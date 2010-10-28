@@ -5,30 +5,75 @@ import java.awt.Component;
 import java.io.File;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
+import javax.naming.spi.DirectoryManager;
 import javax.swing.JPanel;
 import javax.swing.MenuElement;
+import javax.swing.tree.TreeModel;
+import javax.swing.tree.TreePath;
+
+import com.sun.corba.se.impl.orbutil.threadpool.ThreadPoolImpl;
+import com.sun.corba.se.spi.orbutil.threadpool.ThreadPool;
+import com.sun.corba.se.spi.orbutil.threadpool.ThreadPoolManager;
 
 public class ConversionSVGController
 {
-    protected MainWindow mainwindow;
-    protected Converter  converter;
+    protected MainWindow               mainwindow;
+    protected Converter                converter;
+    protected File                     inkscapeExecutable;
+
+    // ThreadPool
+    int                                corePoolSize    = 2;
+    int                                maximumPoolSize = 2;
+    long                               keepAliveTime   = 10;
+    final ArrayBlockingQueue<Runnable> queue           = new ArrayBlockingQueue<Runnable>(
+                                                               5);
+    protected ThreadPoolExecutor       threadPool;
 
     public ConversionSVGController(conversion.ui.MainWindow mainwindow)
     {
         this.mainwindow = mainwindow;
+        inkscapeExecutable = findInkscapeExecutable();
+        threadPool = new ThreadPoolExecutor(corePoolSize, maximumPoolSize,
+                keepAliveTime, TimeUnit.SECONDS, queue);
     }
 
     public List<File> getFiles()
     {
-        return null;
+        List<File> files = new ArrayList<File>();
+        TreePath[] selectedTreePaths = null;
+        
+        if ((selectedTreePaths = mainwindow.fileHeirarchy.getCheckingPaths()) != null)
+        {
+            for (TreePath selection : selectedTreePaths)
+            {
+                File file = (File) selection.getLastPathComponent();
+                files.add(file);
+            }
+        }
+
+        return files;
     }
 
-    public void setFiles(List<File> files)
+    public void setFiles(TreePath[] paths)
     {
+        List<File> files = new ArrayList<File>();
+        
+        if (paths != null)
+        {
+            for (TreePath selection : paths)
+            {
+                File file = (File) selection.getLastPathComponent();
+                files.add(file);
+            }
+        }
 
     }
 
@@ -54,20 +99,21 @@ public class ConversionSVGController
 
     public void convert()
     {
-        // TODO make use of ThreadPoolExecutor()
-        
         // disable GUI input to prevent mistakes
         enableInput(false);
         // getOutputFormat() for each file and merge
-        //      with result from getInkscapeCommandLineOptions()
-        Map<String, String> options = getInkscapeCommandlineOptions();
+        // with result from getInkscapeCommandLineOptions()
+
         for (File file : getFiles())
         {
+            Map<String, String> options = getInkscapeCommandlineOptions();
             Map<String, String> format = getOutputFormat(file);
-            // TODO fix, this will be too many
+
             options.putAll(format);
+
+            threadPool.execute(new Converter(inkscapeExecutable, options));
         }
-        
+
         // enable GUI input
         enableInput(true);
     }
@@ -83,31 +129,33 @@ public class ConversionSVGController
         // confirmation to quit
         System.exit(0);
     }
-    
+
     /**
-     * Disable all user inputs to prevent unwanted/unnecessary interactions while
-     * Inkscape handles converting images.
+     * Disable all user inputs to prevent unwanted/unnecessary interactions
+     * while Inkscape handles converting images.
+     * 
      * @param enable
      */
     public void enableInput(boolean enable)
     {
         // enable/disable all Menu input
-       for (MenuElement elem : mainwindow.menubar.getSubElements())
-       {
-           elem.getComponent().setEnabled(enable);
-       }
-       
-       // enable/disable the necessary JPanels
-       enablePanel(mainwindow.colorPicker, enable);
-       enablePanel(mainwindow.sizePanel, enable);
-       enablePanel(mainwindow.outputFormatPanel, enable);
-       enablePanel(mainwindow.exportAreaPanel, enable);
-       
+        for (MenuElement elem : mainwindow.menubar.getSubElements())
+        {
+            elem.getComponent().setEnabled(enable);
+        }
+
+        // enable/disable the necessary JPanels
+        enablePanel(mainwindow.colorPicker, enable);
+        enablePanel(mainwindow.sizePanel, enable);
+        enablePanel(mainwindow.outputFormatPanel, enable);
+        enablePanel(mainwindow.exportAreaPanel, enable);
+
     }
-    
+
     /**
-     * Disables all the components contained in the JPanel. This is intended
-     * to be used by disableInput() prior to converting.
+     * Disables all the components contained in the JPanel. This is intended to
+     * be used by disableInput() prior to converting.
+     * 
      * @param panel
      * @param enable
      */
@@ -124,16 +172,18 @@ public class ConversionSVGController
         HashMap<String, String> options = new HashMap<String, String>();
 
         options.put("-b", sanitizeColor(mainwindow.colorPicker.getColor()));
-        options.put("-y", String.valueOf(mainwindow.colorPicker.getColor().getAlpha()));
+        options.put("-y", String.valueOf(mainwindow.colorPicker.getColor()
+                .getAlpha()));
         options.put("-h", mainwindow.heightTextField.getText());
         options.putAll(getExportArea());
-        
+
         return options;
     }
 
     /**
-     * Inkscape requires the background color to be a string in a certain format. We
-     * are choosing to use the rgb(255,255,255) format.
+     * Inkscape requires the background color to be a string in a certain
+     * format. We are choosing to use the rgb(255,255,255) format.
+     * 
      * @param color
      * @return A sanitized String formatted as rgb(255,255,255).
      */
@@ -142,7 +192,7 @@ public class ConversionSVGController
         return "rgb(" + color.getRed() + "," + color.getGreen() + ","
                 + color.getBlue() + ")";
     }
-    
+
     private Map<String, String> getExportArea()
     {
         HashMap<String, String> option = new HashMap<String, String>();
@@ -155,7 +205,7 @@ public class ConversionSVGController
         } // TODO future -a --export-area=x0:y0:x1:y1
         return option;
     }
-    
+
     private Map<String, String> getOutputFormat(File file)
     {
         HashMap<String, String> option = new HashMap<String, String>();
@@ -176,5 +226,23 @@ public class ConversionSVGController
             option.put("-E", file.getAbsolutePath());
         }
         return option;
+    }
+
+    private File findInkscapeExecutable()
+    {
+        File executable = null;
+        String os = System.getProperty("os.name").toLowerCase();
+        if (os.equals("linux"))
+        {
+            executable = new File("/usr/bin/inkscape");
+        } else if (os.contains("windows"))
+        {
+            executable = new File("C:/Program Files/Inkscape/inkscape.exe");
+        } else
+        {
+            // TODO handle Apple Inc. or platform independent
+        }
+
+        return executable;
     }
 }

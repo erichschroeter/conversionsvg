@@ -27,9 +27,10 @@ import it.cnr.imaa.essi.lablib.gui.checkboxtree.TreeCheckingListener;
 import it.cnr.imaa.essi.lablib.gui.checkboxtree.TreeCheckingModel;
 
 import java.awt.BorderLayout;
-import java.awt.Dimension;
-//import java.awt.List;
+import java.awt.Dimension; //import java.awt.List;
+import java.awt.GridBagConstraints;
 
+import javax.swing.DefaultComboBoxModel;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import java.awt.*;
@@ -38,6 +39,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import javax.swing.event.TreeSelectionEvent;
 import javax.swing.event.TreeSelectionListener;
+import javax.swing.tree.TreePath;
 
 import org.pushingpixels.flamingo.api.common.JCommandButton;
 import org.pushingpixels.flamingo.api.common.icon.ImageWrapperResizableIcon;
@@ -73,8 +75,17 @@ public class MainWindow extends JRibbonFrame
     JLabel                    nameOfImageLabel              = new JLabel();
     JProgressBar              progressBar                   = new JProgressBar();
     JButton                   cancelButton                  = new JButton();
-    JButton                   convertButton                 = new JButton();
+    // JButton convertButton = new JButton();
     JButton                   quitButton                    = new JButton();
+
+    // ------------------------------------------------
+    // Ribbon
+    // ------------------------------------------------
+    JCommandButton            convertButton;
+    JCommandButton            languageButton;
+    JCommandButton            accessibilityButton;
+    JCommandButton            fontButton;
+    JCommandButton            shortcutsButton;
 
     // Menu
     JMenuBar                  menubar                       = new JMenuBar();
@@ -118,8 +129,7 @@ public class MainWindow extends JRibbonFrame
     JComboBox                 unitComboBox                  = new JComboBox();
 
     // Background Color Picker
-    ColorPicker               colorPicker                   = new ColorPicker(
-                                                                    true, true);
+    ColorPicker               colorPicker                   = new ColorPicker(true, true);
 
     // ------------------------------------------------
     // END Options Panel
@@ -136,8 +146,7 @@ public class MainWindow extends JRibbonFrame
     JLabel                    lblPercent                    = new JLabel();
 
     // Controller
-    ConversionSVGController   controller                    = new ConversionSVGController(
-                                                                    this);
+    ConversionSVGController   controller                    = new ConversionSVGController(this);
     // Event Listener
     EventListener             eventListener                 = new EventListener();
 
@@ -179,30 +188,26 @@ public class MainWindow extends JRibbonFrame
 
         // Options Panel
         optionsPanel.setLayout(new GridBagLayout());
-
-        constraints.fill = GridBagConstraints.HORIZONTAL;
-        constraints.weightx = 1;
-        // constraints.weighty = 1;
-        constraints.ipadx = 5;
-        constraints.ipady = 5;
-        constraints.anchor = GridBagConstraints.NORTHWEST;
-        constraints.gridx = 0;
-        constraints.gridy = 0;
+        optionsPanel.setMinimumSize(new Dimension(300, 600));
+        optionsPanel.setPreferredSize(new Dimension(350, 600));
+        // (gridx, gridy, gridwidth, gridheight, weightx, weighty, anchor, fill,
+        // insets, ipadx, ipady)
+        constraints = new GridBagConstraints(0, 0, 1, 1, 0, 0, GridBagConstraints.NORTHWEST, GridBagConstraints.HORIZONTAL, new Insets(5, 5, 5, 5), 0, 0);
         optionsPanel.add(outputFormatPanel, constraints);
-        constraints.gridy = 1;
+        constraints = new GridBagConstraints(0, 1, 1, 1, 0, 0, GridBagConstraints.NORTHWEST, GridBagConstraints.HORIZONTAL, new Insets(5, 5, 5, 5), 0, 0);
         optionsPanel.add(exportAreaPanel, constraints);
-        constraints.gridy = 2;
+        constraints = new GridBagConstraints(0, 2, 1, 1, 0, 0, GridBagConstraints.NORTHWEST, GridBagConstraints.HORIZONTAL, new Insets(5, 5, 5, 5), 0, 0);
         optionsPanel.add(sizePanel, constraints);
-        constraints.gridy = 3;
+        constraints = new GridBagConstraints(0, 3, 1, 1, 1, 0, GridBagConstraints.NORTHWEST, GridBagConstraints.BOTH, new Insets(5, 5, 5, 5), 0, 0);
         optionsPanel.add(colorPicker, constraints);
 
         // ------------------------------------------------
         // Ribbon
         // ------------------------------------------------
-        
+
         // Controls Band ----------------------------------
-        JCommandButton convertButton = new JCommandButton("Convert", getResizableIconFromResource("go-next.png"));
-        
+        convertButton = new JCommandButton("Convert", getResizableIconFromResource("go-next.png"));
+
         JRibbonBand controlsBand = new JRibbonBand("Controls", getApplicationIcon());
         controlsBand.addCommandButton(convertButton, RibbonElementPriority.TOP);
 
@@ -212,13 +217,13 @@ public class MainWindow extends JRibbonFrame
         resizePolicies.add(new CoreRibbonResizePolicies.High2Low(controlsBand.getControlPanel()));
         controlsBand.setResizePolicies(resizePolicies);
         // END --------------------------------------------
-        
+
         // Preferences Band -------------------------------
-        JCommandButton languageButton = new JCommandButton("Language", getResizableIconFromResource("preferences-desktop-locale.png"));
-        JCommandButton accessibilityButton = new JCommandButton("Accessibility", getResizableIconFromResource("preferences-desktop-accessibility.png"));
-        JCommandButton fontButton = new JCommandButton("Font", getResizableIconFromResource("preferences-desktop-font.png"));
-        JCommandButton shortcutsButton = new JCommandButton("Shortcuts", getResizableIconFromResource("preferences-desktop-keyboard-shortcuts.png"));
-        
+        languageButton = new JCommandButton("Language", getResizableIconFromResource("preferences-desktop-locale.png"));
+        accessibilityButton = new JCommandButton("Accessibility", getResizableIconFromResource("preferences-desktop-accessibility.png"));
+        fontButton = new JCommandButton("Font", getResizableIconFromResource("preferences-desktop-font.png"));
+        shortcutsButton = new JCommandButton("Shortcuts", getResizableIconFromResource("preferences-desktop-keyboard-shortcuts.png"));
+
         JRibbonBand preferencesBand = new JRibbonBand("Preferences", getApplicationIcon());
         preferencesBand.addCommandButton(languageButton, RibbonElementPriority.TOP);
         preferencesBand.addCommandButton(accessibilityButton, RibbonElementPriority.LOW);
@@ -230,53 +235,41 @@ public class MainWindow extends JRibbonFrame
         resizePolicies.add(new CoreRibbonResizePolicies.Mid2Low(preferencesBand.getControlPanel()));
         preferencesBand.setResizePolicies(resizePolicies);
         // END --------------------------------------------
-        
+
         RibbonTask task = new RibbonTask("Home", controlsBand, preferencesBand);
         getRibbon().addTask(task);
         // ------------------------------------------------
         // END Ribbon
         // ------------------------------------------------
         // Menu
-//        this.setJMenuBar(menubar);
-//        fileMenu.setText("Fichier");
-//        quitMenuItem.setText("Quitter");
-//        conversionMenu.setText("Conversion");
-//        wizardMenuItem.setText("Assistant");
-//        parameterMenu.setText("Parametre");
-//        languageMenu.setText("Langue");
-//        inkscapeMenuItem.setText("Inkscape");
-//        helpMenu.setText("Aide");
-//        aboutMenuItem.setText("A propos");
-//        frenchCheckboxMenuItem.setText("Francais");
-//        englishCheckboxMenuItem.setText("Anglais");
-//        menubar.add(fileMenu);
-//        menubar.add(conversionMenu);
-//        menubar.add(parameterMenu);
-//        menubar.add(helpMenu);
-//        fileMenu.add(quitMenuItem);
-//        conversionMenu.add(wizardMenuItem);
-//        parameterMenu.add(languageMenu);
-//        parameterMenu.add(inkscapeMenuItem);
-//        languageMenu.add(frenchCheckboxMenuItem);
-//        languageMenu.add(englishCheckboxMenuItem);
-//        helpMenu.add(aboutMenuItem);
+        // this.setJMenuBar(menubar);
+        // fileMenu.setText("Fichier");
+        // quitMenuItem.setText("Quitter");
+        // conversionMenu.setText("Conversion");
+        // wizardMenuItem.setText("Assistant");
+        // parameterMenu.setText("Parametre");
+        // languageMenu.setText("Langue");
+        // inkscapeMenuItem.setText("Inkscape");
+        // helpMenu.setText("Aide");
+        // aboutMenuItem.setText("A propos");
+        // frenchCheckboxMenuItem.setText("Francais");
+        // englishCheckboxMenuItem.setText("Anglais");
+        // menubar.add(fileMenu);
+        // menubar.add(conversionMenu);
+        // menubar.add(parameterMenu);
+        // menubar.add(helpMenu);
+        // fileMenu.add(quitMenuItem);
+        // conversionMenu.add(wizardMenuItem);
+        // parameterMenu.add(languageMenu);
+        // parameterMenu.add(inkscapeMenuItem);
+        // languageMenu.add(frenchCheckboxMenuItem);
+        // languageMenu.add(englishCheckboxMenuItem);
+        // helpMenu.add(aboutMenuItem);
 
         // Output Format
         GroupLayout layout = new GroupLayout(outputFormatPanel);
-        layout.setHorizontalGroup(layout.createSequentialGroup().addGroup(
-                layout.createParallelGroup(GroupLayout.Alignment.LEADING)
-                        .addComponent(pngCheckBox).addComponent(pdfCheckBox))
-                .addGroup(
-                        layout.createParallelGroup(
-                                GroupLayout.Alignment.LEADING).addComponent(
-                                epsCheckBox).addComponent(psCheckBox)));
-        layout.setVerticalGroup(layout.createSequentialGroup().addGroup(
-                layout.createParallelGroup(GroupLayout.Alignment.LEADING)
-                        .addComponent(pngCheckBox).addComponent(epsCheckBox))
-                .addGroup(
-                        layout.createParallelGroup(
-                                GroupLayout.Alignment.LEADING).addComponent(
-                                pdfCheckBox).addComponent(psCheckBox)));
+        layout.setHorizontalGroup(layout.createSequentialGroup().addGroup(layout.createParallelGroup(GroupLayout.Alignment.LEADING).addComponent(pngCheckBox).addComponent(pdfCheckBox)).addGroup(layout.createParallelGroup(GroupLayout.Alignment.LEADING).addComponent(epsCheckBox).addComponent(psCheckBox)));
+        layout.setVerticalGroup(layout.createSequentialGroup().addGroup(layout.createParallelGroup(GroupLayout.Alignment.LEADING).addComponent(pngCheckBox).addComponent(epsCheckBox)).addGroup(layout.createParallelGroup(GroupLayout.Alignment.LEADING).addComponent(pdfCheckBox).addComponent(psCheckBox)));
         outputFormatPanel.setLayout(layout);
         outputFormatPanel.setBorder(BorderFactory.createTitledBorder("Format"));
 
@@ -301,74 +294,69 @@ public class MainWindow extends JRibbonFrame
         drawingRadioButton.setSelected(true);
         exportAreaPanel.add(drawingRadioButton);
         exportAreaPanel.add(pageRadioButton);
-        exportAreaPanel.setBorder(BorderFactory
-                .createTitledBorder("Export Area"));
+        exportAreaPanel.setBorder(BorderFactory.createTitledBorder("Export Area"));
 
         // Size
         heightLabel.setText("Height");
         widthLabel.setText("Width");
-
-        sizePanel.setLayout(new GridBagLayout());
-        constraints.anchor = GridBagConstraints.EAST;
-        constraints.fill = GridBagConstraints.NONE;
-        constraints.gridx = 0;
-        constraints.gridy = 0;
-        sizePanel.add(heightLabel, constraints);
-        constraints.gridy = 1;
-        sizePanel.add(widthLabel, constraints);
-        constraints.anchor = GridBagConstraints.NORTHWEST;
-        constraints.fill = GridBagConstraints.HORIZONTAL;
-        constraints.gridx = 1;
-        constraints.gridy = 0;
-        sizePanel.add(heightTextField, constraints);
-        constraints.gridy = 1;
-        sizePanel.add(widthTextField, constraints);
-        constraints.gridx = 2;
-        constraints.gridy = 0;
-        constraints.anchor = GridBagConstraints.CENTER;
-        constraints.gridheight = 2;
-        sizePanel.add(unitComboBox, constraints);
-        sizePanel.setBorder(BorderFactory.createTitledBorder("Size"));
-
         heightTextField.setBorder(BorderFactory.createLoweredBevelBorder());
         widthTextField.setBorder(BorderFactory.createLoweredBevelBorder());
+        heightTextField.setColumns(10);
+        String[] units = { "px", "mm" };
+        ComboBoxModel unitModel = new DefaultComboBoxModel(units);
+        unitComboBox.setModel(unitModel);
+
+        // (gridx, gridy, gridwidth, gridheight, weightx, weighty, anchor, fill,
+        // insets, ipadx, ipady)
+        sizePanel.setLayout(new GridBagLayout());
+        constraints = new GridBagConstraints(0, 0, 1, 1, 0, 0, GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(5, 5, 5, 5), 0, 0);
+        sizePanel.add(heightLabel, constraints);
+        constraints = new GridBagConstraints(0, 1, 1, 1, 0, 0, GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(5, 5, 5, 5), 0, 0);
+        sizePanel.add(widthLabel, constraints);
+        constraints = new GridBagConstraints(1, 0, 1, 1, 0, 0, GridBagConstraints.NORTHWEST, GridBagConstraints.HORIZONTAL, new Insets(5, 5, 5, 5), 0, 0);
+        sizePanel.add(heightTextField, constraints);
+        constraints = new GridBagConstraints(1, 1, 1, 1, 0, 0, GridBagConstraints.NORTHWEST, GridBagConstraints.HORIZONTAL, new Insets(5, 5, 5, 5), 0, 0);
+        sizePanel.add(widthTextField, constraints);
+        constraints = new GridBagConstraints(2, 0, 1, 2, 0, 0, GridBagConstraints.CENTER, GridBagConstraints.HORIZONTAL, new Insets(5, 5, 5, 5), 0, 0);
+        sizePanel.add(unitComboBox, constraints);
+        sizePanel.setBorder(BorderFactory.createTitledBorder("Size"));
 
         // Color Picker
         colorPicker.setColor(Color.WHITE);
         colorPicker.setBorder(BorderFactory.createTitledBorder("Background"));
         colorPicker.setEnabled(false);
 
+        // ------------------------------------------------
         // File Select
+        // ------------------------------------------------
         FileSystemModel model = new FileSystemModel();
         fileHeirarchy = new CheckboxTree(model);
-        fileHeirarchy.getCheckingModel().setCheckingMode(
-                TreeCheckingModel.CheckingMode.PROPAGATE);
+        fileHeirarchy.getCheckingModel().setCheckingMode(TreeCheckingModel.CheckingMode.PROPAGATE);
 
         ScrollPane fileSelectScrollPane = new ScrollPane();
         fileSelectScrollPane.add(fileHeirarchy);
 
-        fileSelectPanel.setMinimumSize(new Dimension(300, 500));
+        fileSelectPanel.setMinimumSize(new Dimension(350, 500));
         fileSelectPanel.setLayout(new GridBagLayout());
-        constraints.fill = GridBagConstraints.BOTH;
-        constraints.weighty = 1;
-        constraints.anchor = GridBagConstraints.NORTHWEST;
-        constraints.gridy = 1;
-        fileSelectPanel.add(fileSelectScrollPane, constraints);
+
         // add the output directory options
         // - same directory as each file
         // - a single directory
-        constraints.fill = GridBagConstraints.HORIZONTAL;
-        constraints.weighty = 0;
-        constraints.anchor = GridBagConstraints.SOUTHWEST;
-        constraints.gridy = 0;
+        constraints = new GridBagConstraints(0, 0, 1, 1, 0, 0, GridBagConstraints.NORTHWEST, GridBagConstraints.HORIZONTAL, new Insets(5, 5, 5, 5), 0, 0);
         fileSelectPanel.add(directoryTextField, constraints);
-        constraints.gridy = 2;
+        constraints = new GridBagConstraints(0, 1, 1, 1, 1, 1, GridBagConstraints.NORTHWEST, GridBagConstraints.BOTH, new Insets(5, 5, 5, 5), 0, 0);
+        fileSelectPanel.add(fileSelectScrollPane, constraints);
+        constraints = new GridBagConstraints(0, 2, 1, 1, 0, 0, GridBagConstraints.NORTHWEST, GridBagConstraints.HORIZONTAL, new Insets(5, 5, 5, 5), 0, 0);
         fileSelectPanel.add(singleOutputDirectoryCheckbox, constraints);
-        constraints.gridy = 3;
+        constraints = new GridBagConstraints(0, 3, 1, 1, 0, 0, GridBagConstraints.NORTHWEST, GridBagConstraints.HORIZONTAL, new Insets(5, 5, 5, 5), 0, 0);
         fileSelectPanel.add(sameOutputDirectoryCheckbox, constraints);
-        constraints.gridy = 4;
+        constraints = new GridBagConstraints(0, 4, 1, 1, 0, 0, GridBagConstraints.NORTHWEST, GridBagConstraints.HORIZONTAL, new Insets(5, 5, 5, 5), 0, 0);
         fileSelectPanel.add(outputDirTextField, constraints);
-
+        
+        singleOutputDirectoryCheckbox.setText("Put all converted files in one directory.");
+        sameOutputDirectoryCheckbox.setText("Put converted files in their respective directory.");
+        // END File Select --------------------------------
+        
         // Status Information
         lblPercent.setHorizontalAlignment(SwingConstants.CENTER);
         lblPercent.setText("100%");
@@ -379,33 +367,18 @@ public class MainWindow extends JRibbonFrame
         numberOfImageLabel.setBorder(BorderFactory.createLoweredBevelBorder());
         numberOfImageLabel.setText("0/100");
         nameOfImageLabel.setBorder(BorderFactory.createLoweredBevelBorder());
-        nameOfImageLabel
-                .setText("/home/erich/Public/ConversionSVG/characature.svg");
-        constraints.anchor = GridBagConstraints.SOUTHWEST;
-        constraints.fill = GridBagConstraints.HORIZONTAL;
-        constraints.weightx = 1;
-        constraints.weighty = 0;
-        constraints.gridx = 0;
-        constraints.gridy = 0;
-//        createConstraints(constraints, 0, 0, null, null, 1, 0, GridBagConstraints.SOUTHWEST, GridBagConstraints.HORIZONTAL, null, null, null)
+        nameOfImageLabel.setText("/home/erich/Public/ConversionSVG/characature.svg");
+        constraints = new GridBagConstraints(0, 0, 1, 1, 0.1, 0, GridBagConstraints.SOUTHWEST, GridBagConstraints.HORIZONTAL, new Insets(2,2,2,2), 0, 0);
         statusBarPanel.add(numberOfImageLabel, constraints);
-        constraints.gridx = 1;
-        constraints.gridy = 0;
+        constraints = new GridBagConstraints(1, 0, 1, 1, 0.9, 0, GridBagConstraints.SOUTHWEST, GridBagConstraints.HORIZONTAL, new Insets(2,2,2,2), 0, 0);
         statusBarPanel.add(nameOfImageLabel, constraints);
 
-        // Menu
-        quitMenuItem.addActionListener(eventListener);
-        wizardMenuItem.addActionListener(eventListener);
-        frenchCheckboxMenuItem.addActionListener(eventListener);
-        englishCheckboxMenuItem.addActionListener(eventListener);
-        inkscapeMenuItem.addActionListener(eventListener);
-        aboutMenuItem.addActionListener(eventListener);
-
-        pdfCheckBox.addActionListener(eventListener);
+        // Event Listeners
+        convertButton.addActionListener(eventListener);
 
         // File Select
-        fileHeirarchy.addTreeSelectionListener(eventListener);
-        fileHeirarchy.addTreeCheckingListener(eventListener);
+        // fileHeirarchy.addTreeSelectionListener(eventListener);
+         fileHeirarchy.addTreeCheckingListener(eventListener);
 
         widthTextField.addKeyListener(new NumberKeyAdapter(this));
         heightTextField.addKeyListener(new NumberKeyAdapter(this));
@@ -424,38 +397,11 @@ public class MainWindow extends JRibbonFrame
 
         pack();
     }
-    
+
     public static ResizableIcon getResizableIconFromResource(String resource)
     {
-        return ImageWrapperResizableIcon.getIcon(MainWindow.class.getClassLoader().getResource("conversion/resources/" + resource), new Dimension(48, 48));
-    }
-
-    private GridBagConstraints createConstraints(
-            GridBagConstraints constraints, Integer gridx, Integer gridy,
-            Integer gridwidth, Integer gridheight, Double weightx,
-            Double weighty, Integer anchor, Integer fill, Insets insets,
-            Integer ipadx, Integer ipady)
-    {
-        if (constraints == null)
-        {
-            constraints = new GridBagConstraints();
-        }
-        // since each constraint is allowed to be null, we just set the default
-        // to itself
-        constraints.gridx = gridx == null ? constraints.gridx : gridx;
-        constraints.gridy = gridy == null ? constraints.gridy : gridy;
-        constraints.gridwidth = gridwidth == null ? constraints.gridwidth
-                : gridwidth;
-        constraints.gridheight = gridheight == null ? constraints.gridheight
-                : gridheight;
-        constraints.weightx = weightx == null ? constraints.weightx : weightx;
-        constraints.weighty = weighty == null ? constraints.weighty : weighty;
-        constraints.anchor = anchor == null ? constraints.anchor : anchor;
-        constraints.fill = fill == null ? constraints.fill : fill;
-        constraints.ipadx = ipadx == null ? constraints.ipadx : ipadx;
-        constraints.ipady = ipady == null ? constraints.ipady : ipady;
-
-        return constraints;
+        return ImageWrapperResizableIcon.getIcon(MainWindow.class.getClassLoader().getResource("conversion/resources/"
+                + resource), new Dimension(48, 48));
     }
 
     /*
@@ -612,6 +558,12 @@ public class MainWindow extends JRibbonFrame
                 // TODO handle updating converter with the switch(es)
             }
 
+            // Ribbon
+            else if (obj.equals(convertButton))
+            {
+                controller.getFiles();
+            }
+
             // Menu
             else if (obj.equals(englishCheckboxMenuItem))
             {
@@ -639,7 +591,7 @@ public class MainWindow extends JRibbonFrame
         {
             // TODO handle mapping the output directories to the checked files'
             // directories
-
+            controller.setFiles(fileHeirarchy.getCheckingPaths());
         }
     }
 }
