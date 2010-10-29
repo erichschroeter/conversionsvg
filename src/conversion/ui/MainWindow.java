@@ -21,10 +21,10 @@
 
 package conversion.ui;
 
-import it.cnr.imaa.essi.lablib.gui.checkboxtree.CheckboxTree;
-import it.cnr.imaa.essi.lablib.gui.checkboxtree.TreeCheckingEvent;
-import it.cnr.imaa.essi.lablib.gui.checkboxtree.TreeCheckingListener;
-import it.cnr.imaa.essi.lablib.gui.checkboxtree.TreeCheckingModel;
+//import it.cnr.imaa.essi.lablib.gui.checkboxtree.CheckboxTree;
+//import it.cnr.imaa.essi.lablib.gui.checkboxtree.TreeCheckingEvent;
+//import it.cnr.imaa.essi.lablib.gui.checkboxtree.TreeCheckingListener;
+//import it.cnr.imaa.essi.lablib.gui.checkboxtree.TreeCheckingModel;
 
 import java.awt.BorderLayout;
 import java.awt.Dimension; //import java.awt.List;
@@ -39,6 +39,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import javax.swing.event.TreeSelectionEvent;
 import javax.swing.event.TreeSelectionListener;
+import javax.swing.filechooser.FileSystemView;
 import javax.swing.tree.TreePath;
 
 import org.pushingpixels.flamingo.api.common.JCommandButton;
@@ -53,18 +54,24 @@ import org.pushingpixels.flamingo.api.ribbon.resize.CoreRibbonResizePolicies;
 import org.pushingpixels.flamingo.api.ribbon.resize.RibbonBandResizePolicy;
 
 import com.bric.swing.ColorPicker;
+import com.jidesoft.swing.CheckBoxTree;
+import com.sun.corba.se.impl.oa.poa.ActiveObjectMap.Key;
+import com.sun.org.apache.xml.internal.security.keys.KeyInfo;
 
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyAdapter;
+import java.awt.event.KeyListener;
+import java.awt.event.TextEvent;
+import java.awt.event.TextListener;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
+import java.io.File;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class MainWindow extends JRibbonFrame
-{
+public class MainWindow extends JRibbonFrame {
     private static final long serialVersionUID              = 6987289183119465870L;
     String                    inkscapeTitle;
     JSplitPane                splitPane;
@@ -74,7 +81,7 @@ public class MainWindow extends JRibbonFrame
     JLabel                    numberOfImageLabel            = new JLabel();
     JLabel                    nameOfImageLabel              = new JLabel();
     JProgressBar              progressBar                   = new JProgressBar();
-    JButton                   cancelButton                  = new JButton();
+    // JButton cancelButton = new JButton();
     // JButton convertButton = new JButton();
     JButton                   quitButton                    = new JButton();
 
@@ -82,6 +89,7 @@ public class MainWindow extends JRibbonFrame
     // Ribbon
     // ------------------------------------------------
     JCommandButton            convertButton;
+    JCommandButton            cancelButton;
     JCommandButton            languageButton;
     JCommandButton            accessibilityButton;
     JCommandButton            fontButton;
@@ -127,6 +135,7 @@ public class MainWindow extends JRibbonFrame
     JTextField                heightTextField               = new JTextField();
     JTextField                widthTextField                = new JTextField();
     JComboBox                 unitComboBox                  = new JComboBox();
+    String[]                  units                         = { "px", "mm" };
 
     // Background Color Picker
     ColorPicker               colorPicker                   = new ColorPicker(true, true);
@@ -137,27 +146,25 @@ public class MainWindow extends JRibbonFrame
 
     // File Select
     JPanel                    fileSelectPanel               = new JPanel();
-    CheckboxTree              fileHeirarchy;
-    JTextField                directoryTextField            = new JTextField();
-    JTextField                outputDirTextField            = new JTextField();
+    CheckBoxTree              fileHeirarchy;
     JCheckBox                 singleOutputDirectoryCheckbox = new JCheckBox();
     JCheckBox                 sameOutputDirectoryCheckbox   = new JCheckBox();
+    JTextField                directoryTextField            = new JTextField();
+    JTextField                outputDirTextField            = new JTextField();
+    JButton                   outputDirectoryEllipse        = new JButton("...");
 
     JLabel                    lblPercent                    = new JLabel();
 
     // Controller
     ConversionSVGController   controller                    = new ConversionSVGController(this);
     // Event Listener
-    EventListener             eventListener                 = new EventListener();
+    EventListener             eventListener                 = new EventListener(this);
 
-    public MainWindow()
-    {
-        try
-        {
+    public MainWindow() {
+        try {
             setDefaultCloseOperation(EXIT_ON_CLOSE);
             init();
-        } catch (Exception exception)
-        {
+        } catch (Exception exception) {
             exception.printStackTrace();
         }
     }
@@ -167,8 +174,7 @@ public class MainWindow extends JRibbonFrame
      * 
      * @throws java.lang.Exception
      */
-    private void init() throws Exception
-    {
+    private void init() throws Exception {
         // Main Window
         setTitle("ConversionSVG");
 
@@ -207,9 +213,11 @@ public class MainWindow extends JRibbonFrame
 
         // Controls Band ----------------------------------
         convertButton = new JCommandButton("Convert", getResizableIconFromResource("go-next.png"));
+        cancelButton = new JCommandButton("Cancel", getResizableIconFromResource("process-stop.png"));
 
         JRibbonBand controlsBand = new JRibbonBand("Controls", getApplicationIcon());
         controlsBand.addCommandButton(convertButton, RibbonElementPriority.TOP);
+        controlsBand.addCommandButton(cancelButton, RibbonElementPriority.TOP);
 
         List<RibbonBandResizePolicy> resizePolicies = new ArrayList<RibbonBandResizePolicy>();
         resizePolicies.add(new CoreRibbonResizePolicies.Mirror(controlsBand.getControlPanel()));
@@ -302,12 +310,11 @@ public class MainWindow extends JRibbonFrame
         heightTextField.setBorder(BorderFactory.createLoweredBevelBorder());
         widthTextField.setBorder(BorderFactory.createLoweredBevelBorder());
         heightTextField.setColumns(10);
-        String[] units = { "px", "mm" };
+
         ComboBoxModel unitModel = new DefaultComboBoxModel(units);
         unitComboBox.setModel(unitModel);
 
-        // (gridx, gridy, gridwidth, gridheight, weightx, weighty, anchor, fill,
-        // insets, ipadx, ipady)
+        // (gridx, gridy, gridwidth, gridheight, weightx, weighty, anchor, fill, insets, ipadx, ipady)
         sizePanel.setLayout(new GridBagLayout());
         constraints = new GridBagConstraints(0, 0, 1, 1, 0, 0, GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(5, 5, 5, 5), 0, 0);
         sizePanel.add(heightLabel, constraints);
@@ -319,6 +326,10 @@ public class MainWindow extends JRibbonFrame
         sizePanel.add(widthTextField, constraints);
         constraints = new GridBagConstraints(2, 0, 1, 2, 0, 0, GridBagConstraints.CENTER, GridBagConstraints.HORIZONTAL, new Insets(5, 5, 5, 5), 0, 0);
         sizePanel.add(unitComboBox, constraints);
+        // and a spacer to make everything anchor to the EAST
+        constraints = new GridBagConstraints(3, 0, 1, 2, 1, 0, GridBagConstraints.CENTER, GridBagConstraints.HORIZONTAL, new Insets(5, 5, 5, 5), 0, 0);
+        sizePanel.add(new JPanel(), constraints);
+        
         sizePanel.setBorder(BorderFactory.createTitledBorder("Size"));
 
         // Color Picker
@@ -330,33 +341,40 @@ public class MainWindow extends JRibbonFrame
         // File Select
         // ------------------------------------------------
         FileSystemModel model = new FileSystemModel();
-        fileHeirarchy = new CheckboxTree(model);
-        fileHeirarchy.getCheckingModel().setCheckingMode(TreeCheckingModel.CheckingMode.PROPAGATE);
+        FileSystemView view = FileSystemView.getFileSystemView();
+        fileHeirarchy = new CheckBoxTree(view.getRoots());
 
         ScrollPane fileSelectScrollPane = new ScrollPane();
         fileSelectScrollPane.add(fileHeirarchy);
 
         fileSelectPanel.setMinimumSize(new Dimension(350, 500));
+        fileSelectPanel.setPreferredSize(new Dimension(350, 600));
         fileSelectPanel.setLayout(new GridBagLayout());
 
         // add the output directory options
         // - same directory as each file
         // - a single directory
-        constraints = new GridBagConstraints(0, 0, 1, 1, 0, 0, GridBagConstraints.NORTHWEST, GridBagConstraints.HORIZONTAL, new Insets(5, 5, 5, 5), 0, 0);
+
+        // (gridx, gridy, gridwidth, gridheight, weightx, weighty, anchor, fill, insets, ipadx, ipady)
+        constraints = new GridBagConstraints(0, 0, 2, 1, 0, 0, GridBagConstraints.NORTHWEST, GridBagConstraints.HORIZONTAL, new Insets(2, 2, 2, 2), 0, 0);
         fileSelectPanel.add(directoryTextField, constraints);
-        constraints = new GridBagConstraints(0, 1, 1, 1, 1, 1, GridBagConstraints.NORTHWEST, GridBagConstraints.BOTH, new Insets(5, 5, 5, 5), 0, 0);
+        constraints = new GridBagConstraints(0, 1, 2, 1, 1, 1, GridBagConstraints.NORTHWEST, GridBagConstraints.BOTH, new Insets(2, 2, 2, 2), 0, 0);
         fileSelectPanel.add(fileSelectScrollPane, constraints);
-        constraints = new GridBagConstraints(0, 2, 1, 1, 0, 0, GridBagConstraints.NORTHWEST, GridBagConstraints.HORIZONTAL, new Insets(5, 5, 5, 5), 0, 0);
-        fileSelectPanel.add(singleOutputDirectoryCheckbox, constraints);
-        constraints = new GridBagConstraints(0, 3, 1, 1, 0, 0, GridBagConstraints.NORTHWEST, GridBagConstraints.HORIZONTAL, new Insets(5, 5, 5, 5), 0, 0);
+        constraints = new GridBagConstraints(0, 2, 2, 1, 0, 0, GridBagConstraints.NORTHWEST, GridBagConstraints.HORIZONTAL, new Insets(2, 2, 2, 2), 0, 0);
         fileSelectPanel.add(sameOutputDirectoryCheckbox, constraints);
-        constraints = new GridBagConstraints(0, 4, 1, 1, 0, 0, GridBagConstraints.NORTHWEST, GridBagConstraints.HORIZONTAL, new Insets(5, 5, 5, 5), 0, 0);
+        constraints = new GridBagConstraints(0, 3, 2, 1, 0, 0, GridBagConstraints.NORTHWEST, GridBagConstraints.HORIZONTAL, new Insets(2, 2, 2, 2), 0, 0);
+        fileSelectPanel.add(singleOutputDirectoryCheckbox, constraints);
+        constraints = new GridBagConstraints(0, 4, 1, 1, 1, 0, GridBagConstraints.NORTHWEST, GridBagConstraints.HORIZONTAL, new Insets(2, 2, 2, 2), 0, 0);
         fileSelectPanel.add(outputDirTextField, constraints);
-        
-        singleOutputDirectoryCheckbox.setText("Put all converted files in one directory.");
+        constraints = new GridBagConstraints(1, 4, 1, 1, 0, 0, GridBagConstraints.NORTHWEST, GridBagConstraints.HORIZONTAL, new Insets(2, 2, 2, 2), 0, 0);
+        fileSelectPanel.add(outputDirectoryEllipse, constraints);
+
         sameOutputDirectoryCheckbox.setText("Put converted files in their respective directory.");
+        sameOutputDirectoryCheckbox.setEnabled(true);
+        singleOutputDirectoryCheckbox.setText("Put all converted files in one directory.");
+        checkSingleOutputDirectoryOption(false);
         // END File Select --------------------------------
-        
+
         // Status Information
         lblPercent.setHorizontalAlignment(SwingConstants.CENTER);
         lblPercent.setText("100%");
@@ -368,23 +386,24 @@ public class MainWindow extends JRibbonFrame
         numberOfImageLabel.setText("0/100");
         nameOfImageLabel.setBorder(BorderFactory.createLoweredBevelBorder());
         nameOfImageLabel.setText("/home/erich/Public/ConversionSVG/characature.svg");
-        constraints = new GridBagConstraints(0, 0, 1, 1, 0.1, 0, GridBagConstraints.SOUTHWEST, GridBagConstraints.HORIZONTAL, new Insets(2,2,2,2), 0, 0);
+        constraints = new GridBagConstraints(0, 0, 1, 1, 0.1, 0, GridBagConstraints.SOUTHWEST, GridBagConstraints.HORIZONTAL, new Insets(2, 2, 2, 2), 0, 0);
         statusBarPanel.add(numberOfImageLabel, constraints);
-        constraints = new GridBagConstraints(1, 0, 1, 1, 0.9, 0, GridBagConstraints.SOUTHWEST, GridBagConstraints.HORIZONTAL, new Insets(2,2,2,2), 0, 0);
+        constraints = new GridBagConstraints(1, 0, 1, 1, 0.9, 0, GridBagConstraints.SOUTHWEST, GridBagConstraints.HORIZONTAL, new Insets(2, 2, 2, 2), 0, 0);
         statusBarPanel.add(nameOfImageLabel, constraints);
 
         // Event Listeners
         convertButton.addActionListener(eventListener);
+        cancelButton.addActionListener(eventListener);
 
         // File Select
         // fileHeirarchy.addTreeSelectionListener(eventListener);
-         fileHeirarchy.addTreeCheckingListener(eventListener);
-
+//        fileHeirarchy.addTreeSelectionListener(eventListener);
+        fileHeirarchy.getCheckBoxTreeSelectionModel().addTreeSelectionListener(eventListener);
         widthTextField.addKeyListener(new NumberKeyAdapter(this));
         heightTextField.addKeyListener(new NumberKeyAdapter(this));
-
         singleOutputDirectoryCheckbox.addActionListener(eventListener);
         sameOutputDirectoryCheckbox.addActionListener(eventListener);
+        outputDirectoryEllipse.addActionListener(eventListener);
 
         // module.createLanguage();
         // module.openHome();
@@ -398,10 +417,19 @@ public class MainWindow extends JRibbonFrame
         pack();
     }
 
-    public static ResizableIcon getResizableIconFromResource(String resource)
-    {
+    public void checkSingleOutputDirectoryOption(boolean enable) {
+        if (singleOutputDirectoryCheckbox.isSelected()) {
+            outputDirectoryEllipse.setEnabled(true);
+            outputDirTextField.setEnabled(true);
+        } else {
+            outputDirectoryEllipse.setEnabled(false);
+            outputDirTextField.setEnabled(false);
+        }
+    }
+
+    public static ResizableIcon getResizableIconFromResource(String resource) {
         return ImageWrapperResizableIcon.getIcon(MainWindow.class.getClassLoader().getResource("conversion/resources/"
-                + resource), new Dimension(48, 48));
+                        + resource), new Dimension(48, 48));
     }
 
     /*
@@ -498,136 +526,119 @@ public class MainWindow extends JRibbonFrame
      * @author Erich Schroeter
      */
     private class EventListener implements ActionListener,
-            TreeSelectionListener, TreeCheckingListener
-    {
+                    TreeSelectionListener {
+        MainWindow mainwindow;
+
+        public EventListener(MainWindow mainwindow) {
+            this.mainwindow = mainwindow;
+        }
 
         @Override
-        public void actionPerformed(ActionEvent e)
-        {
+        public void actionPerformed(ActionEvent e) {
             Object obj = e.getSource();
 
-            if (obj.equals(singleOutputDirectoryCheckbox))
-            {
+            // File Select
+            if (obj.equals(singleOutputDirectoryCheckbox)) {
                 // handle set flag to only allow one output directory
-                if (singleOutputDirectoryCheckbox.isSelected())
-                {
-                    controller.singleOutputDirectorySelected();
-                } else
-                {
-                    controller.singleOutputDirectoryUnselected();
-                }
-            } else if (obj.equals(sameOutputDirectoryCheckbox))
-            {
+                mainwindow.checkSingleOutputDirectoryOption(singleOutputDirectoryCheckbox.isSelected());
+            } else if (obj.equals(sameOutputDirectoryCheckbox)) {
                 // handle exporting all images to their respective same
                 // directory
                 // sameOutputDir_actionPerformed()
-                if (sameOutputDirectoryCheckbox.isSelected())
-                {
-                    controller.sameOutputDirectorySelected();
-                } else
-                {
-                    controller.sameOutputDirectoryUnselected();
+
+            } else if (obj.equals(outputDirectoryEllipse)) {
+                JFileChooser chooser = new JFileChooser();
+                chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+                if (chooser.showSaveDialog(mainwindow) == JFileChooser.APPROVE_OPTION) {
+                    outputDirTextField.setText(chooser.getSelectedFile().getAbsolutePath());
                 }
-            } else if (obj.equals(quitMenuItem))
-            {
-                controller.quit();
-            } else if (obj.equals(pngCheckBox))
-            {
+            }
+
+            // Output Format
+            else if (obj.equals(pngCheckBox)) {
                 // TODO handle updating whoever needs to know what else to
                 // export
-            } else if (obj.equals(pdfCheckBox))
-            {
+            } else if (obj.equals(pdfCheckBox)) {
                 // TODO handle updating whoever needs to know what else to
                 // export
-            } else if (obj.equals(epsCheckBox))
-            {
+            } else if (obj.equals(epsCheckBox)) {
                 // TODO handle updating whoever needs to know what else to
                 // export
-            } else if (obj.equals(psCheckBox))
-            {
+            } else if (obj.equals(psCheckBox)) {
                 // TODO handle updating whoever needs to know what else to
                 // export
-            } else if (obj.equals(drawingRadioButton))
-            {
+            }
+
+            // Export Area
+            else if (obj.equals(drawingRadioButton)) {
                 // TODO handle updating converter with the switch
-            } else if (obj.equals(pageRadioButton))
-            {
+            } else if (obj.equals(pageRadioButton)) {
                 // TODO handle updating converter with the switch
-            } else if (obj.equals(unitComboBox))
-            {
+            }
+
+            // Size
+            else if (obj.equals(unitComboBox)) {
                 // TODO handle updating converter with the switch(es)
             }
 
             // Ribbon
-            else if (obj.equals(convertButton))
-            {
-                controller.getFiles();
-            }
-
-            // Menu
-            else if (obj.equals(englishCheckboxMenuItem))
-            {
-
-            } else if (obj.equals(frenchCheckboxMenuItem))
-            {
-
-            } else if (obj.equals(aboutMenuItem))
-            {
-
+            else if (obj.equals(convertButton)) {
+                controller.convert();
+            } else if (obj.equals(cancelButton)) {
+                controller.cancel();
             }
         }
 
         @Override
-        public void valueChanged(TreeSelectionEvent e)
-        {
+        public void valueChanged(TreeSelectionEvent e) {
             // TODO if singleDirectoryCheckbox isSelected() then set output
             // directory to e.getPath();
             // controller.setFiles(files)
-
+            for (TreePath path : e.getPaths())
+            {
+                System.out.println(path);
+            }
         }
 
-        @Override
-        public void valueChanged(TreeCheckingEvent e)
-        {
-            // TODO handle mapping the output directories to the checked files'
-            // directories
-            controller.setFiles(fileHeirarchy.getCheckingPaths());
-        }
+//        @Override
+//        public void valueChanged(TreeCheckingEvent e) {
+//            // TODO handle mapping the output directories to the checked files'
+//            // directories
+//            // controller.setFiles(fileHeirarchy.getCheckingPaths());
+//            System.out.println();
+//            TreePath[] checked = fileHeirarchy.getCheckingPaths();
+//            for (TreePath path : checked) {
+//                System.out.println(path.getLastPathComponent());
+//            }
+//        }
     }
 }
 
-class NumberKeyAdapter extends KeyAdapter
-{
+class NumberKeyAdapter extends KeyAdapter {
     private MainWindow adaptee;
 
-    NumberKeyAdapter(MainWindow adaptee)
-    {
+    NumberKeyAdapter(MainWindow adaptee) {
         this.adaptee = adaptee;
     }
 
     @Override
-    public void keyTyped(KeyEvent e)
-    {
+    public void keyTyped(KeyEvent e) {
         Pattern p = Pattern.compile("\\p{Digit}");
         Matcher m = p.matcher(String.valueOf(e.getKeyChar()));
-        if (!m.matches())
-        {
+        if (!m.matches()) {
             e.consume();
         }
     }
 
-    public void handleNumeric(KeyEvent e)
-    {
-        if (e.getKeyChar() == '.')
-        {
+    public void handleNumeric(KeyEvent e) {
+        if (e.getKeyChar() == '.') {
             e.consume();
         } else if ((e.getKeyChar() != '0') && (e.getKeyChar() != '1')
-                && (e.getKeyChar() != '2') && (e.getKeyChar() != '3')
-                && (e.getKeyChar() != '4') && (e.getKeyChar() != '5')
-                && (e.getKeyChar() != '6') && (e.getKeyChar() != '7')
-                && (e.getKeyChar() != '8') && (e.getKeyChar() != '9')
-                && (e.getKeyChar() != '\b') && (e.getKeyChar() != '.'))
-        {
+                        && (e.getKeyChar() != '2') && (e.getKeyChar() != '3')
+                        && (e.getKeyChar() != '4') && (e.getKeyChar() != '5')
+                        && (e.getKeyChar() != '6') && (e.getKeyChar() != '7')
+                        && (e.getKeyChar() != '8') && (e.getKeyChar() != '9')
+                        && (e.getKeyChar() != '\b') && (e.getKeyChar() != '.')) {
             e.consume();
         }
     }

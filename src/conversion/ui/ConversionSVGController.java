@@ -15,6 +15,7 @@ import java.util.concurrent.TimeUnit;
 
 import javax.naming.spi.DirectoryManager;
 import javax.swing.JPanel;
+import javax.swing.JTextField;
 import javax.swing.MenuElement;
 import javax.swing.tree.TreeModel;
 import javax.swing.tree.TreePath;
@@ -23,53 +24,43 @@ import com.sun.corba.se.impl.orbutil.threadpool.ThreadPoolImpl;
 import com.sun.corba.se.spi.orbutil.threadpool.ThreadPool;
 import com.sun.corba.se.spi.orbutil.threadpool.ThreadPoolManager;
 
-public class ConversionSVGController
-{
-    protected MainWindow               mainwindow;
-    protected Converter                converter;
-    protected File                     inkscapeExecutable;
+public class ConversionSVGController {
+    protected MainWindow mainwindow;
+    protected Converter converter;
+    protected File inkscapeExecutable;
 
     // ThreadPool
-    int                                corePoolSize    = 2;
-    int                                maximumPoolSize = 2;
-    long                               keepAliveTime   = 10;
-    final ArrayBlockingQueue<Runnable> queue           = new ArrayBlockingQueue<Runnable>(
-                                                               5);
-    protected ThreadPoolExecutor       threadPool;
+    int corePoolSize = 2;
+    int maximumPoolSize = 2;
+    long keepAliveTime = 10;
+    final ArrayBlockingQueue<Runnable> queue = new ArrayBlockingQueue<Runnable>(5);
+    protected ThreadPoolExecutor threadPool;
 
-    public ConversionSVGController(conversion.ui.MainWindow mainwindow)
-    {
+    public ConversionSVGController(conversion.ui.MainWindow mainwindow) {
         this.mainwindow = mainwindow;
         inkscapeExecutable = findInkscapeExecutable();
-        threadPool = new ThreadPoolExecutor(corePoolSize, maximumPoolSize,
-                keepAliveTime, TimeUnit.SECONDS, queue);
+        threadPool = new ThreadPoolExecutor(corePoolSize, maximumPoolSize, keepAliveTime, TimeUnit.SECONDS, queue);
     }
 
-    public List<File> getFiles()
-    {
+    public List<File> getFiles() {
         List<File> files = new ArrayList<File>();
         TreePath[] selectedTreePaths = null;
-        
-        if ((selectedTreePaths = mainwindow.fileHeirarchy.getCheckingPaths()) != null)
-        {
-            for (TreePath selection : selectedTreePaths)
-            {
-                File file = (File) selection.getLastPathComponent();
-                files.add(file);
-            }
-        }
+
+//        if ((selectedTreePaths = mainwindow.fileHeirarchy.getCheckingPaths()) != null) {
+//            for (TreePath selection : selectedTreePaths) {
+//                File file = (File) selection.getLastPathComponent();
+//                files.add(file);
+//            }
+//        }
 
         return files;
     }
 
-    public void setFiles(TreePath[] paths)
-    {
+    public void setFiles(TreePath[] paths) {
         List<File> files = new ArrayList<File>();
-        
-        if (paths != null)
-        {
-            for (TreePath selection : paths)
-            {
+
+        if (paths != null) {
+            for (TreePath selection : paths) {
                 File file = (File) selection.getLastPathComponent();
                 files.add(file);
             }
@@ -77,54 +68,51 @@ public class ConversionSVGController
 
     }
 
-    public void sameOutputDirectorySelected()
-    {
+    public void sameOutputDirectorySelected() {
 
     }
 
-    public void sameOutputDirectoryUnselected()
-    {
+    public void sameOutputDirectoryUnselected() {
 
     }
 
-    public void singleOutputDirectorySelected()
-    {
+    public void singleOutputDirectorySelected() {
 
     }
 
-    public void singleOutputDirectoryUnselected()
-    {
+    public void singleOutputDirectoryUnselected() {
 
     }
 
-    public void convert()
-    {
+    public void convert() {
         // disable GUI input to prevent mistakes
         enableInput(false);
         // getOutputFormat() for each file and merge
         // with result from getInkscapeCommandLineOptions()
 
-        for (File file : getFiles())
-        {
+        for (File file : getFiles()) {
             Map<String, String> options = getInkscapeCommandlineOptions();
-            Map<String, String> format = getOutputFormat(file);
+            options.put("-f", file.getAbsolutePath());
+            Map<String, String> formats = getOutputFormat(file);
 
-            options.putAll(format);
+            // we have to call Inkscape each time to export for each format
+            for (Map.Entry<String, String> format : formats.entrySet()) {
+                options.put(format.getKey(), format.getValue());
 
-            threadPool.execute(new Converter(inkscapeExecutable, options));
+                threadPool.execute(new Converter(inkscapeExecutable, options));
+            }
         }
 
         // enable GUI input
         enableInput(true);
     }
 
-    public void cancel()
-    {
-
+    public void cancel() {
+        threadPool.shutdownNow();
+        enableInput(true);
     }
 
-    public void quit()
-    {
+    public void quit() {
         // TODO if processes are still going (Inkscape), modal dialog for
         // confirmation to quit
         System.exit(0);
@@ -136,11 +124,9 @@ public class ConversionSVGController
      * 
      * @param enable
      */
-    public void enableInput(boolean enable)
-    {
+    public void enableInput(boolean enable) {
         // enable/disable all Menu input
-        for (MenuElement elem : mainwindow.menubar.getSubElements())
-        {
+        for (MenuElement elem : mainwindow.menubar.getSubElements()) {
             elem.getComponent().setEnabled(enable);
         }
 
@@ -149,7 +135,7 @@ public class ConversionSVGController
         enablePanel(mainwindow.sizePanel, enable);
         enablePanel(mainwindow.outputFormatPanel, enable);
         enablePanel(mainwindow.exportAreaPanel, enable);
-
+        enablePanel(mainwindow.fileSelectPanel, enable);
     }
 
     /**
@@ -159,25 +145,29 @@ public class ConversionSVGController
      * @param panel
      * @param enable
      */
-    private void enablePanel(JPanel panel, boolean enable)
-    {
-        for (Component component : panel.getComponents())
-        {
+    private void enablePanel(JPanel panel, boolean enable) {
+        for (Component component : panel.getComponents()) {
             component.setEnabled(enable);
         }
     }
 
-    public HashMap<String, String> getInkscapeCommandlineOptions()
-    {
+    public HashMap<String, String> getInkscapeCommandlineOptions() {
         HashMap<String, String> options = new HashMap<String, String>();
 
         options.put("-b", sanitizeColor(mainwindow.colorPicker.getColor()));
-        options.put("-y", String.valueOf(mainwindow.colorPicker.getColor()
-                .getAlpha()));
-        options.put("-h", mainwindow.heightTextField.getText());
+        options.put("-y", String.valueOf(mainwindow.colorPicker.getColor().getAlpha()));
+        setCommandlineOption(options, "-h", mainwindow.heightTextField);
+        setCommandlineOption(options, "-w", mainwindow.widthTextField);
         options.putAll(getExportArea());
 
         return options;
+    }
+
+    private void setCommandlineOption(HashMap<String, String> options,
+                    String option, JTextField field) {
+        if (!field.getText().isEmpty()) {
+            options.put(option, field.getText());
+        }
     }
 
     /**
@@ -187,59 +177,52 @@ public class ConversionSVGController
      * @param color
      * @return A sanitized String formatted as rgb(255,255,255).
      */
-    private String sanitizeColor(Color color)
-    {
+    private String sanitizeColor(Color color) {
         return "rgb(" + color.getRed() + "," + color.getGreen() + ","
-                + color.getBlue() + ")";
+                        + color.getBlue() + ")";
     }
 
-    private Map<String, String> getExportArea()
-    {
+    private Map<String, String> getExportArea() {
         HashMap<String, String> option = new HashMap<String, String>();
-        if (mainwindow.pageRadioButton.isSelected())
-        {
+        if (mainwindow.pageRadioButton.isSelected()) {
             option.put("-C", "");
-        } else if (mainwindow.drawingRadioButton.isSelected())
-        {
+        } else if (mainwindow.drawingRadioButton.isSelected()) {
             option.put("-D", "");
         } // TODO future -a --export-area=x0:y0:x1:y1
         return option;
     }
 
-    private Map<String, String> getOutputFormat(File file)
-    {
+    private Map<String, String> getOutputFormat(File file) {
         HashMap<String, String> option = new HashMap<String, String>();
-        if (mainwindow.pngCheckBox.isSelected())
-        {
-            option.put("-e", file.getAbsolutePath());
+        if (mainwindow.pngCheckBox.isSelected()) {
+            option.put("-e", changeExtension(file.getAbsolutePath(), "png"));
         }
-        if (mainwindow.psCheckBox.isSelected())
-        {
-            option.put("-P", file.getAbsolutePath());
+        if (mainwindow.psCheckBox.isSelected()) {
+            option.put("-P", changeExtension(file.getAbsolutePath(), "ps"));
         }
-        if (mainwindow.pdfCheckBox.isSelected())
-        {
-            option.put("-A", file.getAbsolutePath());
+        if (mainwindow.pdfCheckBox.isSelected()) {
+            option.put("-A", changeExtension(file.getAbsolutePath(), "pdf"));
         }
-        if (mainwindow.epsCheckBox.isSelected())
-        {
-            option.put("-E", file.getAbsolutePath());
+        if (mainwindow.epsCheckBox.isSelected()) {
+            option.put("-E", changeExtension(file.getAbsolutePath(), "eps"));
         }
         return option;
     }
 
-    private File findInkscapeExecutable()
-    {
+    public String changeExtension(String path, String extension) {
+        path = path.substring(0, path.lastIndexOf(".") + 1);
+        path += extension;
+        return path;
+    }
+
+    private File findInkscapeExecutable() {
         File executable = null;
         String os = System.getProperty("os.name").toLowerCase();
-        if (os.equals("linux"))
-        {
+        if (os.equals("linux")) {
             executable = new File("/usr/bin/inkscape");
-        } else if (os.contains("windows"))
-        {
+        } else if (os.contains("windows")) {
             executable = new File("C:/Program Files/Inkscape/inkscape.exe");
-        } else
-        {
+        } else {
             // TODO handle Apple Inc. or platform independent
         }
 
