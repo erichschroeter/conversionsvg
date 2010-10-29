@@ -37,6 +37,9 @@ import java.awt.*;
 import javax.swing.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 import javax.swing.event.TreeSelectionEvent;
 import javax.swing.event.TreeSelectionListener;
 import javax.swing.filechooser.FileSystemView;
@@ -58,6 +61,8 @@ import com.jidesoft.swing.CheckBoxTree;
 import com.sun.corba.se.impl.oa.poa.ActiveObjectMap.Key;
 import com.sun.org.apache.xml.internal.security.keys.KeyInfo;
 
+import filesystem.FileSystemModel;
+
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyListener;
@@ -72,18 +77,18 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class MainWindow extends JRibbonFrame {
-    private static final long serialVersionUID              = 6987289183119465870L;
+    private static final long serialVersionUID           = 6987289183119465870L;
     String                    inkscapeTitle;
     JSplitPane                splitPane;
     Container                 contentPane;
-    JPanel                    mainPanel                     = new JPanel();
-    JPanel                    statusBarPanel                = new JPanel();
-    JLabel                    numberOfImageLabel            = new JLabel();
-    JLabel                    nameOfImageLabel              = new JLabel();
-    JProgressBar              progressBar                   = new JProgressBar();
+    JPanel                    mainPanel                  = new JPanel();
+    JPanel                    statusBarPanel             = new JPanel();
+    JLabel                    numberOfImageLabel         = new JLabel();
+    JLabel                    nameOfImageLabel           = new JLabel();
+    JProgressBar              progressBar                = new JProgressBar();
     // JButton cancelButton = new JButton();
     // JButton convertButton = new JButton();
-    JButton                   quitButton                    = new JButton();
+    JButton                   quitButton                 = new JButton();
 
     // ------------------------------------------------
     // Ribbon
@@ -96,69 +101,69 @@ public class MainWindow extends JRibbonFrame {
     JCommandButton            shortcutsButton;
 
     // Menu
-    JMenuBar                  menubar                       = new JMenuBar();
-    JMenu                     fileMenu                      = new JMenu();
-    JMenuItem                 quitMenuItem                  = new JMenuItem();
-    JMenu                     conversionMenu                = new JMenu();
-    JMenuItem                 wizardMenuItem                = new JMenuItem();
-    JMenu                     parameterMenu                 = new JMenu();
-    JMenu                     languageMenu                  = new JMenu();
-    JMenuItem                 inkscapeMenuItem              = new JMenuItem();
-    JMenu                     helpMenu                      = new JMenu();
-    JMenuItem                 aboutMenuItem                 = new JMenuItem();
-    JCheckBoxMenuItem         frenchCheckboxMenuItem        = new JCheckBoxMenuItem();
-    JCheckBoxMenuItem         englishCheckboxMenuItem       = new JCheckBoxMenuItem();
+    JMenuBar                  menubar                    = new JMenuBar();
+    JMenu                     fileMenu                   = new JMenu();
+    JMenuItem                 quitMenuItem               = new JMenuItem();
+    JMenu                     conversionMenu             = new JMenu();
+    JMenuItem                 wizardMenuItem             = new JMenuItem();
+    JMenu                     parameterMenu              = new JMenu();
+    JMenu                     languageMenu               = new JMenu();
+    JMenuItem                 inkscapeMenuItem           = new JMenuItem();
+    JMenu                     helpMenu                   = new JMenu();
+    JMenuItem                 aboutMenuItem              = new JMenuItem();
+    JCheckBoxMenuItem         frenchCheckboxMenuItem     = new JCheckBoxMenuItem();
+    JCheckBoxMenuItem         englishCheckboxMenuItem    = new JCheckBoxMenuItem();
 
     // ------------------------------------------------
     // Options Panel
     // ------------------------------------------------
-    JPanel                    optionsPanel                  = new JPanel();
+    JPanel                    optionsPanel               = new JPanel();
 
     // Output Format
-    JPanel                    outputFormatPanel             = new JPanel();
-    JCheckBox                 pngCheckBox                   = new JCheckBox();
-    JCheckBox                 psCheckBox                    = new JCheckBox();
-    JCheckBox                 epsCheckBox                   = new JCheckBox();
-    JCheckBox                 pdfCheckBox                   = new JCheckBox();
-    ButtonGroup               outputFormatGroup             = new ButtonGroup();
+    JPanel                    outputFormatPanel          = new JPanel();
+    JCheckBox                 pngCheckBox                = new JCheckBox();
+    JCheckBox                 psCheckBox                 = new JCheckBox();
+    JCheckBox                 epsCheckBox                = new JCheckBox();
+    JCheckBox                 pdfCheckBox                = new JCheckBox();
+    ButtonGroup               outputFormatGroup          = new ButtonGroup();
 
     // Export Area
-    JPanel                    exportAreaPanel               = new JPanel();
-    ButtonGroup               exportAreaGroup               = new ButtonGroup();
-    JRadioButton              drawingRadioButton            = new JRadioButton();
-    JRadioButton              pageRadioButton               = new JRadioButton();
+    JPanel                    exportAreaPanel            = new JPanel();
+    ButtonGroup               exportAreaGroup            = new ButtonGroup();
+    JRadioButton              drawingRadioButton         = new JRadioButton();
+    JRadioButton              pageRadioButton            = new JRadioButton();
 
     // Size
-    JPanel                    sizePanel                     = new JPanel();
-    JLabel                    heightLabel                   = new JLabel();
-    JLabel                    widthLabel                    = new JLabel();
-    JTextField                heightTextField               = new JTextField();
-    JTextField                widthTextField                = new JTextField();
-    JComboBox                 unitComboBox                  = new JComboBox();
-    String[]                  units                         = { "px", "mm" };
+    JPanel                    sizePanel                  = new JPanel();
+    JLabel                    heightLabel                = new JLabel();
+    JLabel                    widthLabel                 = new JLabel();
+    JTextField                heightTextField            = new JTextField();
+    JTextField                widthTextField             = new JTextField();
+    JComboBox                 unitComboBox               = new JComboBox();
+    String[]                  units                      = { "px", "mm" };
 
     // Background Color Picker
-    ColorPicker               colorPicker                   = new ColorPicker(true, true);
+    ColorPicker               colorPicker                = new ColorPicker(true, true);
 
     // ------------------------------------------------
     // END Options Panel
     // ------------------------------------------------
 
     // File Select
-    JPanel                    fileSelectPanel               = new JPanel();
+    JPanel                    fileSelectPanel            = new JPanel();
     CheckBoxTree              fileHeirarchy;
-    JCheckBox                 singleOutputDirectoryCheckbox = new JCheckBox();
-    JCheckBox                 sameOutputDirectoryCheckbox   = new JCheckBox();
-    JTextField                directoryTextField            = new JTextField();
-    JTextField                outputDirTextField            = new JTextField();
-    JButton                   outputDirectoryEllipse        = new JButton("...");
+    JRadioButton              singleOutputDirectoryRadio = new JRadioButton();
+    JRadioButton              sameOutputDirectoryRadio   = new JRadioButton();
+    JTextField                directoryTextField         = new JTextField();
+    JTextField                outputDirectoryTextField   = new JTextField();
+    JButton                   outputDirectoryEllipse     = new JButton("...");
 
-    JLabel                    lblPercent                    = new JLabel();
+    JLabel                    lblPercent                 = new JLabel();
 
     // Controller
-    ConversionSVGController   controller                    = new ConversionSVGController(this);
+    ConversionSVGController   controller                 = new ConversionSVGController(this);
     // Event Listener
-    EventListener             eventListener                 = new EventListener(this);
+    EventListener             eventListener              = new EventListener(this);
 
     public MainWindow() {
         try {
@@ -314,7 +319,8 @@ public class MainWindow extends JRibbonFrame {
         ComboBoxModel unitModel = new DefaultComboBoxModel(units);
         unitComboBox.setModel(unitModel);
 
-        // (gridx, gridy, gridwidth, gridheight, weightx, weighty, anchor, fill, insets, ipadx, ipady)
+        // (gridx, gridy, gridwidth, gridheight, weightx, weighty, anchor, fill,
+        // insets, ipadx, ipady)
         sizePanel.setLayout(new GridBagLayout());
         constraints = new GridBagConstraints(0, 0, 1, 1, 0, 0, GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(5, 5, 5, 5), 0, 0);
         sizePanel.add(heightLabel, constraints);
@@ -329,7 +335,7 @@ public class MainWindow extends JRibbonFrame {
         // and a spacer to make everything anchor to the EAST
         constraints = new GridBagConstraints(3, 0, 1, 2, 1, 0, GridBagConstraints.CENTER, GridBagConstraints.HORIZONTAL, new Insets(5, 5, 5, 5), 0, 0);
         sizePanel.add(new JPanel(), constraints);
-        
+
         sizePanel.setBorder(BorderFactory.createTitledBorder("Size"));
 
         // Color Picker
@@ -341,11 +347,8 @@ public class MainWindow extends JRibbonFrame {
         // File Select
         // ------------------------------------------------
         FileSystemModel model = new FileSystemModel();
-        FileSystemView view = FileSystemView.getFileSystemView();
-        fileHeirarchy = new CheckBoxTree(view.getRoots());
-
-        ScrollPane fileSelectScrollPane = new ScrollPane();
-        fileSelectScrollPane.add(fileHeirarchy);
+        fileHeirarchy = new CheckBoxTree(model);
+        JScrollPane fileSelectScrollPane = new JScrollPane(fileHeirarchy);
 
         fileSelectPanel.setMinimumSize(new Dimension(350, 500));
         fileSelectPanel.setPreferredSize(new Dimension(350, 600));
@@ -354,24 +357,30 @@ public class MainWindow extends JRibbonFrame {
         // add the output directory options
         // - same directory as each file
         // - a single directory
+        ButtonGroup outputDirectoryGroup = new ButtonGroup();
+        outputDirectoryGroup.add(singleOutputDirectoryRadio);
+        outputDirectoryGroup.add(sameOutputDirectoryRadio);
+        sameOutputDirectoryRadio.setSelected(true);
+        singleOutputDirectoryRadio.addChangeListener(eventListener);
 
-        // (gridx, gridy, gridwidth, gridheight, weightx, weighty, anchor, fill, insets, ipadx, ipady)
+        // (gridx, gridy, gridwidth, gridheight, weightx, weighty, anchor, fill,
+        // insets, ipadx, ipady)
         constraints = new GridBagConstraints(0, 0, 2, 1, 0, 0, GridBagConstraints.NORTHWEST, GridBagConstraints.HORIZONTAL, new Insets(2, 2, 2, 2), 0, 0);
         fileSelectPanel.add(directoryTextField, constraints);
         constraints = new GridBagConstraints(0, 1, 2, 1, 1, 1, GridBagConstraints.NORTHWEST, GridBagConstraints.BOTH, new Insets(2, 2, 2, 2), 0, 0);
         fileSelectPanel.add(fileSelectScrollPane, constraints);
         constraints = new GridBagConstraints(0, 2, 2, 1, 0, 0, GridBagConstraints.NORTHWEST, GridBagConstraints.HORIZONTAL, new Insets(2, 2, 2, 2), 0, 0);
-        fileSelectPanel.add(sameOutputDirectoryCheckbox, constraints);
+        fileSelectPanel.add(sameOutputDirectoryRadio, constraints);
         constraints = new GridBagConstraints(0, 3, 2, 1, 0, 0, GridBagConstraints.NORTHWEST, GridBagConstraints.HORIZONTAL, new Insets(2, 2, 2, 2), 0, 0);
-        fileSelectPanel.add(singleOutputDirectoryCheckbox, constraints);
+        fileSelectPanel.add(singleOutputDirectoryRadio, constraints);
         constraints = new GridBagConstraints(0, 4, 1, 1, 1, 0, GridBagConstraints.NORTHWEST, GridBagConstraints.HORIZONTAL, new Insets(2, 2, 2, 2), 0, 0);
-        fileSelectPanel.add(outputDirTextField, constraints);
+        fileSelectPanel.add(outputDirectoryTextField, constraints);
         constraints = new GridBagConstraints(1, 4, 1, 1, 0, 0, GridBagConstraints.NORTHWEST, GridBagConstraints.HORIZONTAL, new Insets(2, 2, 2, 2), 0, 0);
         fileSelectPanel.add(outputDirectoryEllipse, constraints);
 
-        sameOutputDirectoryCheckbox.setText("Put converted files in their respective directory.");
-        sameOutputDirectoryCheckbox.setEnabled(true);
-        singleOutputDirectoryCheckbox.setText("Put all converted files in one directory.");
+        sameOutputDirectoryRadio.setText("Put converted files in their respective directory.");
+        sameOutputDirectoryRadio.setEnabled(true);
+        singleOutputDirectoryRadio.setText("Put all converted files in one directory.");
         checkSingleOutputDirectoryOption(false);
         // END File Select --------------------------------
 
@@ -397,12 +406,12 @@ public class MainWindow extends JRibbonFrame {
 
         // File Select
         // fileHeirarchy.addTreeSelectionListener(eventListener);
-//        fileHeirarchy.addTreeSelectionListener(eventListener);
+        // fileHeirarchy.addTreeSelectionListener(eventListener);
         fileHeirarchy.getCheckBoxTreeSelectionModel().addTreeSelectionListener(eventListener);
         widthTextField.addKeyListener(new NumberKeyAdapter(this));
         heightTextField.addKeyListener(new NumberKeyAdapter(this));
-        singleOutputDirectoryCheckbox.addActionListener(eventListener);
-        sameOutputDirectoryCheckbox.addActionListener(eventListener);
+        singleOutputDirectoryRadio.addActionListener(eventListener);
+        sameOutputDirectoryRadio.addActionListener(eventListener);
         outputDirectoryEllipse.addActionListener(eventListener);
 
         // module.createLanguage();
@@ -418,12 +427,12 @@ public class MainWindow extends JRibbonFrame {
     }
 
     public void checkSingleOutputDirectoryOption(boolean enable) {
-        if (singleOutputDirectoryCheckbox.isSelected()) {
+        if (singleOutputDirectoryRadio.isSelected()) {
             outputDirectoryEllipse.setEnabled(true);
-            outputDirTextField.setEnabled(true);
+            outputDirectoryTextField.setEnabled(true);
         } else {
             outputDirectoryEllipse.setEnabled(false);
-            outputDirTextField.setEnabled(false);
+            outputDirectoryTextField.setEnabled(false);
         }
     }
 
@@ -526,7 +535,7 @@ public class MainWindow extends JRibbonFrame {
      * @author Erich Schroeter
      */
     private class EventListener implements ActionListener,
-                    TreeSelectionListener {
+                    TreeSelectionListener, ChangeListener {
         MainWindow mainwindow;
 
         public EventListener(MainWindow mainwindow) {
@@ -538,10 +547,10 @@ public class MainWindow extends JRibbonFrame {
             Object obj = e.getSource();
 
             // File Select
-            if (obj.equals(singleOutputDirectoryCheckbox)) {
+            if (obj.equals(singleOutputDirectoryRadio)) {
                 // handle set flag to only allow one output directory
-                mainwindow.checkSingleOutputDirectoryOption(singleOutputDirectoryCheckbox.isSelected());
-            } else if (obj.equals(sameOutputDirectoryCheckbox)) {
+                
+            } else if (obj.equals(sameOutputDirectoryRadio)) {
                 // handle exporting all images to their respective same
                 // directory
                 // sameOutputDir_actionPerformed()
@@ -550,7 +559,7 @@ public class MainWindow extends JRibbonFrame {
                 JFileChooser chooser = new JFileChooser();
                 chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
                 if (chooser.showSaveDialog(mainwindow) == JFileChooser.APPROVE_OPTION) {
-                    outputDirTextField.setText(chooser.getSelectedFile().getAbsolutePath());
+                    outputDirectoryTextField.setText(chooser.getSelectedFile().getAbsolutePath());
                 }
             }
 
@@ -594,23 +603,31 @@ public class MainWindow extends JRibbonFrame {
             // TODO if singleDirectoryCheckbox isSelected() then set output
             // directory to e.getPath();
             // controller.setFiles(files)
-            for (TreePath path : e.getPaths())
-            {
+            for (TreePath path : e.getPaths()) {
                 System.out.println(path);
             }
         }
 
-//        @Override
-//        public void valueChanged(TreeCheckingEvent e) {
-//            // TODO handle mapping the output directories to the checked files'
-//            // directories
-//            // controller.setFiles(fileHeirarchy.getCheckingPaths());
-//            System.out.println();
-//            TreePath[] checked = fileHeirarchy.getCheckingPaths();
-//            for (TreePath path : checked) {
-//                System.out.println(path.getLastPathComponent());
-//            }
-//        }
+        @Override
+        public void stateChanged(ChangeEvent e) {
+            Object obj = e.getSource();
+            if (obj.equals(singleOutputDirectoryRadio))
+            {
+                mainwindow.checkSingleOutputDirectoryOption(singleOutputDirectoryRadio.isSelected());
+            }
+        }
+
+        // @Override
+        // public void valueChanged(TreeCheckingEvent e) {
+        // // TODO handle mapping the output directories to the checked files'
+        // // directories
+        // // controller.setFiles(fileHeirarchy.getCheckingPaths());
+        // System.out.println();
+        // TreePath[] checked = fileHeirarchy.getCheckingPaths();
+        // for (TreePath path : checked) {
+        // System.out.println(path.getLastPathComponent());
+        // }
+        // }
     }
 }
 

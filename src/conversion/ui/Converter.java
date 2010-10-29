@@ -25,6 +25,8 @@ import javax.swing.JDialog;
 import javax.swing.JProgressBar;
 import javax.swing.JLabel;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Vector;
@@ -73,17 +75,22 @@ public class Converter extends Thread
     @Override
     public void run()
     {
-        StringBuilder builder = new StringBuilder(command);
+//        StringBuilder builder = new StringBuilder(command);
+        List<String> commandline = new ArrayList<String>();
+        commandline.add(command);
         for (Map.Entry<String, String> pair : options.entrySet())
         {
-            builder.append(pair.getKey());
-            builder.append(pair.getValue());
+//            builder.append(pair.getKey());
+//            builder.append(pair.getValue());
+            commandline.add(pair.getKey());
+            commandline.add(pair.getValue());
         }
 
         try
         {
             // Execute the command
-            process = new ProcessBuilder(builder.toString()).start();
+//            process = new ProcessBuilder(builder.toString()).start();
+            process = new ProcessBuilder(commandline).start();
         } catch (IOException e)
         {
             e.printStackTrace();

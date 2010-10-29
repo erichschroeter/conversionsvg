@@ -46,12 +46,12 @@ public class ConversionSVGController {
         List<File> files = new ArrayList<File>();
         TreePath[] selectedTreePaths = null;
 
-//        if ((selectedTreePaths = mainwindow.fileHeirarchy.getCheckingPaths()) != null) {
-//            for (TreePath selection : selectedTreePaths) {
-//                File file = (File) selection.getLastPathComponent();
-//                files.add(file);
-//            }
-//        }
+        if ((selectedTreePaths = mainwindow.fileHeirarchy.getCheckBoxTreeSelectionModel().getSelectionPaths()) != null) {
+            for (TreePath selection : selectedTreePaths) {
+                File file = (File) selection.getLastPathComponent();
+                files.add(file);
+            }
+        }
 
         return files;
     }
@@ -68,22 +68,6 @@ public class ConversionSVGController {
 
     }
 
-    public void sameOutputDirectorySelected() {
-
-    }
-
-    public void sameOutputDirectoryUnselected() {
-
-    }
-
-    public void singleOutputDirectorySelected() {
-
-    }
-
-    public void singleOutputDirectoryUnselected() {
-
-    }
-
     public void convert() {
         // disable GUI input to prevent mistakes
         enableInput(false);
@@ -95,7 +79,7 @@ public class ConversionSVGController {
             options.put("-f", file.getAbsolutePath());
             Map<String, String> formats = getOutputFormat(file);
 
-            // we have to call Inkscape each time to export for each format
+            // we have to call Inkscape each time to export each format
             for (Map.Entry<String, String> format : formats.entrySet()) {
                 options.put(format.getKey(), format.getValue());
 
@@ -135,7 +119,6 @@ public class ConversionSVGController {
         enablePanel(mainwindow.sizePanel, enable);
         enablePanel(mainwindow.outputFormatPanel, enable);
         enablePanel(mainwindow.exportAreaPanel, enable);
-        enablePanel(mainwindow.fileSelectPanel, enable);
     }
 
     /**
@@ -194,22 +177,44 @@ public class ConversionSVGController {
 
     private Map<String, String> getOutputFormat(File file) {
         HashMap<String, String> option = new HashMap<String, String>();
-        if (mainwindow.pngCheckBox.isSelected()) {
-            option.put("-e", changeExtension(file.getAbsolutePath(), "png"));
+        
+        if (mainwindow.singleOutputDirectoryRadio.isSelected()) {
+            addOutputFormats(option, changeDirectory(file, mainwindow.outputDirectoryTextField.getText()));
+        } else if (mainwindow.sameOutputDirectoryRadio.isSelected()) {
+            addOutputFormats(option, file.getAbsolutePath());
         }
-        if (mainwindow.psCheckBox.isSelected()) {
-            option.put("-P", changeExtension(file.getAbsolutePath(), "ps"));
-        }
-        if (mainwindow.pdfCheckBox.isSelected()) {
-            option.put("-A", changeExtension(file.getAbsolutePath(), "pdf"));
-        }
-        if (mainwindow.epsCheckBox.isSelected()) {
-            option.put("-E", changeExtension(file.getAbsolutePath(), "eps"));
-        }
+        
         return option;
     }
-
-    public String changeExtension(String path, String extension) {
+    
+    /**
+     * Handles adding the necessary options to the Map for exporting different file formats.
+     * @param option
+     * @param absolutePath
+     */
+    private void addOutputFormats(Map<String, String> option, String absolutePath)
+    {
+        if (mainwindow.pngCheckBox.isSelected()) {
+            option.put("-e", changeExtension(absolutePath, "png"));
+        }
+        if (mainwindow.psCheckBox.isSelected()) {
+            option.put("-P", changeExtension(absolutePath, "ps"));
+        }
+        if (mainwindow.pdfCheckBox.isSelected()) {
+            option.put("-A", changeExtension(absolutePath, "pdf"));
+        }
+        if (mainwindow.epsCheckBox.isSelected()) {
+            option.put("-E", changeExtension(absolutePath, "eps"));
+        }
+    }
+    
+    private String changeDirectory(File file, String path)
+    {
+        String name = file.getName();
+        return path + System.getProperty("file.separator") + name;
+    }
+    
+    private String changeExtension(String path, String extension) {
         path = path.substring(0, path.lastIndexOf(".") + 1);
         path += extension;
         return path;

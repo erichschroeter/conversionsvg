@@ -139,7 +139,7 @@ public class Language {
 //        principal.btnParDosSortie.setText(rPrincipal.getString("Parcourir"));
 //        principal.btnParFichier.setText(rPrincipal.getString("Parcourir"));
         principal.quitButton.setText(rPrincipal.getString("Quitter"));
-        principal.sameOutputDirectoryCheckbox.setText(rPrincipal.getString("chbMeme"));
+//        principal.sameOutputDirectoryCheckbox.setText(rPrincipal.getString("chbMeme"));
 //        principal.treeCheckbox.setText(rPrincipal.getString("Arbo"));
 //        principal.ckbCouleurFond.setText(rPrincipal.getString("CouleurFond"));
         principal.heightLabel.setText(rPrincipal.getString("Hauteur"));
