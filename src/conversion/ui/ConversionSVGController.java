@@ -17,6 +17,7 @@ import java.util.concurrent.TimeUnit;
 
 import javax.naming.spi.DirectoryManager;
 import javax.swing.AbstractButton;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.MenuElement;
@@ -30,30 +31,35 @@ import com.sun.corba.se.impl.orbutil.threadpool.ThreadPoolImpl;
 import com.sun.corba.se.spi.orbutil.threadpool.ThreadPool;
 import com.sun.corba.se.spi.orbutil.threadpool.ThreadPoolManager;
 
-public class ConversionSVGController {
-    protected MainWindow mainwindow;
-    protected Converter converter;
-    protected File inkscapeExecutable;
+public class ConversionSVGController
+{
+    protected MainWindow               mainwindow;
+    protected Converter                converter;
+    protected File                     inkscapeExecutable;
 
     // ThreadPool
-    int corePoolSize = 2;
-    int maximumPoolSize = 2;
-    long keepAliveTime = 10;
-    final ArrayBlockingQueue<Runnable> queue = new ArrayBlockingQueue<Runnable>(5);
-    protected ThreadPoolExecutor threadPool;
+    int                                corePoolSize    = 2;
+    int                                maximumPoolSize = 2;
+    long                               keepAliveTime   = 10;
+    final ArrayBlockingQueue<Runnable> queue           = new ArrayBlockingQueue<Runnable>(5);
+    private ThreadPoolExecutor         threadPool;
 
-    public ConversionSVGController(conversion.ui.MainWindow mainwindow) {
+    public ConversionSVGController(conversion.ui.MainWindow mainwindow)
+    {
         this.mainwindow = mainwindow;
         inkscapeExecutable = findInkscapeExecutable();
         threadPool = new ThreadPoolExecutor(corePoolSize, maximumPoolSize, keepAliveTime, TimeUnit.SECONDS, queue);
     }
 
-    public List<File> getFiles() {
+    public List<File> getFiles()
+    {
         List<File> files = new ArrayList<File>();
         TreePath[] selectedTreePaths = null;
 
-        if ((selectedTreePaths = mainwindow.fileHeirarchy.getCheckBoxTreeSelectionModel().getSelectionPaths()) != null) {
-            for (TreePath selection : selectedTreePaths) {
+        if ((selectedTreePaths = mainwindow.fileHeirarchy.getCheckBoxTreeSelectionModel().getSelectionPaths()) != null)
+        {
+            for (TreePath selection : selectedTreePaths)
+            {
                 File file = (File) selection.getLastPathComponent();
                 files.add(file);
             }
@@ -62,11 +68,14 @@ public class ConversionSVGController {
         return files;
     }
 
-    public void setFiles(TreePath[] paths) {
+    public void setFiles(TreePath[] paths)
+    {
         List<File> files = new ArrayList<File>();
 
-        if (paths != null) {
-            for (TreePath selection : paths) {
+        if (paths != null)
+        {
+            for (TreePath selection : paths)
+            {
                 File file = (File) selection.getLastPathComponent();
                 files.add(file);
             }
@@ -74,22 +83,86 @@ public class ConversionSVGController {
 
     }
 
-    public void convert() {
+    /**
+     * This is the method that handles creating the threads that call Inkscape
+     * to convert the files selected by the user.
+     */
+    public void convert()
+    {
         // disable GUI input to prevent mistakes
         enableInput(false);
         // getOutputFormat() for each file and merge
         // with result from getInkscapeCommandLineOptions()
-
-        for (File file : getFiles()) {
+        boolean yesToAll = false;
+        boolean noToAll = false;
+        boolean cancel = false;
+        
+        for (File file : getFiles())
+        {
             Map<String, String> options = getInkscapeCommandlineOptions();
             options.put("-f", file.getAbsolutePath());
             Map<String, String> formats = getOutputFormat(file);
 
             // we have to call Inkscape each time to export each format
-            for (Map.Entry<String, String> format : formats.entrySet()) {
+            for (Map.Entry<String, String> format : formats.entrySet())
+            {
                 options.put(format.getKey(), format.getValue());
 
-                threadPool.execute(new Converter(inkscapeExecutable, options));
+                File exportFile = new File(format.getValue());
+                
+                if (exportFile.exists())
+                {
+                    int choice = -2; // nothing uses -2 (-1 is CLOSED_OPTION
+                    if (yesToAll) {
+                        
+                    } else if (noToAll) {
+                        
+                    } else
+//                    if (!yesToAll || !noToAll)
+                    {
+                        String[] choices = {"yes", "yes to all", "no", "no to all", "cancel"};
+                        choice = JOptionPane.showOptionDialog(mainwindow, 
+                                "create a message", 
+                                "File exists", 
+                                JOptionPane.DEFAULT_OPTION, 
+                                JOptionPane.INFORMATION_MESSAGE, 
+                                null, 
+                                choices, 
+                                choices[2]);
+                    }
+                    
+                    if (choice == 4 || choice == JOptionPane.CLOSED_OPTION)
+                    { // Cancelled
+                        enableInput(true);
+                        return;
+                    } else if (choice == 1)
+                    {
+                        yesToAll = true;
+                    } else if (choice == 3)
+                    {
+                        noToAll = true;
+                    }
+
+                    if (noToAll)
+                    {
+                        break;
+                    }
+                    
+                    if (yesToAll)
+                    {
+                        threadPool.execute(new Converter(inkscapeExecutable, options));
+                        break;
+                    }
+                    
+                    if (choice == 0)
+                    {
+                        threadPool.execute(new Converter(inkscapeExecutable, options));
+                    }
+                }
+                else
+                {
+                    threadPool.execute(new Converter(inkscapeExecutable, options));
+                }
             }
         }
 
@@ -97,21 +170,25 @@ public class ConversionSVGController {
         enableInput(true);
     }
 
-    public void cancel() {
+    public void cancel()
+    {
         threadPool.shutdownNow();
         enableInput(true);
     }
 
-    public void quit() {
+    public void quit()
+    {
         // TODO if processes are still going (Inkscape), modal dialog for
         // confirmation to quit
         System.exit(0);
     }
-    
+
     /**
-     * Handles changing the text the user sees on the application's screen to the
-     * selected language.
+     * Handles changing the text the user sees on the application's screen to
+     * the selected language.
+     * 
      * @param locale
+     *            The Locale language to change to.
      */
     public void changeLanguage(Locale locale)
     {
@@ -121,30 +198,31 @@ public class ConversionSVGController {
         mainwindow.homeTask.setTitle(resourceBundle.getString("HomeRibbonTask"));
         mainwindow.controlsBand.setTitle(resourceBundle.getString("ControlsRibbonBand"));
         mainwindow.preferencesBand.setTitle(resourceBundle.getString("PreferencesRibbonBand"));
-        
+
         mainwindow.convertButton.setText(resourceBundle.getString("ConvertButton"));
         mainwindow.cancelButton.setText(resourceBundle.getString("CancelButton"));
         mainwindow.languageButton.setText(resourceBundle.getString("LanguageButton"));
         mainwindow.accessibilityButton.setText(resourceBundle.getString("AccessibilityButton"));
         mainwindow.fontButton.setText(resourceBundle.getString("FontButton"));
         mainwindow.shortcutsButton.setText(resourceBundle.getString("ShortcutsButton"));
-        
+
         // Option Panel
         changeBorderLanguage((TitledBorder) mainwindow.outputFormatPanel.getBorder(), resourceBundle.getString("FormatPanel"));
         changeBorderLanguage((TitledBorder) mainwindow.exportAreaPanel.getBorder(), resourceBundle.getString("ExportAreaPanel"));
         changeBorderLanguage((TitledBorder) mainwindow.sizePanel.getBorder(), resourceBundle.getString("SizePanel"));
         changeBorderLanguage((TitledBorder) mainwindow.colorPicker.getBorder(), resourceBundle.getString("BackgroundPanel"));
-        
+
         mainwindow.drawingRadioButton.setText(resourceBundle.getString("DrawingRadioButton"));
         mainwindow.pageRadioButton.setText(resourceBundle.getString("PageRadioButton"));
         mainwindow.heightLabel.setText(resourceBundle.getString("HeightTextField"));
         mainwindow.widthLabel.setText(resourceBundle.getString("WidthTextField"));
-        
+
         // File Select Panel
         mainwindow.singleOutputDirectoryRadio.setText(resourceBundle.getString("SingleDirectoryRadioButton"));
         mainwindow.sameOutputDirectoryRadio.setText(resourceBundle.getString("SameDirectoryRadioButton"));
     }
-    
+
+    // simple helper function to save code in changeLanguage()
     private void changeBorderLanguage(TitledBorder border, String text)
     {
         border.setTitle(text);
@@ -156,7 +234,8 @@ public class ConversionSVGController {
      * 
      * @param enable
      */
-    public void enableInput(boolean enable) {
+    public void enableInput(boolean enable)
+    {
 
         // enable/disable the necessary JPanels
         enablePanel(mainwindow.colorPicker, enable);
@@ -172,13 +251,16 @@ public class ConversionSVGController {
      * @param panel
      * @param enable
      */
-    private void enablePanel(JPanel panel, boolean enable) {
-        for (Component component : panel.getComponents()) {
+    private void enablePanel(JPanel panel, boolean enable)
+    {
+        for (Component component : panel.getComponents())
+        {
             component.setEnabled(enable);
         }
     }
 
-    public HashMap<String, String> getInkscapeCommandlineOptions() {
+    public HashMap<String, String> getInkscapeCommandlineOptions()
+    {
         HashMap<String, String> options = new HashMap<String, String>();
 
         options.put("-b", sanitizeColor(mainwindow.colorPicker.getColor()));
@@ -191,8 +273,10 @@ public class ConversionSVGController {
     }
 
     private void setCommandlineOption(HashMap<String, String> options,
-                    String option, JTextField field) {
-        if (!field.getText().isEmpty()) {
+            String option, JTextField field)
+    {
+        if (!field.getText().isEmpty())
+        {
             options.put(option, field.getText());
         }
     }
@@ -204,74 +288,93 @@ public class ConversionSVGController {
      * @param color
      * @return A sanitized String formatted as rgb(255,255,255).
      */
-    private String sanitizeColor(Color color) {
+    private String sanitizeColor(Color color)
+    {
         return "rgb(" + color.getRed() + "," + color.getGreen() + ","
-                        + color.getBlue() + ")";
+                + color.getBlue() + ")";
     }
 
-    private Map<String, String> getExportArea() {
+    private Map<String, String> getExportArea()
+    {
         HashMap<String, String> option = new HashMap<String, String>();
-        if (mainwindow.pageRadioButton.isSelected()) {
+        if (mainwindow.pageRadioButton.isSelected())
+        {
             option.put("-C", "");
-        } else if (mainwindow.drawingRadioButton.isSelected()) {
+        } else if (mainwindow.drawingRadioButton.isSelected())
+        {
             option.put("-D", "");
         } // TODO future -a --export-area=x0:y0:x1:y1
         return option;
     }
 
-    private Map<String, String> getOutputFormat(File file) {
+    private Map<String, String> getOutputFormat(File file)
+    {
         HashMap<String, String> option = new HashMap<String, String>();
-        
-        if (mainwindow.singleOutputDirectoryRadio.isSelected()) {
+
+        if (mainwindow.singleOutputDirectoryRadio.isSelected())
+        {
             addOutputFormats(option, changeDirectory(file, mainwindow.outputDirectoryTextField.getText()));
-        } else if (mainwindow.sameOutputDirectoryRadio.isSelected()) {
+        } else if (mainwindow.sameOutputDirectoryRadio.isSelected())
+        {
             addOutputFormats(option, file.getAbsolutePath());
         }
-        
+
         return option;
     }
-    
+
     /**
-     * Handles adding the necessary options to the Map for exporting different file formats.
+     * Handles adding the necessary options to the Map for exporting different
+     * file formats.
+     * 
      * @param option
      * @param absolutePath
      */
-    private void addOutputFormats(Map<String, String> option, String absolutePath)
+    private void addOutputFormats(Map<String, String> option,
+            String absolutePath)
     {
-        if (mainwindow.pngCheckBox.isSelected()) {
+        if (mainwindow.pngCheckBox.isSelected())
+        {
             option.put("-e", changeExtension(absolutePath, "png"));
         }
-        if (mainwindow.psCheckBox.isSelected()) {
+        if (mainwindow.psCheckBox.isSelected())
+        {
             option.put("-P", changeExtension(absolutePath, "ps"));
         }
-        if (mainwindow.pdfCheckBox.isSelected()) {
+        if (mainwindow.pdfCheckBox.isSelected())
+        {
             option.put("-A", changeExtension(absolutePath, "pdf"));
         }
-        if (mainwindow.epsCheckBox.isSelected()) {
+        if (mainwindow.epsCheckBox.isSelected())
+        {
             option.put("-E", changeExtension(absolutePath, "eps"));
         }
     }
-    
+
     private String changeDirectory(File file, String path)
     {
         String name = file.getName();
         return path + System.getProperty("file.separator") + name;
     }
-    
-    private String changeExtension(String path, String extension) {
+
+    private String changeExtension(String path, String extension)
+    {
         path = path.substring(0, path.lastIndexOf(".") + 1);
         path += extension;
         return path;
     }
 
-    private File findInkscapeExecutable() {
+    private File findInkscapeExecutable()
+    {
         File executable = null;
         String os = System.getProperty("os.name").toLowerCase();
-        if (os.equals("linux")) {
+        if (os.equals("linux"))
+        {
             executable = new File("/usr/bin/inkscape");
-        } else if (os.contains("windows")) {
+        } else if (os.contains("windows"))
+        {
             executable = new File("C:/Program Files/Inkscape/inkscape.exe");
-        } else {
+        } else
+        {
             // TODO handle Apple Inc. or platform independent
         }
 

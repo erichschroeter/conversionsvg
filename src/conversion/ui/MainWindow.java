@@ -640,10 +640,10 @@ public class MainWindow extends JRibbonFrame
             // TODO if singleDirectoryCheckbox isSelected() then set output
             // directory to e.getPath();
             // controller.setFiles(files)
-            for (TreePath path : e.getPaths())
-            {
-                System.out.println(path);
-            }
+//            for (TreePath path : e.getPaths())
+//            {
+//                System.out.println(path);
+//            }
         }
 
         @Override
