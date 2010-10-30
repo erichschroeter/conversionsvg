@@ -23,8 +23,12 @@ package conversion.ui;
 
 import java.util.Locale;
 import java.util.ResourceBundle;
+
+import javax.swing.AbstractButton;
 import javax.swing.JTextArea;
 import javax.swing.JButton;
+
+import org.pushingpixels.flamingo.api.common.JCommandButton;
 
 public class Language {
 
@@ -125,12 +129,12 @@ public class Language {
         ResourceBundle rPrincipal = ResourceBundle.getBundle("Principal");
         if (language.equals("fr")){
             rPrincipal = ResourceBundle.getBundle("Principal",Locale.FRENCH);
-            principal.frenchCheckboxMenuItem.setSelected(true);
-            principal.englishCheckboxMenuItem.setSelected(false);
+//            principal.frenchCheckboxMenuItem.setSelected(true);
+//            principal.englishCheckboxMenuItem.setSelected(false);
         } else {
             rPrincipal = ResourceBundle.getBundle("Principal",Locale.ENGLISH);
-            principal.frenchCheckboxMenuItem.setSelected(false);
-            principal.englishCheckboxMenuItem.setSelected(true);
+//            principal.frenchCheckboxMenuItem.setSelected(false);
+//            principal.englishCheckboxMenuItem.setSelected(true);
         }
 //        principal.ckbCouleurFond.setText(rPrincipal.getString("CouleurFond"));
         principal.cancelButton.setText(rPrincipal.getString("Annuler"));
@@ -146,22 +150,22 @@ public class Language {
         principal.widthLabel.setText(rPrincipal.getString("Largeur"));
 //        principal.lblOpaque.setText(rPrincipal.getString("Opaque"));
 //        principal.lblTransparent.setText(rPrincipal.getString("Transparence"));
-        principal.aboutMenuItem.setText(rPrincipal.getString("MApropos"));
-        principal.englishCheckboxMenuItem.setText(rPrincipal.getString("mniAnglais"));
-        principal.wizardMenuItem.setText(rPrincipal.getString("MAssistant"));
-        principal.frenchCheckboxMenuItem.setText(rPrincipal.getString("mniFrancais"));
-        principal.inkscapeMenuItem.setText(rPrincipal.getString("mniInkscape"));
-        principal.quitMenuItem.setText(rPrincipal.getString("MQuitter"));
-        principal.helpMenu.setText(rPrincipal.getString("MAide"));
-        principal.fileMenu.setText(rPrincipal.getString("Fichier"));
-        principal.conversionMenu.setText(rPrincipal.getString("MConversion"));
-        principal.languageMenu.setText(rPrincipal.getString("MLangue"));
-        principal.parameterMenu.setText(rPrincipal.getString("MParametre"));
-        principal.drawingRadioButton.setText(rPrincipal.getString("Dessin"));
+//        principal.aboutMenuItem.setText(rPrincipal.getString("MApropos"));
+//        principal.englishCheckboxMenuItem.setText(rPrincipal.getString("mniAnglais"));
+//        principal.wizardMenuItem.setText(rPrincipal.getString("MAssistant"));
+//        principal.frenchCheckboxMenuItem.setText(rPrincipal.getString("mniFrancais"));
+//        principal.inkscapeMenuItem.setText(rPrincipal.getString("mniInkscape"));
+//        principal.quitMenuItem.setText(rPrincipal.getString("MQuitter"));
+//        principal.helpMenu.setText(rPrincipal.getString("MAide"));
+//        principal.fileMenu.setText(rPrincipal.getString("Fichier"));
+//        principal.conversionMenu.setText(rPrincipal.getString("MConversion"));
+//        principal.languageMenu.setText(rPrincipal.getString("MLangue"));
+//        principal.parameterMenu.setText(rPrincipal.getString("MParametre"));
+//        principal.drawingRadioButton.setText(rPrincipal.getString("Dessin"));
 //        principal.folderRadioButton.setText(rPrincipal.getString("Dossier"));
 //        principal.fileRadioButton.setText(rPrincipal.getString("Fichier"));
         principal.pageRadioButton.setText(rPrincipal.getString("Page"));
-        principal.inkscapeTitle = rPrincipal.getString("TitreInkscape");
+//        principal.inkscapeTitle = rPrincipal.getString("TitreInkscape");
     }
 
     public String errorMessage(String pMessage){

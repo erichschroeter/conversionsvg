@@ -8,17 +8,23 @@ import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.ResourceBundle;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import javax.naming.spi.DirectoryManager;
+import javax.swing.AbstractButton;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.MenuElement;
+import javax.swing.border.TitledBorder;
 import javax.swing.tree.TreeModel;
 import javax.swing.tree.TreePath;
+
+import org.pushingpixels.flamingo.api.common.JCommandButton;
 
 import com.sun.corba.se.impl.orbutil.threadpool.ThreadPoolImpl;
 import com.sun.corba.se.spi.orbutil.threadpool.ThreadPool;
@@ -101,6 +107,48 @@ public class ConversionSVGController {
         // confirmation to quit
         System.exit(0);
     }
+    
+    /**
+     * Handles changing the text the user sees on the application's screen to the
+     * selected language.
+     * @param locale
+     */
+    public void changeLanguage(Locale locale)
+    {
+        ResourceBundle resourceBundle = ResourceBundle.getBundle("conversion.resources.i18ln.MainWindow", locale);
+
+        // Ribbon
+        mainwindow.homeTask.setTitle(resourceBundle.getString("HomeRibbonTask"));
+        mainwindow.controlsBand.setTitle(resourceBundle.getString("ControlsRibbonBand"));
+        mainwindow.preferencesBand.setTitle(resourceBundle.getString("PreferencesRibbonBand"));
+        
+        mainwindow.convertButton.setText(resourceBundle.getString("ConvertButton"));
+        mainwindow.cancelButton.setText(resourceBundle.getString("CancelButton"));
+        mainwindow.languageButton.setText(resourceBundle.getString("LanguageButton"));
+        mainwindow.accessibilityButton.setText(resourceBundle.getString("AccessibilityButton"));
+        mainwindow.fontButton.setText(resourceBundle.getString("FontButton"));
+        mainwindow.shortcutsButton.setText(resourceBundle.getString("ShortcutsButton"));
+        
+        // Option Panel
+        changeBorderLanguage((TitledBorder) mainwindow.outputFormatPanel.getBorder(), resourceBundle.getString("FormatPanel"));
+        changeBorderLanguage((TitledBorder) mainwindow.exportAreaPanel.getBorder(), resourceBundle.getString("ExportAreaPanel"));
+        changeBorderLanguage((TitledBorder) mainwindow.sizePanel.getBorder(), resourceBundle.getString("SizePanel"));
+        changeBorderLanguage((TitledBorder) mainwindow.colorPicker.getBorder(), resourceBundle.getString("BackgroundPanel"));
+        
+        mainwindow.drawingRadioButton.setText(resourceBundle.getString("DrawingRadioButton"));
+        mainwindow.pageRadioButton.setText(resourceBundle.getString("PageRadioButton"));
+        mainwindow.heightLabel.setText(resourceBundle.getString("HeightTextField"));
+        mainwindow.widthLabel.setText(resourceBundle.getString("WidthTextField"));
+        
+        // File Select Panel
+        mainwindow.singleOutputDirectoryRadio.setText(resourceBundle.getString("SingleDirectoryRadioButton"));
+        mainwindow.sameOutputDirectoryRadio.setText(resourceBundle.getString("SameDirectoryRadioButton"));
+    }
+    
+    private void changeBorderLanguage(TitledBorder border, String text)
+    {
+        border.setTitle(text);
+    }
 
     /**
      * Disable all user inputs to prevent unwanted/unnecessary interactions
@@ -109,10 +157,6 @@ public class ConversionSVGController {
      * @param enable
      */
     public void enableInput(boolean enable) {
-        // enable/disable all Menu input
-        for (MenuElement elem : mainwindow.menubar.getSubElements()) {
-            elem.getComponent().setEnabled(enable);
-        }
 
         // enable/disable the necessary JPanels
         enablePanel(mainwindow.colorPicker, enable);

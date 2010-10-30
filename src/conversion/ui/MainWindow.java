@@ -46,8 +46,13 @@ import javax.swing.filechooser.FileSystemView;
 import javax.swing.tree.TreePath;
 
 import org.pushingpixels.flamingo.api.common.JCommandButton;
+import org.pushingpixels.flamingo.api.common.JCommandMenuButton;
+import org.pushingpixels.flamingo.api.common.JCommandButton.CommandButtonKind;
 import org.pushingpixels.flamingo.api.common.icon.ImageWrapperResizableIcon;
 import org.pushingpixels.flamingo.api.common.icon.ResizableIcon;
+import org.pushingpixels.flamingo.api.common.popup.JCommandPopupMenu;
+import org.pushingpixels.flamingo.api.common.popup.JPopupPanel;
+import org.pushingpixels.flamingo.api.common.popup.PopupPanelCallback;
 import org.pushingpixels.flamingo.api.ribbon.JRibbon;
 import org.pushingpixels.flamingo.api.ribbon.JRibbonBand;
 import org.pushingpixels.flamingo.api.ribbon.JRibbonFrame;
@@ -73,26 +78,34 @@ import java.awt.event.WindowListener;
 import java.io.File;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Locale;
+import java.util.Properties;
+import java.util.ResourceBundle;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class MainWindow extends JRibbonFrame {
+public class MainWindow extends JRibbonFrame
+{
     private static final long serialVersionUID           = 6987289183119465870L;
-    String                    inkscapeTitle;
+
+    ResourceBundle            languageBundle;
+    ResourceBundle            imageBundle;
     JSplitPane                splitPane;
     Container                 contentPane;
+
     JPanel                    mainPanel                  = new JPanel();
     JPanel                    statusBarPanel             = new JPanel();
     JLabel                    numberOfImageLabel         = new JLabel();
     JLabel                    nameOfImageLabel           = new JLabel();
     JProgressBar              progressBar                = new JProgressBar();
-    // JButton cancelButton = new JButton();
-    // JButton convertButton = new JButton();
     JButton                   quitButton                 = new JButton();
 
     // ------------------------------------------------
     // Ribbon
     // ------------------------------------------------
+    RibbonTask                homeTask;
+    JRibbonBand               controlsBand;
+    JRibbonBand               preferencesBand;
     JCommandButton            convertButton;
     JCommandButton            cancelButton;
     JCommandButton            languageButton;
@@ -101,18 +114,18 @@ public class MainWindow extends JRibbonFrame {
     JCommandButton            shortcutsButton;
 
     // Menu
-    JMenuBar                  menubar                    = new JMenuBar();
-    JMenu                     fileMenu                   = new JMenu();
-    JMenuItem                 quitMenuItem               = new JMenuItem();
-    JMenu                     conversionMenu             = new JMenu();
-    JMenuItem                 wizardMenuItem             = new JMenuItem();
-    JMenu                     parameterMenu              = new JMenu();
-    JMenu                     languageMenu               = new JMenu();
-    JMenuItem                 inkscapeMenuItem           = new JMenuItem();
-    JMenu                     helpMenu                   = new JMenu();
-    JMenuItem                 aboutMenuItem              = new JMenuItem();
-    JCheckBoxMenuItem         frenchCheckboxMenuItem     = new JCheckBoxMenuItem();
-    JCheckBoxMenuItem         englishCheckboxMenuItem    = new JCheckBoxMenuItem();
+    // JMenuBar menubar = new JMenuBar();
+    // JMenu fileMenu = new JMenu();
+    // JMenuItem quitMenuItem = new JMenuItem();
+    // JMenu conversionMenu = new JMenu();
+    // JMenuItem wizardMenuItem = new JMenuItem();
+    // JMenu parameterMenu = new JMenu();
+    // JMenu languageMenu = new JMenu();
+    // JMenuItem inkscapeMenuItem = new JMenuItem();
+    // JMenu helpMenu = new JMenu();
+    // JMenuItem aboutMenuItem = new JMenuItem();
+    // JCheckBoxMenuItem frenchCheckboxMenuItem = new JCheckBoxMenuItem();
+    // JCheckBoxMenuItem englishCheckboxMenuItem = new JCheckBoxMenuItem();
 
     // ------------------------------------------------
     // Options Panel
@@ -165,11 +178,14 @@ public class MainWindow extends JRibbonFrame {
     // Event Listener
     EventListener             eventListener              = new EventListener(this);
 
-    public MainWindow() {
-        try {
+    public MainWindow()
+    {
+        try
+        {
             setDefaultCloseOperation(EXIT_ON_CLOSE);
             init();
-        } catch (Exception exception) {
+        } catch (Exception exception)
+        {
             exception.printStackTrace();
         }
     }
@@ -179,7 +195,10 @@ public class MainWindow extends JRibbonFrame {
      * 
      * @throws java.lang.Exception
      */
-    private void init() throws Exception {
+    private void init() throws Exception
+    {
+        languageBundle = ResourceBundle.getBundle("conversion.resources.i18ln.MainWindow", Locale.getDefault());
+        
         // Main Window
         setTitle("ConversionSVG");
 
@@ -217,10 +236,10 @@ public class MainWindow extends JRibbonFrame {
         // ------------------------------------------------
 
         // Controls Band ----------------------------------
-        convertButton = new JCommandButton("Convert", getResizableIconFromResource("go-next.png"));
-        cancelButton = new JCommandButton("Cancel", getResizableIconFromResource("process-stop.png"));
+        convertButton = new JCommandButton(languageBundle.getString("ConvertButton"), getResizableIconFromResource("go-next.png"));
+        cancelButton = new JCommandButton(languageBundle.getString("CancelButton"), getResizableIconFromResource("process-stop.png"));
 
-        JRibbonBand controlsBand = new JRibbonBand("Controls", getApplicationIcon());
+        controlsBand = new JRibbonBand(languageBundle.getString("ControlsRibbonBand"), getApplicationIcon());
         controlsBand.addCommandButton(convertButton, RibbonElementPriority.TOP);
         controlsBand.addCommandButton(cancelButton, RibbonElementPriority.TOP);
 
@@ -230,14 +249,44 @@ public class MainWindow extends JRibbonFrame {
         resizePolicies.add(new CoreRibbonResizePolicies.High2Low(controlsBand.getControlPanel()));
         controlsBand.setResizePolicies(resizePolicies);
         // END --------------------------------------------
-
+        
         // Preferences Band -------------------------------
-        languageButton = new JCommandButton("Language", getResizableIconFromResource("preferences-desktop-locale.png"));
-        accessibilityButton = new JCommandButton("Accessibility", getResizableIconFromResource("preferences-desktop-accessibility.png"));
-        fontButton = new JCommandButton("Font", getResizableIconFromResource("preferences-desktop-font.png"));
-        shortcutsButton = new JCommandButton("Shortcuts", getResizableIconFromResource("preferences-desktop-keyboard-shortcuts.png"));
+        languageButton = new JCommandButton(languageBundle.getString("LanguageButton"), getResizableIconFromResource("preferences-desktop-locale.png"));
+        languageButton.setCommandButtonKind(CommandButtonKind.POPUP_ONLY);
+        languageButton.setPopupCallback(new PopupPanelCallback() {
 
-        JRibbonBand preferencesBand = new JRibbonBand("Preferences", getApplicationIcon());
+            @Override
+            public JPopupPanel getPopupPanel(JCommandButton commandButton)
+            {
+                JCommandPopupMenu menu = new JCommandPopupMenu();
+                menu.addMenuButton(createLanguageButton("English", Locale.US));
+                menu.addMenuButton(createLanguageButton("French", Locale.FRANCE));
+                return menu;
+            }
+
+            private JCommandMenuButton createLanguageButton(
+                    String languageText, Locale locale)
+            {
+                final Locale finalLocale = locale; // needed for the inner class
+                // NOTE this method depends on a standard naming convention of
+                // the flag image
+                JCommandMenuButton button = new JCommandMenuButton(languageText, getResizableIconFromResource("flag-" + locale.getCountry().toLowerCase() + ".png"));
+                button.addActionListener(new ActionListener() {
+
+                    @Override
+                    public void actionPerformed(ActionEvent e)
+                    {
+                        controller.changeLanguage(finalLocale);
+                    }
+                });
+                return button;
+            }
+        });
+        accessibilityButton = new JCommandButton(languageBundle.getString("AccessibilityButton"), getResizableIconFromResource("preferences-desktop-accessibility.png"));
+        fontButton = new JCommandButton(languageBundle.getString("FontButton"), getResizableIconFromResource("preferences-desktop-font.png"));
+        shortcutsButton = new JCommandButton(languageBundle.getString("ShortcutsButton"), getResizableIconFromResource("preferences-desktop-keyboard-shortcuts.png"));
+
+        preferencesBand = new JRibbonBand(languageBundle.getString("PreferencesRibbonBand"), getApplicationIcon());
         preferencesBand.addCommandButton(languageButton, RibbonElementPriority.TOP);
         preferencesBand.addCommandButton(accessibilityButton, RibbonElementPriority.LOW);
         preferencesBand.addCommandButton(fontButton, RibbonElementPriority.MEDIUM);
@@ -249,42 +298,18 @@ public class MainWindow extends JRibbonFrame {
         preferencesBand.setResizePolicies(resizePolicies);
         // END --------------------------------------------
 
-        RibbonTask task = new RibbonTask("Home", controlsBand, preferencesBand);
-        getRibbon().addTask(task);
+        homeTask = new RibbonTask(languageBundle.getString("HomeRibbonTask"), controlsBand, preferencesBand);
+        getRibbon().addTask(homeTask);
         // ------------------------------------------------
         // END Ribbon
         // ------------------------------------------------
-        // Menu
-        // this.setJMenuBar(menubar);
-        // fileMenu.setText("Fichier");
-        // quitMenuItem.setText("Quitter");
-        // conversionMenu.setText("Conversion");
-        // wizardMenuItem.setText("Assistant");
-        // parameterMenu.setText("Parametre");
-        // languageMenu.setText("Langue");
-        // inkscapeMenuItem.setText("Inkscape");
-        // helpMenu.setText("Aide");
-        // aboutMenuItem.setText("A propos");
-        // frenchCheckboxMenuItem.setText("Francais");
-        // englishCheckboxMenuItem.setText("Anglais");
-        // menubar.add(fileMenu);
-        // menubar.add(conversionMenu);
-        // menubar.add(parameterMenu);
-        // menubar.add(helpMenu);
-        // fileMenu.add(quitMenuItem);
-        // conversionMenu.add(wizardMenuItem);
-        // parameterMenu.add(languageMenu);
-        // parameterMenu.add(inkscapeMenuItem);
-        // languageMenu.add(frenchCheckboxMenuItem);
-        // languageMenu.add(englishCheckboxMenuItem);
-        // helpMenu.add(aboutMenuItem);
 
         // Output Format
         GroupLayout layout = new GroupLayout(outputFormatPanel);
         layout.setHorizontalGroup(layout.createSequentialGroup().addGroup(layout.createParallelGroup(GroupLayout.Alignment.LEADING).addComponent(pngCheckBox).addComponent(pdfCheckBox)).addGroup(layout.createParallelGroup(GroupLayout.Alignment.LEADING).addComponent(epsCheckBox).addComponent(psCheckBox)));
         layout.setVerticalGroup(layout.createSequentialGroup().addGroup(layout.createParallelGroup(GroupLayout.Alignment.LEADING).addComponent(pngCheckBox).addComponent(epsCheckBox)).addGroup(layout.createParallelGroup(GroupLayout.Alignment.LEADING).addComponent(pdfCheckBox).addComponent(psCheckBox)));
         outputFormatPanel.setLayout(layout);
-        outputFormatPanel.setBorder(BorderFactory.createTitledBorder("Format"));
+        outputFormatPanel.setBorder(BorderFactory.createTitledBorder(languageBundle.getString("FormatPanel")));
 
         pngCheckBox.setSelected(true);
         pngCheckBox.setText(".PNG");
@@ -299,19 +324,19 @@ public class MainWindow extends JRibbonFrame {
 
         // Export Area
         exportAreaPanel.setLayout(new FlowLayout(FlowLayout.LEFT));
-        pageRadioButton.setText("Page");
-        drawingRadioButton.setText("Drawing");
+        pageRadioButton.setText(languageBundle.getString("PageRadioButton"));
+        drawingRadioButton.setText(languageBundle.getString("DrawingRadioButton"));
         exportAreaGroup.add(pageRadioButton);
         exportAreaGroup.add(drawingRadioButton);
 
         drawingRadioButton.setSelected(true);
         exportAreaPanel.add(drawingRadioButton);
         exportAreaPanel.add(pageRadioButton);
-        exportAreaPanel.setBorder(BorderFactory.createTitledBorder("Export Area"));
+        exportAreaPanel.setBorder(BorderFactory.createTitledBorder(languageBundle.getString("ExportAreaPanel")));
 
         // Size
-        heightLabel.setText("Height");
-        widthLabel.setText("Width");
+        heightLabel.setText(languageBundle.getString("HeightTextField"));
+        widthLabel.setText(languageBundle.getString("WidthTextField"));
         heightTextField.setBorder(BorderFactory.createLoweredBevelBorder());
         widthTextField.setBorder(BorderFactory.createLoweredBevelBorder());
         heightTextField.setColumns(10);
@@ -336,11 +361,11 @@ public class MainWindow extends JRibbonFrame {
         constraints = new GridBagConstraints(3, 0, 1, 2, 1, 0, GridBagConstraints.CENTER, GridBagConstraints.HORIZONTAL, new Insets(5, 5, 5, 5), 0, 0);
         sizePanel.add(new JPanel(), constraints);
 
-        sizePanel.setBorder(BorderFactory.createTitledBorder("Size"));
+        sizePanel.setBorder(BorderFactory.createTitledBorder(languageBundle.getString("SizePanel")));
 
         // Color Picker
         colorPicker.setColor(Color.WHITE);
-        colorPicker.setBorder(BorderFactory.createTitledBorder("Background"));
+        colorPicker.setBorder(BorderFactory.createTitledBorder(languageBundle.getString("BackgroundPanel")));
         colorPicker.setEnabled(false);
 
         // ------------------------------------------------
@@ -378,9 +403,9 @@ public class MainWindow extends JRibbonFrame {
         constraints = new GridBagConstraints(1, 4, 1, 1, 0, 0, GridBagConstraints.NORTHWEST, GridBagConstraints.HORIZONTAL, new Insets(2, 2, 2, 2), 0, 0);
         fileSelectPanel.add(outputDirectoryEllipse, constraints);
 
-        sameOutputDirectoryRadio.setText("Put converted files in their respective directory.");
+        sameOutputDirectoryRadio.setText(languageBundle.getString("SameDirectoryRadioButton"));
         sameOutputDirectoryRadio.setEnabled(true);
-        singleOutputDirectoryRadio.setText("Put all converted files in one directory.");
+        singleOutputDirectoryRadio.setText(languageBundle.getString("SingleDirectoryRadioButton"));
         checkSingleOutputDirectoryOption(false);
         // END File Select --------------------------------
 
@@ -414,31 +439,26 @@ public class MainWindow extends JRibbonFrame {
         sameOutputDirectoryRadio.addActionListener(eventListener);
         outputDirectoryEllipse.addActionListener(eventListener);
 
-        // module.createLanguage();
-        // module.openHome();
-        // module.langue.setLangue(module.parametre.gsLangue);
-        // module.language.setLanguage("en");
-        // module.language.mainLanguage(this);
-        // if (module.parameter.gbWizard){
-        // module.showWizard();
-        // }
-
         pack();
     }
 
-    public void checkSingleOutputDirectoryOption(boolean enable) {
-        if (singleOutputDirectoryRadio.isSelected()) {
+    public void checkSingleOutputDirectoryOption(boolean enable)
+    {
+        if (singleOutputDirectoryRadio.isSelected())
+        {
             outputDirectoryEllipse.setEnabled(true);
             outputDirectoryTextField.setEnabled(true);
-        } else {
+        } else
+        {
             outputDirectoryEllipse.setEnabled(false);
             outputDirectoryTextField.setEnabled(false);
         }
     }
 
-    public static ResizableIcon getResizableIconFromResource(String resource) {
+    public ResizableIcon getResizableIconFromResource(String resource)
+    {
         return ImageWrapperResizableIcon.getIcon(MainWindow.class.getClassLoader().getResource("conversion/resources/"
-                        + resource), new Dimension(48, 48));
+                + resource), new Dimension(48, 48));
     }
 
     /*
@@ -535,127 +555,141 @@ public class MainWindow extends JRibbonFrame {
      * @author Erich Schroeter
      */
     private class EventListener implements ActionListener,
-                    TreeSelectionListener, ChangeListener {
+            TreeSelectionListener, ChangeListener
+    {
         MainWindow mainwindow;
 
-        public EventListener(MainWindow mainwindow) {
+        public EventListener(MainWindow mainwindow)
+        {
             this.mainwindow = mainwindow;
         }
 
         @Override
-        public void actionPerformed(ActionEvent e) {
+        public void actionPerformed(ActionEvent e)
+        {
             Object obj = e.getSource();
 
             // File Select
-            if (obj.equals(singleOutputDirectoryRadio)) {
+            if (obj.equals(singleOutputDirectoryRadio))
+            {
                 // handle set flag to only allow one output directory
-                
-            } else if (obj.equals(sameOutputDirectoryRadio)) {
+
+            } else if (obj.equals(sameOutputDirectoryRadio))
+            {
                 // handle exporting all images to their respective same
                 // directory
                 // sameOutputDir_actionPerformed()
 
-            } else if (obj.equals(outputDirectoryEllipse)) {
+            } else if (obj.equals(outputDirectoryEllipse))
+            {
                 JFileChooser chooser = new JFileChooser();
                 chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-                if (chooser.showSaveDialog(mainwindow) == JFileChooser.APPROVE_OPTION) {
+                if (chooser.showSaveDialog(mainwindow) == JFileChooser.APPROVE_OPTION)
+                {
                     outputDirectoryTextField.setText(chooser.getSelectedFile().getAbsolutePath());
                 }
             }
 
             // Output Format
-            else if (obj.equals(pngCheckBox)) {
+            else if (obj.equals(pngCheckBox))
+            {
                 // TODO handle updating whoever needs to know what else to
                 // export
-            } else if (obj.equals(pdfCheckBox)) {
+            } else if (obj.equals(pdfCheckBox))
+            {
                 // TODO handle updating whoever needs to know what else to
                 // export
-            } else if (obj.equals(epsCheckBox)) {
+            } else if (obj.equals(epsCheckBox))
+            {
                 // TODO handle updating whoever needs to know what else to
                 // export
-            } else if (obj.equals(psCheckBox)) {
+            } else if (obj.equals(psCheckBox))
+            {
                 // TODO handle updating whoever needs to know what else to
                 // export
             }
 
             // Export Area
-            else if (obj.equals(drawingRadioButton)) {
+            else if (obj.equals(drawingRadioButton))
+            {
                 // TODO handle updating converter with the switch
-            } else if (obj.equals(pageRadioButton)) {
+            } else if (obj.equals(pageRadioButton))
+            {
                 // TODO handle updating converter with the switch
             }
 
             // Size
-            else if (obj.equals(unitComboBox)) {
+            else if (obj.equals(unitComboBox))
+            {
                 // TODO handle updating converter with the switch(es)
             }
 
             // Ribbon
-            else if (obj.equals(convertButton)) {
+            else if (obj.equals(convertButton))
+            {
                 controller.convert();
-            } else if (obj.equals(cancelButton)) {
+            } else if (obj.equals(cancelButton))
+            {
                 controller.cancel();
             }
         }
 
         @Override
-        public void valueChanged(TreeSelectionEvent e) {
+        public void valueChanged(TreeSelectionEvent e)
+        {
             // TODO if singleDirectoryCheckbox isSelected() then set output
             // directory to e.getPath();
             // controller.setFiles(files)
-            for (TreePath path : e.getPaths()) {
+            for (TreePath path : e.getPaths())
+            {
                 System.out.println(path);
             }
         }
 
         @Override
-        public void stateChanged(ChangeEvent e) {
+        public void stateChanged(ChangeEvent e)
+        {
             Object obj = e.getSource();
             if (obj.equals(singleOutputDirectoryRadio))
             {
                 mainwindow.checkSingleOutputDirectoryOption(singleOutputDirectoryRadio.isSelected());
             }
         }
-
-        // @Override
-        // public void valueChanged(TreeCheckingEvent e) {
-        // // TODO handle mapping the output directories to the checked files'
-        // // directories
-        // // controller.setFiles(fileHeirarchy.getCheckingPaths());
-        // System.out.println();
-        // TreePath[] checked = fileHeirarchy.getCheckingPaths();
-        // for (TreePath path : checked) {
-        // System.out.println(path.getLastPathComponent());
-        // }
-        // }
     }
 }
 
-class NumberKeyAdapter extends KeyAdapter {
+class NumberKeyAdapter extends KeyAdapter
+{
     private MainWindow adaptee;
 
-    NumberKeyAdapter(MainWindow adaptee) {
+    NumberKeyAdapter(MainWindow adaptee)
+    {
         this.adaptee = adaptee;
     }
 
     @Override
-    public void keyTyped(KeyEvent e) {
+    public void keyTyped(KeyEvent e)
+    {
         Pattern p = Pattern.compile("\\p{Digit}");
         Matcher m = p.matcher(String.valueOf(e.getKeyChar()));
-        if (!m.matches()) {
+        if (!m.matches())
+        {
             e.consume();
         }
     }
 
-    public void handleNumeric(KeyEvent e) {
-        if (e.getKeyChar() == '.') {
+    public void handleNumeric(KeyEvent e)
+    {
+        if (e.getKeyChar() == '.')
+        {
             e.consume();
         } else if ((e.getKeyChar() != '0') && (e.getKeyChar() != '1')
-                        && (e.getKeyChar() != '2') && (e.getKeyChar() != '3')
-                        && (e.getKeyChar() != '4') && (e.getKeyChar() != '5')
-                        && (e.getKeyChar() != '6') && (e.getKeyChar() != '7')
-                        && (e.getKeyChar() != '8') && (e.getKeyChar() != '9')
-                        && (e.getKeyChar() != '\b') && (e.getKeyChar() != '.')) {
+                && (e.getKeyChar() != '2') && (e.getKeyChar() != '3')
+                && (e.getKeyChar() != '4') && (e.getKeyChar() != '5')
+                && (e.getKeyChar() != '6') && (e.getKeyChar() != '7')
+                && (e.getKeyChar() != '8') && (e.getKeyChar() != '9')
+                && (e.getKeyChar() != '\b') && (e.getKeyChar() != '.'))
+        {
             e.consume();
         }
     }
