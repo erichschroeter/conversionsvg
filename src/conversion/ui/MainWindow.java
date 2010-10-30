@@ -33,6 +33,8 @@ import java.awt.GridBagConstraints;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+
 import java.awt.*;
 import javax.swing.*;
 import java.awt.event.ActionEvent;
@@ -93,39 +95,29 @@ public class MainWindow extends JRibbonFrame
     JSplitPane                splitPane;
     Container                 contentPane;
 
-    JPanel                    mainPanel                  = new JPanel();
-    JPanel                    statusBarPanel             = new JPanel();
-    JLabel                    numberOfImageLabel         = new JLabel();
-    JLabel                    nameOfImageLabel           = new JLabel();
-    JProgressBar              progressBar                = new JProgressBar();
-    JButton                   quitButton                 = new JButton();
+//    JPanel                    mainPanel                  = new JPanel();
+//    JPanel                    statusBarPanel             = new JPanel();
+//    JLabel                    numberOfImageLabel         = new JLabel();
+//    JLabel                    nameOfImageLabel           = new JLabel();
+//    JProgressBar              progressBar                = new JProgressBar();
+//    JButton                   quitButton                 = new JButton();
 
     // ------------------------------------------------
     // Ribbon
     // ------------------------------------------------
     RibbonTask                homeTask;
+    
     JRibbonBand               controlsBand;
     JRibbonBand               preferencesBand;
+    JRibbonBand               monitorBand;
+    
     JCommandButton            convertButton;
     JCommandButton            cancelButton;
     JCommandButton            languageButton;
     JCommandButton            accessibilityButton;
     JCommandButton            fontButton;
     JCommandButton            shortcutsButton;
-
-    // Menu
-    // JMenuBar menubar = new JMenuBar();
-    // JMenu fileMenu = new JMenu();
-    // JMenuItem quitMenuItem = new JMenuItem();
-    // JMenu conversionMenu = new JMenu();
-    // JMenuItem wizardMenuItem = new JMenuItem();
-    // JMenu parameterMenu = new JMenu();
-    // JMenu languageMenu = new JMenu();
-    // JMenuItem inkscapeMenuItem = new JMenuItem();
-    // JMenu helpMenu = new JMenu();
-    // JMenuItem aboutMenuItem = new JMenuItem();
-    // JCheckBoxMenuItem frenchCheckboxMenuItem = new JCheckBoxMenuItem();
-    // JCheckBoxMenuItem englishCheckboxMenuItem = new JCheckBoxMenuItem();
+    JCommandButton            statusMonitorButton;
 
     // ------------------------------------------------
     // Options Panel
@@ -174,7 +166,7 @@ public class MainWindow extends JRibbonFrame
     JLabel                    lblPercent                 = new JLabel();
 
     // Controller
-    ConversionSVGController   controller                 = new ConversionSVGController(this);
+    ConversionSVGController   controller;
     // Event Listener
     EventListener             eventListener              = new EventListener(this);
 
@@ -198,9 +190,11 @@ public class MainWindow extends JRibbonFrame
     private void init() throws Exception
     {
         languageBundle = ResourceBundle.getBundle("conversion.resources.i18ln.MainWindow", Locale.getDefault());
-        
+        controller = new ConversionSVGController(this, languageBundle);
+     
         // Main Window
         setTitle("ConversionSVG");
+        setMinimumSize(new Dimension(600, 350));
 
         GridBagConstraints constraints = new GridBagConstraints();
 
@@ -212,14 +206,15 @@ public class MainWindow extends JRibbonFrame
         splitPane.setOneTouchExpandable(true);
         contentPane.add(splitPane, BorderLayout.CENTER);
 
-        splitPane.setTopComponent(optionsPanel);
+        JScrollPane optionsPanelScrollPane = new JScrollPane(optionsPanel);
+        splitPane.setTopComponent(optionsPanelScrollPane);
         splitPane.setRightComponent(fileSelectPanel);
-        contentPane.add(statusBarPanel, BorderLayout.SOUTH);
 
         // Options Panel
         optionsPanel.setLayout(new GridBagLayout());
-        optionsPanel.setMinimumSize(new Dimension(300, 600));
-        optionsPanel.setPreferredSize(new Dimension(350, 600));
+        optionsPanel.setMinimumSize(new Dimension(400, 600));
+        optionsPanel.setPreferredSize(new Dimension(400, 600));
+        
         // (gridx, gridy, gridwidth, gridheight, weightx, weighty, anchor, fill,
         // insets, ipadx, ipady)
         constraints = new GridBagConstraints(0, 0, 1, 1, 0, 0, GridBagConstraints.NORTHWEST, GridBagConstraints.HORIZONTAL, new Insets(5, 5, 5, 5), 0, 0);
@@ -245,8 +240,7 @@ public class MainWindow extends JRibbonFrame
 
         List<RibbonBandResizePolicy> resizePolicies = new ArrayList<RibbonBandResizePolicy>();
         resizePolicies.add(new CoreRibbonResizePolicies.Mirror(controlsBand.getControlPanel()));
-        resizePolicies.add(new CoreRibbonResizePolicies.Mid2Low(controlsBand.getControlPanel()));
-        resizePolicies.add(new CoreRibbonResizePolicies.High2Low(controlsBand.getControlPanel()));
+        resizePolicies.add(new CoreRibbonResizePolicies.High2Mid(controlsBand.getControlPanel()));
         controlsBand.setResizePolicies(resizePolicies);
         // END --------------------------------------------
         
@@ -285,20 +279,45 @@ public class MainWindow extends JRibbonFrame
         accessibilityButton = new JCommandButton(languageBundle.getString("AccessibilityButton"), getResizableIconFromResource("preferences-desktop-accessibility.png"));
         fontButton = new JCommandButton(languageBundle.getString("FontButton"), getResizableIconFromResource("preferences-desktop-font.png"));
         shortcutsButton = new JCommandButton(languageBundle.getString("ShortcutsButton"), getResizableIconFromResource("preferences-desktop-keyboard-shortcuts.png"));
+        
+        // -----------------------------------------------
+        // Remove button disabling once functionality is implemented
+        // -----------------------------------------------
+        accessibilityButton.setEnabled(false);
+        fontButton.setEnabled(false);
+        shortcutsButton.setEnabled(false);
 
         preferencesBand = new JRibbonBand(languageBundle.getString("PreferencesRibbonBand"), getApplicationIcon());
         preferencesBand.addCommandButton(languageButton, RibbonElementPriority.TOP);
-        preferencesBand.addCommandButton(accessibilityButton, RibbonElementPriority.LOW);
+        preferencesBand.addCommandButton(accessibilityButton, RibbonElementPriority.MEDIUM);
         preferencesBand.addCommandButton(fontButton, RibbonElementPriority.MEDIUM);
-        preferencesBand.addCommandButton(shortcutsButton, RibbonElementPriority.LOW);
+        preferencesBand.addCommandButton(shortcutsButton, RibbonElementPriority.MEDIUM);
 
         resizePolicies = new ArrayList<RibbonBandResizePolicy>();
         resizePolicies.add(new CoreRibbonResizePolicies.Mirror(preferencesBand.getControlPanel()));
+        resizePolicies.add(new CoreRibbonResizePolicies.High2Mid(preferencesBand.getControlPanel()));
         resizePolicies.add(new CoreRibbonResizePolicies.Mid2Low(preferencesBand.getControlPanel()));
         preferencesBand.setResizePolicies(resizePolicies);
         // END --------------------------------------------
 
-        homeTask = new RibbonTask(languageBundle.getString("HomeRibbonTask"), controlsBand, preferencesBand);
+        // Monitor Band -----------------------------------
+        statusMonitorButton = new JCommandButton(languageBundle.getString("StatusMonitorButton"), getResizableIconFromResource("utilities-system-monitor.png"));
+
+        monitorBand = new JRibbonBand(languageBundle.getString("MonitorRibbonBand"), getApplicationIcon());
+        monitorBand.addCommandButton(statusMonitorButton, RibbonElementPriority.TOP);
+
+        // -----------------------------------------------
+        // Remove button disabling once functionality is implemented
+        // -----------------------------------------------
+        statusMonitorButton.setEnabled(false);
+        
+        resizePolicies = new ArrayList<RibbonBandResizePolicy>();
+        resizePolicies.add(new CoreRibbonResizePolicies.Mirror(monitorBand.getControlPanel()));
+        resizePolicies.add(new CoreRibbonResizePolicies.Mid2Low(monitorBand.getControlPanel()));
+        monitorBand.setResizePolicies(resizePolicies);        
+        // END --------------------------------------------
+        
+        homeTask = new RibbonTask(languageBundle.getString("HomeRibbonTask"), controlsBand, preferencesBand, monitorBand);
         getRibbon().addTask(homeTask);
         // ------------------------------------------------
         // END Ribbon
@@ -343,6 +362,7 @@ public class MainWindow extends JRibbonFrame
 
         ComboBoxModel unitModel = new DefaultComboBoxModel(units);
         unitComboBox.setModel(unitModel);
+        unitComboBox.setEnabled(false);
 
         // (gridx, gridy, gridwidth, gridheight, weightx, weighty, anchor, fill,
         // insets, ipadx, ipady)
@@ -372,11 +392,12 @@ public class MainWindow extends JRibbonFrame
         // File Select
         // ------------------------------------------------
         FileSystemModel model = new FileSystemModel();
+        model.addFilter(new SVGFilter());
         fileHeirarchy = new CheckBoxTree(model);
         JScrollPane fileSelectScrollPane = new JScrollPane(fileHeirarchy);
 
-        fileSelectPanel.setMinimumSize(new Dimension(350, 500));
-        fileSelectPanel.setPreferredSize(new Dimension(350, 600));
+        fileSelectPanel.setMinimumSize(new Dimension(200, 500));
+        fileSelectPanel.setPreferredSize(new Dimension(400, 600));
         fileSelectPanel.setLayout(new GridBagLayout());
 
         // add the output directory options
@@ -410,24 +431,25 @@ public class MainWindow extends JRibbonFrame
         // END File Select --------------------------------
 
         // Status Information
-        lblPercent.setHorizontalAlignment(SwingConstants.CENTER);
-        lblPercent.setText("100%");
-        numberOfImageLabel.setHorizontalAlignment(SwingConstants.CENTER);
-
-        statusBarPanel.setLayout(new GridBagLayout());
-
-        numberOfImageLabel.setBorder(BorderFactory.createLoweredBevelBorder());
-        numberOfImageLabel.setText("0/100");
-        nameOfImageLabel.setBorder(BorderFactory.createLoweredBevelBorder());
-        nameOfImageLabel.setText("/home/erich/Public/ConversionSVG/characature.svg");
-        constraints = new GridBagConstraints(0, 0, 1, 1, 0.1, 0, GridBagConstraints.SOUTHWEST, GridBagConstraints.HORIZONTAL, new Insets(2, 2, 2, 2), 0, 0);
-        statusBarPanel.add(numberOfImageLabel, constraints);
-        constraints = new GridBagConstraints(1, 0, 1, 1, 0.9, 0, GridBagConstraints.SOUTHWEST, GridBagConstraints.HORIZONTAL, new Insets(2, 2, 2, 2), 0, 0);
-        statusBarPanel.add(nameOfImageLabel, constraints);
+//        lblPercent.setHorizontalAlignment(SwingConstants.CENTER);
+//        lblPercent.setText("100%");
+//        numberOfImageLabel.setHorizontalAlignment(SwingConstants.CENTER);
+//
+//        statusBarPanel.setLayout(new GridBagLayout());
+//
+//        numberOfImageLabel.setBorder(BorderFactory.createLoweredBevelBorder());
+//        numberOfImageLabel.setText("0/100");
+//        nameOfImageLabel.setBorder(BorderFactory.createLoweredBevelBorder());
+//        nameOfImageLabel.setText("/home/erich/Public/ConversionSVG/characature.svg");
+//        constraints = new GridBagConstraints(0, 0, 1, 1, 0.1, 0, GridBagConstraints.SOUTHWEST, GridBagConstraints.HORIZONTAL, new Insets(2, 2, 2, 2), 0, 0);
+//        statusBarPanel.add(numberOfImageLabel, constraints);
+//        constraints = new GridBagConstraints(1, 0, 1, 1, 0.9, 0, GridBagConstraints.SOUTHWEST, GridBagConstraints.HORIZONTAL, new Insets(2, 2, 2, 2), 0, 0);
+//        statusBarPanel.add(nameOfImageLabel, constraints);
 
         // Event Listeners
         convertButton.addActionListener(eventListener);
         cancelButton.addActionListener(eventListener);
+        statusMonitorButton.addActionListener(eventListener);
 
         // File Select
         // fileHeirarchy.addTreeSelectionListener(eventListener);
@@ -631,6 +653,9 @@ public class MainWindow extends JRibbonFrame
             } else if (obj.equals(cancelButton))
             {
                 controller.cancel();
+            } else if (obj.equals(statusMonitorButton))
+            {
+                controller.showStatus();
             }
         }
 

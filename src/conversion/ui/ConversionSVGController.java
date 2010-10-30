@@ -2,6 +2,8 @@ package conversion.ui;
 
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.event.WindowEvent;
+import java.awt.event.WindowListener;
 import java.io.File;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
@@ -17,15 +19,25 @@ import java.util.concurrent.TimeUnit;
 
 import javax.naming.spi.DirectoryManager;
 import javax.swing.AbstractButton;
+import javax.swing.DefaultListModel;
+import javax.swing.JDialog;
+import javax.swing.JFileChooser;
+import javax.swing.JLabel;
+import javax.swing.JList;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JProgressBar;
 import javax.swing.JTextField;
+import javax.swing.ListModel;
 import javax.swing.MenuElement;
 import javax.swing.border.TitledBorder;
+import javax.swing.text.html.ListView;
 import javax.swing.tree.TreeModel;
 import javax.swing.tree.TreePath;
 
 import org.pushingpixels.flamingo.api.common.JCommandButton;
+
+import test.svg.transcoded.system_log_out;
 
 import com.sun.corba.se.impl.orbutil.threadpool.ThreadPoolImpl;
 import com.sun.corba.se.spi.orbutil.threadpool.ThreadPool;
@@ -34,21 +46,46 @@ import com.sun.corba.se.spi.orbutil.threadpool.ThreadPoolManager;
 public class ConversionSVGController
 {
     protected MainWindow               mainwindow;
-    protected Converter                converter;
+    ResourceBundle                     resourceBundle;
+    EventListener                      eventListener;
+    ProgressDialog                     progressDialog;
+
     protected File                     inkscapeExecutable;
 
     // ThreadPool
-    int                                corePoolSize    = 2;
-    int                                maximumPoolSize = 2;
-    long                               keepAliveTime   = 10;
-    final ArrayBlockingQueue<Runnable> queue           = new ArrayBlockingQueue<Runnable>(5);
+    int                                corePoolSize       = 2;
+    int                                maximumPoolSize    = 2;
+    long                               keepAliveTime      = 10;
+    final ArrayBlockingQueue<Runnable> queue              = new ArrayBlockingQueue<Runnable>(5);
     private ThreadPoolExecutor         threadPool;
+    int                                completedProcesses = 0;
 
-    public ConversionSVGController(conversion.ui.MainWindow mainwindow)
+    public ConversionSVGController(conversion.ui.MainWindow mainwindow,
+            ResourceBundle resourceBundle)
     {
         this.mainwindow = mainwindow;
-        inkscapeExecutable = findInkscapeExecutable();
+        this.resourceBundle = resourceBundle;
+        eventListener = new EventListener();
+        if ((inkscapeExecutable = findInkscapeExecutable()) == null)
+        {
+            JFileChooser inkscapeChooser = new JFileChooser();
+            inkscapeChooser.setFileFilter(new InkscapeFilter());
+            inkscapeChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
+            if (inkscapeChooser.showOpenDialog(mainwindow) == JFileChooser.APPROVE_OPTION)
+            {
+                inkscapeExecutable = inkscapeChooser.getSelectedFile();
+            }
+            else
+            {
+                System.exit(0);
+            }
+        }
         threadPool = new ThreadPoolExecutor(corePoolSize, maximumPoolSize, keepAliveTime, TimeUnit.SECONDS, queue);
+        
+        progressDialog = new ProgressDialog(mainwindow);
+        progressDialog.addWindowListener(eventListener);
+
+        
     }
 
     public List<File> getFiles()
@@ -68,21 +105,6 @@ public class ConversionSVGController
         return files;
     }
 
-    public void setFiles(TreePath[] paths)
-    {
-        List<File> files = new ArrayList<File>();
-
-        if (paths != null)
-        {
-            for (TreePath selection : paths)
-            {
-                File file = (File) selection.getLastPathComponent();
-                files.add(file);
-            }
-        }
-
-    }
-
     /**
      * This is the method that handles creating the threads that call Inkscape
      * to convert the files selected by the user.
@@ -91,46 +113,53 @@ public class ConversionSVGController
     {
         // disable GUI input to prevent mistakes
         enableInput(false);
+
         // getOutputFormat() for each file and merge
         // with result from getInkscapeCommandLineOptions()
+        List<File> files = getFiles();
         boolean yesToAll = false;
         boolean noToAll = false;
-        boolean cancel = false;
-        
-        for (File file : getFiles())
+
+        // display progress status
+        if (!progressDialog.statusOutput.isEmpty()){
+            progressDialog.statusOutput.addElement("-----------------------------");
+        }
+        progressDialog.progressBar.setMaximum(files.size());
+        progressDialog.setVisible(true);
+
+        Converter inkscapeProcess;
+
+        for (File file : files)
         {
             Map<String, String> options = getInkscapeCommandlineOptions();
             options.put("-f", file.getAbsolutePath());
             Map<String, String> formats = getOutputFormat(file);
 
             // we have to call Inkscape each time to export each format
+            // I don't believe Inkscape supports it's own batch mode (as of yet)
             for (Map.Entry<String, String> format : formats.entrySet())
             {
                 options.put(format.getKey(), format.getValue());
 
                 File exportFile = new File(format.getValue());
-                
+
                 if (exportFile.exists())
                 {
-                    int choice = -2; // nothing uses -2 (-1 is CLOSED_OPTION
-                    if (yesToAll) {
-                        
-                    } else if (noToAll) {
-                        
-                    } else
-//                    if (!yesToAll || !noToAll)
+                    int choice = -2; // nothing uses -2 (-1 is CLOSED_OPTION)
+                    if (yesToAll)
                     {
-                        String[] choices = {"yes", "yes to all", "no", "no to all", "cancel"};
-                        choice = JOptionPane.showOptionDialog(mainwindow, 
-                                "create a message", 
-                                "File exists", 
-                                JOptionPane.DEFAULT_OPTION, 
-                                JOptionPane.INFORMATION_MESSAGE, 
-                                null, 
-                                choices, 
-                                choices[2]);
+
+                    } else if (noToAll)
+                    {
+                        break;
+                    } else
+                    { // only show the dialog if neither yesToAll or noToAll
+                        // have been set to TRUE
+                        String[] choices = { "yes", "yes to all", "no",
+                                "no to all", "cancel" };
+                        choice = JOptionPane.showOptionDialog(mainwindow, "create a message", "File exists", JOptionPane.DEFAULT_OPTION, JOptionPane.INFORMATION_MESSAGE, null, choices, choices[2]);
                     }
-                    
+
                     if (choice == 4 || choice == JOptionPane.CLOSED_OPTION)
                     { // Cancelled
                         enableInput(true);
@@ -143,25 +172,24 @@ public class ConversionSVGController
                         noToAll = true;
                     }
 
-                    if (noToAll)
-                    {
-                        break;
-                    }
-                    
+                    inkscapeProcess = new Converter(inkscapeExecutable, options);
+                    inkscapeProcess.addProcessCompletedListener(eventListener);
+
                     if (yesToAll)
                     {
-                        threadPool.execute(new Converter(inkscapeExecutable, options));
+                        threadPool.execute(inkscapeProcess);
                         break;
                     }
-                    
+
                     if (choice == 0)
                     {
-                        threadPool.execute(new Converter(inkscapeExecutable, options));
+                        threadPool.execute(inkscapeProcess);
                     }
-                }
-                else
+                } else
                 {
-                    threadPool.execute(new Converter(inkscapeExecutable, options));
+                    inkscapeProcess = new Converter(inkscapeExecutable, options);
+                    inkscapeProcess.addProcessCompletedListener(eventListener);
+                    threadPool.execute(inkscapeProcess);
                 }
             }
         }
@@ -170,17 +198,49 @@ public class ConversionSVGController
         enableInput(true);
     }
 
-    public void cancel()
+    public void showStatus()
     {
-        threadPool.shutdownNow();
-        enableInput(true);
+        if (progressDialog != null)
+        {
+            progressDialog.setVisible(true);
+        }
     }
 
+    /**
+     * Immediately shuts down the active Inkscape processes.
+     */
+    public void cancel()
+    {
+        int queued = threadPool.getQueue().size();
+        if (queued > 0)
+        {
+            threadPool.shutdownNow();
+            progressDialog.statusOutput.addElement("Cancelled with " + queued + " remaining.");
+            enableInput(true);
+        }
+    }
+
+    /**
+     * Checks to make sure there are no active Inkscape processes in the thread
+     * pool. If there are active processes, a modal dialog is presented to the
+     * user asking to confirm that they want to shutdown those processes.
+     */
     public void quit()
     {
-        // TODO if processes are still going (Inkscape), modal dialog for
+        // if processes are still going (Inkscape), modal dialog for
         // confirmation to quit
-        System.exit(0);
+        int proceed = JOptionPane.OK_OPTION;
+        
+        if (threadPool.getActiveCount() != 0)
+        {
+            proceed = JOptionPane.showConfirmDialog(mainwindow, resourceBundle.getString("ActiveProcessesModalMessage"));
+        }
+
+        if (proceed == JOptionPane.OK_OPTION)
+        {
+            threadPool.shutdownNow();
+            System.exit(0);
+        }
     }
 
     /**
@@ -216,6 +276,7 @@ public class ConversionSVGController
         mainwindow.pageRadioButton.setText(resourceBundle.getString("PageRadioButton"));
         mainwindow.heightLabel.setText(resourceBundle.getString("HeightTextField"));
         mainwindow.widthLabel.setText(resourceBundle.getString("WidthTextField"));
+        mainwindow.colorPicker.setLocale(locale);
 
         // File Select Panel
         mainwindow.singleOutputDirectoryRadio.setText(resourceBundle.getString("SingleDirectoryRadioButton"));
@@ -240,6 +301,8 @@ public class ConversionSVGController
         // enable/disable the necessary JPanels
         enablePanel(mainwindow.colorPicker, enable);
         enablePanel(mainwindow.sizePanel, enable);
+        mainwindow.unitComboBox.setEnabled(false);// Special case until it is
+        // actually implemented
         enablePanel(mainwindow.outputFormatPanel, enable);
         enablePanel(mainwindow.exportAreaPanel, enable);
     }
@@ -363,6 +426,11 @@ public class ConversionSVGController
         return path;
     }
 
+    /**
+     * Attempts to find the Inkscape executable in a device independent manner.
+     * 
+     * @return
+     */
     private File findInkscapeExecutable()
     {
         File executable = null;
@@ -379,5 +447,79 @@ public class ConversionSVGController
         }
 
         return executable;
+    }
+
+    private class EventListener implements InkscapeProcessCompletedListener,
+            WindowListener
+    {
+        @Override
+        public void processCompleted(InkscapeProcessInfo info)
+        {
+            completedProcesses++;
+            progressDialog.statusOutput.addElement(getExportedFile(info) + "... done");
+            progressDialog.progressBar.setValue(completedProcesses);
+        }
+        // helper function to get the exported file
+        private String getExportedFile(InkscapeProcessInfo info)
+        {
+            String file = null;
+            if (info.options.containsKey("-e"))
+            {
+                file = info.options.get("-e");
+            } else if (info.options.containsKey("-E"))
+            {
+                file = info.options.get("-E");
+            } else if (info.options.containsKey("-A"))
+            {
+                file = info.options.get("-A");
+            } else if (info.options.containsKey("-P"))
+            {
+                file = info.options.get("-P");
+            }
+            return file;
+        }
+
+        @Override
+        public void windowActivated(WindowEvent arg0)
+        {
+        }
+
+        @Override
+        public void windowClosed(WindowEvent e)
+        {
+            if (e.getSource().equals(progressDialog))
+            {
+                progressDialog.setVisible(false);
+            }
+        }
+
+        @Override
+        public void windowClosing(WindowEvent e)
+        {
+            if (e.getSource().equals(progressDialog))
+            {
+                progressDialog.setVisible(false);
+            }
+        }
+
+        @Override
+        public void windowDeactivated(WindowEvent arg0)
+        {
+        }
+
+        @Override
+        public void windowDeiconified(WindowEvent arg0)
+        {
+        }
+
+        @Override
+        public void windowIconified(WindowEvent arg0)
+        {
+        }
+
+        @Override
+        public void windowOpened(WindowEvent arg0)
+        {
+        }
     }
 }

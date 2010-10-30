@@ -39,6 +39,7 @@ public class InkscapeFilter extends FileFilter{
         }
         
         String fileName = file.getName();
+        // we need to be able to execute Inkscape in order for this app to work
         if (file.canExecute())
         {
 	        if (fileName.equals("inkscape.exe") ||

@@ -21,10 +21,10 @@
 
 package conversion.ui;
 
-import javax.swing.filechooser.FileFilter;
 import java.io.File;
+import java.io.FileFilter;
 
-public class SVGFilter extends FileFilter{
+public class SVGFilter implements FileFilter {
 
     public boolean accept(File file)
     {
