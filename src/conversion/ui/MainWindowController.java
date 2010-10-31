@@ -44,12 +44,30 @@ import com.sun.corba.se.impl.orbutil.threadpool.ThreadPoolImpl;
 import com.sun.corba.se.spi.orbutil.threadpool.ThreadPool;
 import com.sun.corba.se.spi.orbutil.threadpool.ThreadPoolManager;
 
+/**
+ * The MainWindowController class is somewhat self-explanatory. It is the
+ * Controller in the Model View Controller (MVC) framework. It handles
+ * controlling what is done based on user interaction from the MainWindow (the
+ * View in MVC).
+ * 
+ * In addition to the MainWindow, the MainWindowController also handles
+ * displaying dialogs where needed. In instances where a file to be exported
+ * already exists on the system, a dialog will popup asking the user if they
+ * want to overwrite it or not. Another instance where a dialog will popup is if
+ * the program cannot find the Inkscape executable on the system. A file chooser
+ * dialog will popup that will filter anything except the Inkscape executable
+ * (file named Inkscape.exe or inkscape).
+ * 
+ * @author Erich Schroeter
+ */
 public class MainWindowController
 {
     protected MainWindow               mainwindow;
     ResourceBundle                     languageBundle;
     EventListener                      eventListener;
     ProgressDialog                     progressDialog;
+
+    Locale                             selectedLocale     = Locale.getDefault();
 
     protected File                     inkscapeExecutable;
 
@@ -75,20 +93,24 @@ public class MainWindowController
             if (inkscapeChooser.showOpenDialog(mainwindow) == JFileChooser.APPROVE_OPTION)
             {
                 inkscapeExecutable = inkscapeChooser.getSelectedFile();
-            }
-            else
+            } else
             {
                 System.exit(0);
             }
         }
         threadPool = new ThreadPoolExecutor(corePoolSize, maximumPoolSize, keepAliveTime, TimeUnit.SECONDS, queue);
-        
+
         progressDialog = new ProgressDialog(mainwindow);
         progressDialog.addWindowListener(eventListener);
 
-        
     }
 
+    /**
+     * Returns a list of Files that the user has checked in the CheckBoxTree on
+     * the MainWindow's file select panel.
+     * 
+     * @return A list of Files checked in the MainWindow's file select panel.
+     */
     public List<File> getFiles()
     {
         List<File> files = new ArrayList<File>();
@@ -122,8 +144,13 @@ public class MainWindowController
         boolean noToAll = false;
 
         // display progress status
-        if (!progressDialog.statusOutput.isEmpty()){
-            progressDialog.statusOutput.addElement("-----------------------------");
+        // only print a line separator if we've converted something previously
+        // and there won't be >1 consecutively.
+        String lineSeparator = "-----------------------------";
+        if (!progressDialog.statusOutput.isEmpty()
+                && !progressDialog.statusOutput.get(progressDialog.statusOutput.getSize() - 1).equals(lineSeparator))
+        {
+            progressDialog.statusOutput.addElement(lineSeparator);
         }
         progressDialog.progressBar.setMaximum(files.size());
         progressDialog.setVisible(true);
@@ -132,14 +159,18 @@ public class MainWindowController
 
         for (File file : files)
         {
-            Map<String, String> options = getInkscapeCommandlineOptions();
-            options.put("-f", file.getAbsolutePath());
             Map<String, String> formats = getOutputFormat(file);
 
             // we have to call Inkscape each time to export each format
             // I don't believe Inkscape supports it's own batch mode (as of yet)
             for (Map.Entry<String, String> format : formats.entrySet())
             {
+                // create a new options map for each process, so that we can use
+                // the specific commands used when the ProcessCompleted event
+                // occurs.
+                Map<String, String> options = getInkscapeCommandlineOptions();
+                options.put("-f", file.getAbsolutePath());
+
                 options.put(format.getKey(), format.getValue());
 
                 File exportFile = new File(format.getValue());
@@ -156,14 +187,7 @@ public class MainWindowController
                     } else
                     { // only show the dialog if neither yesToAll or noToAll
                         // have been set to TRUE
-                        String[] choices = {
-                                languageBundle.getString("Yes"),
-                                languageBundle.getString("YesToAll"),
-                                languageBundle.getString("No"),
-                                languageBundle.getString("NoToAll"),
-                                languageBundle.getString("Cancel")
-                        };
-                        choice = JOptionPane.showOptionDialog(mainwindow, languageBundle.getString("FileExistsModalMessage"), languageBundle.getString("FileExists"), JOptionPane.DEFAULT_OPTION, JOptionPane.INFORMATION_MESSAGE, null, choices, choices[2]);
+                        choice = showVerificationDialog(selectedLocale);
                     }
 
                     if (choice == 4 || choice == JOptionPane.CLOSED_OPTION)
@@ -184,7 +208,6 @@ public class MainWindowController
                     if (yesToAll)
                     {
                         threadPool.execute(inkscapeProcess);
-                        break;
                     }
 
                     if (choice == 0)
@@ -199,11 +222,23 @@ public class MainWindowController
                 }
             }
         }
-
-        // enable GUI input
-        enableInput(true);
     }
 
+    private int showVerificationDialog(Locale locale)
+    {
+        ResourceBundle languageBundle = ResourceBundle.getBundle("conversion.resources.i18ln.MainWindow", locale);
+        String[] choices = { languageBundle.getString("Yes"),
+                languageBundle.getString("YesToAll"),
+                languageBundle.getString("No"),
+                languageBundle.getString("NoToAll"),
+                languageBundle.getString("Cancel") };
+        return JOptionPane.showOptionDialog(mainwindow, languageBundle.getString("FileExistsModalMessage"), languageBundle.getString("FileExists"), JOptionPane.DEFAULT_OPTION, JOptionPane.INFORMATION_MESSAGE, null, choices, choices[2]);
+    }
+
+    /**
+     * Displays the Progress dialog. If the progressDialog field has not been
+     * instanciated, then nothing occurs.
+     */
     public void showStatus()
     {
         if (progressDialog != null)
@@ -221,19 +256,24 @@ public class MainWindowController
         if (queued > 0)
         {
             threadPool.shutdown();
-            MessageFormat formatter = new MessageFormat("");
-            formatter.setLocale(Locale.getDefault());
-            formatter.applyPattern(languageBundle.getString("CancelledRemainingQueue"));
-            Object[] args = {queued};
-            progressDialog.statusOutput.addElement(formatter.format(args));
+            Object[] args = { queued };
+            progressDialog.statusOutput.addElement(sprintf(languageBundle.getString("CancelledRemainingQueue"), args, selectedLocale));
             enableInput(true);
         }
     }
-    
-    public Locale getSelectedLocale()
+
+    /**
+     * A helper function to get a formatted message using parameters for a
+     * specific Locale.
+     * 
+     * @return Returns a formatted string.
+     */
+    public String sprintf(String pattern, Object[] args, Locale locale)
     {
-//        return mainwindow.languageButton.
-        return null;
+        MessageFormat formatter = new MessageFormat("");
+        formatter.setLocale(locale);
+        formatter.applyPattern(pattern);
+        return formatter.format(args);
     }
 
     /**
@@ -246,7 +286,7 @@ public class MainWindowController
         // if processes are still going (Inkscape), modal dialog for
         // confirmation to quit
         int proceed = JOptionPane.OK_OPTION;
-        
+
         if (threadPool.getActiveCount() != 0)
         {
             proceed = JOptionPane.showConfirmDialog(mainwindow, languageBundle.getString("ActiveProcessesModalMessage"));
@@ -269,14 +309,14 @@ public class MainWindowController
     public void changeLanguage(Locale locale)
     {
         ResourceBundle resourceBundle = ResourceBundle.getBundle("conversion.resources.i18ln.MainWindow", locale);
-
+        selectedLocale = locale;
         // Ribbon
         mainwindow.homeTask.setTitle(resourceBundle.getString("HomeRibbonTask"));
         mainwindow.controlsBand.setTitle(resourceBundle.getString("ControlsRibbonBand"));
         mainwindow.preferencesBand.setTitle(resourceBundle.getString("PreferencesRibbonBand"));
 
         mainwindow.convertButton.setText(resourceBundle.getString("ConvertButton"));
-        mainwindow.cancelButton.setText(resourceBundle.getString("CancelButton"));
+        mainwindow.cancelButton.setText(resourceBundle.getString("Cancel"));
         mainwindow.languageButton.setText(resourceBundle.getString("LanguageButton"));
         mainwindow.accessibilityButton.setText(resourceBundle.getString("AccessibilityButton"));
         mainwindow.fontButton.setText(resourceBundle.getString("FontButton"));
@@ -338,6 +378,13 @@ public class MainWindowController
         }
     }
 
+    /**
+     * Handles populating the command line switches and switch arguments needed
+     * for Inkscape's command line.
+     * 
+     * @return A map populated with switches and their arguments (also known as
+     *         options).
+     */
     public HashMap<String, String> getInkscapeCommandlineOptions()
     {
         HashMap<String, String> options = new HashMap<String, String>();
@@ -351,6 +398,8 @@ public class MainWindowController
         return options;
     }
 
+    // helper function used for checking if anything was entered into the text
+    // field.
     private void setCommandlineOption(HashMap<String, String> options,
             String option, JTextField field)
     {
@@ -373,6 +422,12 @@ public class MainWindowController
                 + color.getBlue() + ")";
     }
 
+    /**
+     * Handles populating the map with the respective switch needed for the
+     * command line.
+     * 
+     * @return The map with the respective switch needed for the command line.
+     */
     private Map<String, String> getExportArea()
     {
         HashMap<String, String> option = new HashMap<String, String>();
@@ -386,6 +441,16 @@ public class MainWindowController
         return option;
     }
 
+    /**
+     * Handles getting all the formats selected by the user in the Format panel
+     * and populating the options map with the respective switches and switch
+     * arguments needed for the command line.
+     * 
+     * @param file
+     *            Used to name the exported file with the selected export
+     *            formats (PNG, PS, PDF, etc)
+     * @return The map of options to be used on the command line.
+     */
     private Map<String, String> getOutputFormat(File file)
     {
         HashMap<String, String> option = new HashMap<String, String>();
@@ -451,7 +516,7 @@ public class MainWindowController
     {
         File executable = null;
         String os = System.getProperty("os.name").toLowerCase();
-        if (os.equals("linux"))
+        if (os.contains("linux"))
         {
             executable = new File("/usr/bin/inkscape");
         } else if (os.contains("windows"))
@@ -472,9 +537,17 @@ public class MainWindowController
         public void processCompleted(InkscapeProcessInfo info)
         {
             completedProcesses++;
-            progressDialog.statusOutput.addElement(getExportedFile(info) + "... done");
+            progressDialog.statusOutput.addElement(getExportedFile(info)
+                    + "... " + languageBundle.getString("Done"));
             progressDialog.progressBar.setValue(completedProcesses);
+
+            if (threadPool.getQueue().size() == 0)
+            {
+                // enable GUI input
+                enableInput(true);
+            }
         }
+
         // helper function to get the exported file
         private String getExportedFile(InkscapeProcessInfo info)
         {
@@ -519,8 +592,12 @@ public class MainWindowController
         }
 
         @Override
-        public void windowDeactivated(WindowEvent arg0)
+        public void windowDeactivated(WindowEvent e)
         {
+            if (e.getSource().equals(progressDialog))
+            {
+                mainwindow.statusMonitorButton.setEnabled(true);
+            }
         }
 
         @Override
