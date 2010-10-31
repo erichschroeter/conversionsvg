@@ -166,7 +166,7 @@ public class MainWindow extends JRibbonFrame
     JLabel                    lblPercent                 = new JLabel();
 
     // Controller
-    ConversionSVGController   controller;
+    MainWindowController   controller;
     // Event Listener
     EventListener             eventListener              = new EventListener(this);
 
@@ -190,7 +190,7 @@ public class MainWindow extends JRibbonFrame
     private void init() throws Exception
     {
         languageBundle = ResourceBundle.getBundle("conversion.resources.i18ln.MainWindow", Locale.getDefault());
-        controller = new ConversionSVGController(this, languageBundle);
+        controller = new MainWindowController(this, languageBundle);
      
         // Main Window
         setTitle("ConversionSVG");
@@ -232,7 +232,7 @@ public class MainWindow extends JRibbonFrame
 
         // Controls Band ----------------------------------
         convertButton = new JCommandButton(languageBundle.getString("ConvertButton"), getResizableIconFromResource("go-next.png"));
-        cancelButton = new JCommandButton(languageBundle.getString("CancelButton"), getResizableIconFromResource("process-stop.png"));
+        cancelButton = new JCommandButton(languageBundle.getString("Cancel"), getResizableIconFromResource("process-stop.png"));
 
         controlsBand = new JRibbonBand(languageBundle.getString("ControlsRibbonBand"), getApplicationIcon());
         controlsBand.addCommandButton(convertButton, RibbonElementPriority.TOP);
@@ -253,8 +253,8 @@ public class MainWindow extends JRibbonFrame
             public JPopupPanel getPopupPanel(JCommandButton commandButton)
             {
                 JCommandPopupMenu menu = new JCommandPopupMenu();
-                menu.addMenuButton(createLanguageButton("English", Locale.US));
-                menu.addMenuButton(createLanguageButton("French", Locale.FRANCE));
+                menu.addMenuButton(createLanguageButton(languageBundle.getString("en"), Locale.US));
+                menu.addMenuButton(createLanguageButton(languageBundle.getString("fr"), Locale.FRANCE));
                 return menu;
             }
 

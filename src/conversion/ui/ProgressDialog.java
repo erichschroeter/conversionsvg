@@ -6,6 +6,8 @@ import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.Locale;
+import java.util.ResourceBundle;
 
 import javax.swing.DefaultListModel;
 import javax.swing.JButton;
@@ -21,6 +23,7 @@ import javax.swing.ListModel;
 public class ProgressDialog extends JDialog
 {
     private static final long serialVersionUID = -3110458696300312879L;
+    ResourceBundle languageBundle = ResourceBundle.getBundle("conversion.resources.i18ln.MainWindow", Locale.getDefault());
 
     JPanel                    panel            = new JPanel();
     JProgressBar              progressBar;
@@ -43,7 +46,7 @@ public class ProgressDialog extends JDialog
         completedTasksList = new JList(statusOutput);
         JScrollPane completedTasksScrollPane = new JScrollPane(completedTasksList);
         progressBar = new JProgressBar();
-        closeButton = new JButton("Close");
+        closeButton = new JButton(languageBundle.getString("Close"));
         closeButton.addActionListener(eventListener);
 
         panel.setLayout(new GridBagLayout());

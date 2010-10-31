@@ -7,6 +7,7 @@ import java.awt.event.WindowListener;
 import java.io.File;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -43,10 +44,10 @@ import com.sun.corba.se.impl.orbutil.threadpool.ThreadPoolImpl;
 import com.sun.corba.se.spi.orbutil.threadpool.ThreadPool;
 import com.sun.corba.se.spi.orbutil.threadpool.ThreadPoolManager;
 
-public class ConversionSVGController
+public class MainWindowController
 {
     protected MainWindow               mainwindow;
-    ResourceBundle                     resourceBundle;
+    ResourceBundle                     languageBundle;
     EventListener                      eventListener;
     ProgressDialog                     progressDialog;
 
@@ -60,11 +61,11 @@ public class ConversionSVGController
     private ThreadPoolExecutor         threadPool;
     int                                completedProcesses = 0;
 
-    public ConversionSVGController(conversion.ui.MainWindow mainwindow,
+    public MainWindowController(conversion.ui.MainWindow mainwindow,
             ResourceBundle resourceBundle)
     {
         this.mainwindow = mainwindow;
-        this.resourceBundle = resourceBundle;
+        this.languageBundle = resourceBundle;
         eventListener = new EventListener();
         if ((inkscapeExecutable = findInkscapeExecutable()) == null)
         {
@@ -155,9 +156,14 @@ public class ConversionSVGController
                     } else
                     { // only show the dialog if neither yesToAll or noToAll
                         // have been set to TRUE
-                        String[] choices = { "yes", "yes to all", "no",
-                                "no to all", "cancel" };
-                        choice = JOptionPane.showOptionDialog(mainwindow, "create a message", "File exists", JOptionPane.DEFAULT_OPTION, JOptionPane.INFORMATION_MESSAGE, null, choices, choices[2]);
+                        String[] choices = {
+                                languageBundle.getString("Yes"),
+                                languageBundle.getString("YesToAll"),
+                                languageBundle.getString("No"),
+                                languageBundle.getString("NoToAll"),
+                                languageBundle.getString("Cancel")
+                        };
+                        choice = JOptionPane.showOptionDialog(mainwindow, languageBundle.getString("FileExistsModalMessage"), languageBundle.getString("FileExists"), JOptionPane.DEFAULT_OPTION, JOptionPane.INFORMATION_MESSAGE, null, choices, choices[2]);
                     }
 
                     if (choice == 4 || choice == JOptionPane.CLOSED_OPTION)
@@ -214,10 +220,20 @@ public class ConversionSVGController
         int queued = threadPool.getQueue().size();
         if (queued > 0)
         {
-            threadPool.shutdownNow();
-            progressDialog.statusOutput.addElement("Cancelled with " + queued + " remaining.");
+            threadPool.shutdown();
+            MessageFormat formatter = new MessageFormat("");
+            formatter.setLocale(Locale.getDefault());
+            formatter.applyPattern(languageBundle.getString("CancelledRemainingQueue"));
+            Object[] args = {queued};
+            progressDialog.statusOutput.addElement(formatter.format(args));
             enableInput(true);
         }
+    }
+    
+    public Locale getSelectedLocale()
+    {
+//        return mainwindow.languageButton.
+        return null;
     }
 
     /**
@@ -233,7 +249,7 @@ public class ConversionSVGController
         
         if (threadPool.getActiveCount() != 0)
         {
-            proceed = JOptionPane.showConfirmDialog(mainwindow, resourceBundle.getString("ActiveProcessesModalMessage"));
+            proceed = JOptionPane.showConfirmDialog(mainwindow, languageBundle.getString("ActiveProcessesModalMessage"));
         }
 
         if (proceed == JOptionPane.OK_OPTION)
