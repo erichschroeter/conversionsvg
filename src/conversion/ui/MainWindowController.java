@@ -44,6 +44,8 @@ import com.sun.corba.se.impl.orbutil.threadpool.ThreadPoolImpl;
 import com.sun.corba.se.spi.orbutil.threadpool.ThreadPool;
 import com.sun.corba.se.spi.orbutil.threadpool.ThreadPoolManager;
 
+import filesystem.FileSystemModel;
+
 /**
  * The MainWindowController class is somewhat self-explanatory. It is the
  * Controller in the Model View Controller (MVC) framework. It handles
@@ -234,6 +236,18 @@ public class MainWindowController
                 languageBundle.getString("Cancel") };
         return JOptionPane.showOptionDialog(mainwindow, languageBundle.getString("FileExistsModalMessage"), languageBundle.getString("FileExists"), JOptionPane.DEFAULT_OPTION, JOptionPane.INFORMATION_MESSAGE, null, choices, choices[2]);
     }
+    
+    public void changeRoot(File root)
+    {
+        try
+        {
+            mainwindow.fileHeirarchy.setModel(new FileSystemModel(root));
+        } catch (Exception e)
+        {
+            // TODO notify user
+            e.printStackTrace();
+        }
+    }
 
     /**
      * Displays the Progress dialog. If the progressDialog field has not been
@@ -311,6 +325,11 @@ public class MainWindowController
         ResourceBundle resourceBundle = ResourceBundle.getBundle("conversion.resources.i18ln.MainWindow", locale);
         selectedLocale = locale;
         // Ribbon
+        mainwindow.saveMenuButton.setText(resourceBundle.getString("Save"));
+        mainwindow.aboutMenuButton.setText(resourceBundle.getString("About"));
+        mainwindow.inkscapeMenuButton.setText(resourceBundle.getString("Information"));
+        mainwindow.quitMenuButton.setText(resourceBundle.getString("Quit"));
+        
         mainwindow.homeTask.setTitle(resourceBundle.getString("HomeRibbonTask"));
         mainwindow.controlsBand.setTitle(resourceBundle.getString("ControlsRibbonBand"));
         mainwindow.preferencesBand.setTitle(resourceBundle.getString("PreferencesRibbonBand"));

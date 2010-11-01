@@ -58,6 +58,10 @@ import org.pushingpixels.flamingo.api.common.popup.PopupPanelCallback;
 import org.pushingpixels.flamingo.api.ribbon.JRibbon;
 import org.pushingpixels.flamingo.api.ribbon.JRibbonBand;
 import org.pushingpixels.flamingo.api.ribbon.JRibbonFrame;
+import org.pushingpixels.flamingo.api.ribbon.RibbonApplicationMenu;
+import org.pushingpixels.flamingo.api.ribbon.RibbonApplicationMenuEntryFooter;
+import org.pushingpixels.flamingo.api.ribbon.RibbonApplicationMenuEntryPrimary;
+import org.pushingpixels.flamingo.api.ribbon.RibbonApplicationMenuEntrySecondary;
 import org.pushingpixels.flamingo.api.ribbon.RibbonElementPriority;
 import org.pushingpixels.flamingo.api.ribbon.RibbonTask;
 import org.pushingpixels.flamingo.api.ribbon.resize.CoreRibbonResizePolicies;
@@ -105,6 +109,12 @@ public class MainWindow extends JRibbonFrame
     // ------------------------------------------------
     // Ribbon
     // ------------------------------------------------
+    RibbonApplicationMenu menuApplicationButton;
+    RibbonApplicationMenuEntryPrimary saveMenuButton;
+    RibbonApplicationMenuEntryPrimary aboutMenuButton;
+    RibbonApplicationMenuEntrySecondary inkscapeMenuButton;
+    RibbonApplicationMenuEntryFooter quitMenuButton;
+    
     RibbonTask                homeTask;
     
     JRibbonBand               controlsBand;
@@ -157,6 +167,7 @@ public class MainWindow extends JRibbonFrame
     // File Select
     JPanel                    fileSelectPanel            = new JPanel();
     CheckBoxTree              fileHeirarchy;
+    JButton                   changeRootButton           = new JButton();
     JRadioButton              singleOutputDirectoryRadio = new JRadioButton();
     JRadioButton              sameOutputDirectoryRadio   = new JRadioButton();
     JTextField                directoryTextField         = new JTextField();
@@ -229,6 +240,21 @@ public class MainWindow extends JRibbonFrame
         // ------------------------------------------------
         // Ribbon
         // ------------------------------------------------
+        menuApplicationButton = new RibbonApplicationMenu();
+        
+        saveMenuButton = new RibbonApplicationMenuEntryPrimary(getResizableIconFromResource("media-floppy.png"), languageBundle.getString("Save"), eventListener, CommandButtonKind.ACTION_ONLY);
+        aboutMenuButton = new RibbonApplicationMenuEntryPrimary(getResizableIconFromResource("help-browser.png"), languageBundle.getString("About"), eventListener, CommandButtonKind.ACTION_AND_POPUP_MAIN_ACTION);
+        inkscapeMenuButton = new RibbonApplicationMenuEntrySecondary(getResizableIconFromResource("inkscape.png"), "Inkscape", eventListener, CommandButtonKind.ACTION_ONLY);
+        aboutMenuButton.addSecondaryMenuGroup("Information", inkscapeMenuButton);
+        
+        quitMenuButton = new RibbonApplicationMenuEntryFooter(getResizableIconFromResource("system-log-out.png"), languageBundle.getString("Quit"), eventListener);
+        
+        menuApplicationButton.addMenuEntry(saveMenuButton);
+        menuApplicationButton.addMenuSeparator();
+        menuApplicationButton.addMenuEntry(aboutMenuButton);
+        menuApplicationButton.addFooterEntry(quitMenuButton);
+        
+        getRibbon().setApplicationMenu(menuApplicationButton);
 
         // Controls Band ----------------------------------
         convertButton = new JCommandButton(languageBundle.getString("ConvertButton"), getResizableIconFromResource("go-next.png"));
@@ -408,10 +434,13 @@ public class MainWindow extends JRibbonFrame
         outputDirectoryGroup.add(sameOutputDirectoryRadio);
         sameOutputDirectoryRadio.setSelected(true);
         singleOutputDirectoryRadio.addChangeListener(eventListener);
+        changeRootButton.setText("...");
+        changeRootButton.addActionListener(eventListener);
 
-        // (gridx, gridy, gridwidth, gridheight, weightx, weighty, anchor, fill,
-        // insets, ipadx, ipady)
-        constraints = new GridBagConstraints(0, 0, 2, 1, 0, 0, GridBagConstraints.NORTHWEST, GridBagConstraints.HORIZONTAL, new Insets(2, 2, 2, 2), 0, 0);
+        // (gridx, gridy, gridwidth, gridheight, weightx, weighty, anchor, fill, insets, ipadx, ipady)
+        constraints = new GridBagConstraints(1, 0, 1, 1, 0, 0, GridBagConstraints.NORTHWEST, GridBagConstraints.HORIZONTAL, new Insets(2, 2, 2, 2), 0, 0);
+        fileSelectPanel.add(changeRootButton, constraints);
+        constraints = new GridBagConstraints(0, 0, 1, 1, 1, 0, GridBagConstraints.NORTHWEST, GridBagConstraints.HORIZONTAL, new Insets(2, 2, 2, 2), 0, 0);
         fileSelectPanel.add(directoryTextField, constraints);
         constraints = new GridBagConstraints(0, 1, 2, 1, 1, 1, GridBagConstraints.NORTHWEST, GridBagConstraints.BOTH, new Insets(2, 2, 2, 2), 0, 0);
         fileSelectPanel.add(fileSelectScrollPane, constraints);
@@ -609,6 +638,14 @@ public class MainWindow extends JRibbonFrame
                 if (chooser.showSaveDialog(mainwindow) == JFileChooser.APPROVE_OPTION)
                 {
                     outputDirectoryTextField.setText(chooser.getSelectedFile().getAbsolutePath());
+                }
+            } else if (obj.equals(changeRootButton))
+            {
+                JFileChooser chooser = new JFileChooser();
+                chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+                if (chooser.showSaveDialog(mainwindow) == JFileChooser.APPROVE_OPTION)
+                {
+                    controller.changeRoot(chooser.getSelectedFile());
                 }
             }
 
