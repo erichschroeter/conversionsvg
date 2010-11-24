@@ -5,8 +5,6 @@ import java.awt.Component;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
 import java.io.File;
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -18,31 +16,12 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-import javax.naming.spi.DirectoryManager;
-import javax.swing.AbstractButton;
-import javax.swing.DefaultListModel;
-import javax.swing.JDialog;
 import javax.swing.JFileChooser;
-import javax.swing.JLabel;
-import javax.swing.JList;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
-import javax.swing.JProgressBar;
 import javax.swing.JTextField;
-import javax.swing.ListModel;
-import javax.swing.MenuElement;
 import javax.swing.border.TitledBorder;
-import javax.swing.text.html.ListView;
-import javax.swing.tree.TreeModel;
 import javax.swing.tree.TreePath;
-
-import org.pushingpixels.flamingo.api.common.JCommandButton;
-
-import test.svg.transcoded.system_log_out;
-
-import com.sun.corba.se.impl.orbutil.threadpool.ThreadPoolImpl;
-import com.sun.corba.se.spi.orbutil.threadpool.ThreadPool;
-import com.sun.corba.se.spi.orbutil.threadpool.ThreadPoolManager;
 
 import filesystem.FileSystemModel;
 

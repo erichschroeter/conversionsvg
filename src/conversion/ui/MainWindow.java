@@ -31,7 +31,6 @@ import java.awt.Dimension; //import java.awt.List;
 import java.awt.GridBagConstraints;
 
 import javax.swing.DefaultComboBoxModel;
-import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 
@@ -44,8 +43,6 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.event.TreeSelectionEvent;
 import javax.swing.event.TreeSelectionListener;
-import javax.swing.filechooser.FileSystemView;
-import javax.swing.tree.TreePath;
 
 import org.pushingpixels.flamingo.api.common.JCommandButton;
 import org.pushingpixels.flamingo.api.common.JCommandMenuButton;
@@ -55,7 +52,6 @@ import org.pushingpixels.flamingo.api.common.icon.ResizableIcon;
 import org.pushingpixels.flamingo.api.common.popup.JCommandPopupMenu;
 import org.pushingpixels.flamingo.api.common.popup.JPopupPanel;
 import org.pushingpixels.flamingo.api.common.popup.PopupPanelCallback;
-import org.pushingpixels.flamingo.api.ribbon.JRibbon;
 import org.pushingpixels.flamingo.api.ribbon.JRibbonBand;
 import org.pushingpixels.flamingo.api.ribbon.JRibbonFrame;
 import org.pushingpixels.flamingo.api.ribbon.RibbonApplicationMenu;
@@ -69,23 +65,14 @@ import org.pushingpixels.flamingo.api.ribbon.resize.RibbonBandResizePolicy;
 
 import com.bric.swing.ColorPicker;
 import com.jidesoft.swing.CheckBoxTree;
-import com.sun.corba.se.impl.oa.poa.ActiveObjectMap.Key;
-import com.sun.org.apache.xml.internal.security.keys.KeyInfo;
 
 import filesystem.FileSystemModel;
 
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyAdapter;
-import java.awt.event.KeyListener;
-import java.awt.event.TextEvent;
-import java.awt.event.TextListener;
-import java.awt.event.WindowEvent;
-import java.awt.event.WindowListener;
-import java.io.File;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Locale;
-import java.util.Properties;
 import java.util.ResourceBundle;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -722,11 +709,11 @@ public class MainWindow extends JRibbonFrame
 
 class NumberKeyAdapter extends KeyAdapter
 {
-    private MainWindow adaptee;
+//    private MainWindow adaptee;
 
     NumberKeyAdapter(MainWindow adaptee)
     {
-        this.adaptee = adaptee;
+//        this.adaptee = adaptee;
     }
 
     @Override
