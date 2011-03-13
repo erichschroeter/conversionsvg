@@ -44,6 +44,8 @@ import javax.swing.event.ChangeListener;
 import javax.swing.event.TreeSelectionEvent;
 import javax.swing.event.TreeSelectionListener;
 
+import net.sf.fstreem.FileSystemTreeModel;
+
 import org.pushingpixels.flamingo.api.common.JCommandButton;
 import org.pushingpixels.flamingo.api.common.JCommandMenuButton;
 import org.pushingpixels.flamingo.api.common.JCommandButton.CommandButtonKind;
@@ -66,10 +68,9 @@ import org.pushingpixels.flamingo.api.ribbon.resize.RibbonBandResizePolicy;
 import com.bric.swing.ColorPicker;
 import com.jidesoft.swing.CheckBoxTree;
 
-import filesystem.FileSystemModel;
-
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyAdapter;
+import java.io.File;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Locale;
@@ -404,8 +405,9 @@ public class MainWindow extends JRibbonFrame
         // ------------------------------------------------
         // File Select
         // ------------------------------------------------
-        FileSystemModel model = new FileSystemModel();
-        model.addFilter(new SVGFilter());
+        File root = new File(System.getProperty("user.home"));
+        FileSystemTreeModel model = new FileSystemTreeModel(root);
+//        model.addFilter(new SVGFilter());
         fileHeirarchy = new CheckBoxTree(model);
         JScrollPane fileSelectScrollPane = new JScrollPane(fileHeirarchy);
 
@@ -498,94 +500,6 @@ public class MainWindow extends JRibbonFrame
         return ImageWrapperResizableIcon.getIcon(MainWindow.class.getClassLoader().getResource("conversion/resources/"
                 + resource), new Dimension(48, 48));
     }
-
-    /*
-     * // Actions public void button_convert_actionPerformed(ActionEvent e) {
-     * module.launchConversion(); }
-     * 
-     * public void button_cancel_actionPerformed(ActionEvent e) {
-     * module.cancel(); }
-     * 
-     * public void button_quit_actionPerformed(ActionEvent e) { module.quit(); }
-     * 
-     * // Panel 4
-     * 
-     * public void txtLargeur_keyTyped(KeyEvent e) { module.Numeric(e); }
-     * 
-     * public void txtHauteur_keyTyped(KeyEvent e) { module.Numeric(e); }
-     * 
-     * // Panel 6
-     * 
-     * public void rdbFichier_actionPerformed(ActionEvent e) {
-     * module.fileOrFolder(true); module.enableConvertButton();
-     * treeCheckbox.setSelected(false);
-     * sameOutputDirectoryCheckbox.setEnabled(true); }
-     * 
-     * public void btnParFichier_actionPerformed(ActionEvent e) {
-     * module.fileFolder(false, convertFileLabel); module.enableConvertButton();
-     * }
-     * 
-     * // Panel 7
-     * 
-     * public void rdbDossier_actionPerformed(ActionEvent e) {
-     * module.fileOrFolder(false); module.enableConvertButton();
-     * treeCheckbox.setEnabled(!sameOutputDirectoryCheckbox.isSelected()); }
-     * 
-     * public void btnParDossier_actionPerformed(ActionEvent e) {
-     * module.fileFolder(true, convertFolderLabel);
-     * module.enableConvertButton(); }
-     * 
-     * // Panel 8
-     * 
-     * public void btnParDosSortie_actionPerformed(ActionEvent e) {
-     * module.folderOutput(lblDossierSortie, sameOutputDirectoryCheckbox);
-     * module.enableConvertButton(); }
-     * 
-     * public void sameOutputDir_actionPerformed(ActionEvent e) {
-     * btnParDosSortie.setEnabled(!sameOutputDirectoryCheckbox.isSelected()); if
-     * (sameOutputDirectoryCheckbox.isSelected()) {
-     * lblDossierSortie.setText(""); } module.enableConvertButton();
-     * treeCheckbox.setSelected(false);
-     * treeCheckbox.setEnabled(!sameOutputDirectoryCheckbox.isSelected() &&
-     * folderRadioButton.isSelected()); }
-     * 
-     * // Menu
-     * 
-     * public void mniQuitter_actionPerformed(ActionEvent e) { module.quit(); }
-     * 
-     * public void mniAssistant_actionPerformed(ActionEvent e) {
-     * module.showWizard(e); }
-     * 
-     * public void mniFrancais_actionPerformed(ActionEvent e) { if
-     * (frenchCheckboxMenuItem.isSelected()) {
-     * englishCheckboxMenuItem.setSelected(false);
-     * module.language.setLanguage("fr"); module.parameter.gsLangue = "fr";
-     * module.language.mainLanguage(this); } else {
-     * frenchCheckboxMenuItem.setSelected(true); } }
-     * 
-     * public void mniAnglais_actionPerformed(ActionEvent e) { if
-     * (englishCheckboxMenuItem.isSelected()) {
-     * frenchCheckboxMenuItem.setSelected(false);
-     * module.language.setLanguage("en"); module.parameter.gsLangue = "en";
-     * module.language.mainLanguage(this); } else {
-     * englishCheckboxMenuItem.setSelected(true); } }
-     * 
-     * public void mniInkscape_actionPerformed(ActionEvent e) { String Inkscape
-     * = module.SelectionnerInkscape(inkscapeTitle); if (Inkscape.length() > 0)
-     * { module.parameter.gsInkscape = Inkscape; } }
-     * 
-     * public void mniAbout_actionPerformed(ActionEvent e) { AboutDialog apropos
-     * = new AboutDialog(this, "", true, module);
-     * module.language.aboutLanguage(apropos); apropos.setSize(400, 280);
-     * apropos.setLocationRelativeTo(this); apropos.setResizable(false);
-     * apropos.show(); apropos.dispose(); }
-     * 
-     * public void this_windowClosing(WindowEvent e) { module.quit(); }
-     * 
-     * public void ckbArbo_actionPerformed(ActionEvent e) {
-     * sameOutputDirectoryCheckbox.setSelected(false);
-     * sameOutputDirectoryCheckbox.setEnabled(!treeCheckbox.isSelected()); }
-     */
 
     /**
      * Private class to handle the MainWindow events

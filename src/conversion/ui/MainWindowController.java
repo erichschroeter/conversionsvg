@@ -23,7 +23,9 @@ import javax.swing.JTextField;
 import javax.swing.border.TitledBorder;
 import javax.swing.tree.TreePath;
 
-import filesystem.FileSystemModel;
+import net.sf.fstreem.FileSystemTreeModel;
+
+import com.jidesoft.swing.CheckBoxTree;
 
 /**
  * The MainWindowController class is somewhat self-explanatory. It is the
@@ -90,18 +92,28 @@ public class MainWindowController
      * Returns a list of Files that the user has checked in the CheckBoxTree on
      * the MainWindow's file select panel.
      * 
+     * @param The checkbox tree to retrieve a list of checked files from.
      * @return A list of Files checked in the MainWindow's file select panel.
      */
-    public List<File> getFiles()
+    public List<File> getFiles(CheckBoxTree tree)
     {
         List<File> files = new ArrayList<File>();
-        TreePath[] selectedTreePaths = null;
+        TreePath[] selectedTreePaths = mainwindow.fileHeirarchy.getCheckBoxTreeSelectionModel().getSelectionPaths();
 
-        if ((selectedTreePaths = mainwindow.fileHeirarchy.getCheckBoxTreeSelectionModel().getSelectionPaths()) != null)
+        if (selectedTreePaths != null)
         {
             for (TreePath selection : selectedTreePaths)
             {
                 File file = (File) selection.getLastPathComponent();
+                if (file.isDirectory())
+                {
+                	System.out.println("Selected a directory");
+                	
+                }
+                else if (file.isFile())
+                {
+                	System.out.println("Selected a file");
+                }
                 files.add(file);
             }
         }
@@ -120,7 +132,7 @@ public class MainWindowController
 
         // getOutputFormat() for each file and merge
         // with result from getInkscapeCommandLineOptions()
-        List<File> files = getFiles();
+        List<File> files = getFiles(mainwindow.fileHeirarchy);
         boolean yesToAll = false;
         boolean noToAll = false;
 
@@ -220,7 +232,7 @@ public class MainWindowController
     {
         try
         {
-            mainwindow.fileHeirarchy.setModel(new FileSystemModel(root));
+            mainwindow.fileHeirarchy.setModel(new FileSystemTreeModel(root));
         } catch (Exception e)
         {
             // TODO notify user
