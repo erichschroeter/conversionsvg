@@ -5,6 +5,7 @@ import java.awt.Component;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
 import java.io.File;
+import java.io.FileFilter;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -12,6 +13,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.ResourceBundle;
+import java.util.Vector;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -24,6 +26,7 @@ import javax.swing.border.TitledBorder;
 import javax.swing.tree.TreePath;
 
 import net.sf.fstreem.FileSystemTreeModel;
+import net.sf.fstreem.FileSystemTreeNode;
 
 import com.jidesoft.swing.CheckBoxTree;
 
@@ -104,7 +107,8 @@ public class MainWindowController
         {
             for (TreePath selection : selectedTreePaths)
             {
-                File file = (File) selection.getLastPathComponent();
+            	FileSystemTreeNode node = (FileSystemTreeNode) selection.getLastPathComponent();
+                File file = (File) node.getFile();
                 if (file.isDirectory())
                 {
                 	System.out.println("Selected a directory");
@@ -113,8 +117,8 @@ public class MainWindowController
                 else if (file.isFile())
                 {
                 	System.out.println("Selected a file");
+                	files.add(file);
                 }
-                files.add(file);
             }
         }
 
@@ -232,7 +236,9 @@ public class MainWindowController
     {
         try
         {
-            mainwindow.fileHeirarchy.setModel(new FileSystemTreeModel(root));
+            Vector<FileFilter> filters = new Vector<FileFilter>();
+            filters.add(new SVGFilter());
+            mainwindow.fileHeirarchy.setModel(new FileSystemTreeModel(root, filters));
         } catch (Exception e)
         {
             // TODO notify user

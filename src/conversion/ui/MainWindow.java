@@ -71,10 +71,12 @@ import com.jidesoft.swing.CheckBoxTree;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyAdapter;
 import java.io.File;
+import java.io.FileFilter;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Locale;
 import java.util.ResourceBundle;
+import java.util.Vector;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -405,8 +407,11 @@ public class MainWindow extends JRibbonFrame
         // ------------------------------------------------
         // File Select
         // ------------------------------------------------
-        File root = new File(System.getProperty("user.home"));
-        FileSystemTreeModel model = new FileSystemTreeModel(root);
+//        File root = new File(System.getProperty("user.home"));
+        File root = new File("C:\\Users\\erich\\Pictures");
+        Vector<FileFilter> filters = new Vector<FileFilter>();
+        filters.add(new SVGFilter());
+        FileSystemTreeModel model = new FileSystemTreeModel(root, filters);
 //        model.addFilter(new SVGFilter());
         fileHeirarchy = new CheckBoxTree(model);
         JScrollPane fileSelectScrollPane = new JScrollPane(fileHeirarchy);
