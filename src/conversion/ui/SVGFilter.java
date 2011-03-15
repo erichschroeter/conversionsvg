@@ -28,18 +28,14 @@ public class SVGFilter implements FileFilter {
 
     public boolean accept(File file)
     {
-    	// allow user to navigate through directories in a filechooser
-        if(file.isDirectory())
-        {
-            return true;
-        }
-        
-        String fileName = file.getName();
+    	if (file.isDirectory()) return false;
+    	
+    	String fileName = file.getName();
         int i = fileName.lastIndexOf('.');
         if (i > 0 && i < fileName.length() - 1)
         {
-            String extension = fileName.substring(i+1).toLowerCase();
-            if(extension.equals("svg"))
+            String extension = fileName.substring(i+1);
+            if(extension.equalsIgnoreCase("svg"))
             {
                 return true;
             }

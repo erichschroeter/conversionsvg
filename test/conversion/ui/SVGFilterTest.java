@@ -15,12 +15,12 @@ public class SVGFilterTest extends AbstractFileSystemTestCase {
 	public static final SVGFilter filter = new SVGFilter();
 	
 	public void testDirectory() {
-		assertTrue(filter.accept(getTestRoot().getAbsoluteFile()));
+		assertFalse(filter.accept(getTestRoot().getAbsoluteFile()));
 	}
 	
 	public void testDirectoryWithExtension() {
 		File directory = createFolder("test.svg");
-		assertTrue(filter.accept(directory));
+		assertFalse(filter.accept(directory));
 	}
 	
 	public void testNonSVGFile() throws IOException {

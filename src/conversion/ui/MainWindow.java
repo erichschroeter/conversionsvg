@@ -21,11 +21,6 @@
 
 package conversion.ui;
 
-//import it.cnr.imaa.essi.lablib.gui.checkboxtree.CheckboxTree;
-//import it.cnr.imaa.essi.lablib.gui.checkboxtree.TreeCheckingEvent;
-//import it.cnr.imaa.essi.lablib.gui.checkboxtree.TreeCheckingListener;
-//import it.cnr.imaa.essi.lablib.gui.checkboxtree.TreeCheckingModel;
-
 import java.awt.BorderLayout;
 import java.awt.Dimension; //import java.awt.List;
 import java.awt.GridBagConstraints;
@@ -72,6 +67,7 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyAdapter;
 import java.io.File;
 import java.io.FileFilter;
+import java.util.Arrays;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Locale;
@@ -88,13 +84,6 @@ public class MainWindow extends JRibbonFrame
     ResourceBundle            imageBundle;
     JSplitPane                splitPane;
     Container                 contentPane;
-
-//    JPanel                    mainPanel                  = new JPanel();
-//    JPanel                    statusBarPanel             = new JPanel();
-//    JLabel                    numberOfImageLabel         = new JLabel();
-//    JLabel                    nameOfImageLabel           = new JLabel();
-//    JProgressBar              progressBar                = new JProgressBar();
-//    JButton                   quitButton                 = new JButton();
 
     // ------------------------------------------------
     // Ribbon
@@ -155,6 +144,11 @@ public class MainWindow extends JRibbonFrame
     // ------------------------------------------------
 
     // File Select
+    File					  root						 = new File(System.getProperty("user.home"));
+    // these filters filter what WILL be displayed (meaning if it doesn't match one
+    // of these filters, then it won't be shown)
+    static final FileFilter[] heirarchy_filters			 = { new SVGFilter(), new NonHiddenDirectoryFilter() };
+    static final Vector<FileFilter>	filters		 		 = new Vector<FileFilter>(Arrays.asList(heirarchy_filters));
     JPanel                    fileSelectPanel            = new JPanel();
     CheckBoxTree              fileHeirarchy;
     JButton                   changeRootButton           = new JButton();
@@ -407,12 +401,7 @@ public class MainWindow extends JRibbonFrame
         // ------------------------------------------------
         // File Select
         // ------------------------------------------------
-//        File root = new File(System.getProperty("user.home"));
-        File root = new File("C:\\Users\\erich\\Pictures");
-        Vector<FileFilter> filters = new Vector<FileFilter>();
-        filters.add(new SVGFilter());
         FileSystemTreeModel model = new FileSystemTreeModel(root, filters);
-//        model.addFilter(new SVGFilter());
         fileHeirarchy = new CheckBoxTree(model);
         JScrollPane fileSelectScrollPane = new JScrollPane(fileHeirarchy);
 
