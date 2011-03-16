@@ -63,6 +63,9 @@ import org.pushingpixels.flamingo.api.ribbon.resize.RibbonBandResizePolicy;
 import com.bric.swing.ColorPicker;
 import com.jidesoft.swing.CheckBoxTree;
 
+import conversion.ui.filters.NonHiddenDirectoryFilter;
+import conversion.ui.filters.SVGFilter;
+
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyAdapter;
 import java.io.File;

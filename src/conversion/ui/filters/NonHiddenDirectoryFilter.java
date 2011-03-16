@@ -1,4 +1,4 @@
-package conversion.ui;
+package conversion.ui.filters;
 
 import java.io.File;
 import java.io.FileFilter;

@@ -30,7 +30,7 @@ import java.io.IOException;
 /**
  * The Converter class handles calling Inkscapes command line feature.
  */
-public class Converter extends Thread
+public class Converter extends Thread implements Comparable<Converter>
 {
     protected Map<String, String>                    options;
     protected String                                 command;
@@ -80,4 +80,10 @@ public class Converter extends Thread
             l.processCompleted(info);
         }
     }
+
+	@Override
+	public int compareTo(Converter o)
+	{
+		return 0;
+	}
 }

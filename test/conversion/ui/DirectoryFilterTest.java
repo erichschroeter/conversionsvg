@@ -3,6 +3,8 @@ package conversion.ui;
 import java.io.File;
 import java.io.IOException;
 
+import conversion.ui.filters.DirectoryFilter;
+
 public class DirectoryFilterTest extends AbstractFileSystemTestCase {
 
 	public static final DirectoryFilter filter = new DirectoryFilter();

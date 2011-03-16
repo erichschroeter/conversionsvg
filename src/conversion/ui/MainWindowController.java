@@ -5,7 +5,6 @@ import java.awt.Component;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
 import java.io.File;
-import java.io.FileFilter;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -13,8 +12,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.ResourceBundle;
-import java.util.Vector;
-import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
@@ -23,12 +21,15 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.border.TitledBorder;
+import javax.swing.filechooser.FileSystemView;
 import javax.swing.tree.TreePath;
 
 import net.sf.fstreem.FileSystemTreeModel;
 import net.sf.fstreem.FileSystemTreeNode;
 
 import com.jidesoft.swing.CheckBoxTree;
+
+import conversion.ui.filters.InkscapeFilter;
 
 /**
  * The MainWindowController class is somewhat self-explanatory. It is the
@@ -61,7 +62,7 @@ public class MainWindowController
     int                                corePoolSize       = 2;
     int                                maximumPoolSize    = 2;
     long                               keepAliveTime      = 10;
-    final ArrayBlockingQueue<Runnable> queue              = new ArrayBlockingQueue<Runnable>(5);
+    final PriorityBlockingQueue<Runnable> queue              = new PriorityBlockingQueue<Runnable>(5);
     private ThreadPoolExecutor         threadPool;
     int                                completedProcesses = 0;
 
@@ -73,7 +74,7 @@ public class MainWindowController
         eventListener = new EventListener();
         if ((inkscapeExecutable = findInkscapeExecutable()) == null)
         {
-            JFileChooser inkscapeChooser = new JFileChooser();
+            JFileChooser inkscapeChooser = new JFileChooser(FileSystemView.getFileSystemView().getHomeDirectory());
             inkscapeChooser.setFileFilter(new InkscapeFilter());
             inkscapeChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
             if (inkscapeChooser.showOpenDialog(mainwindow) == JFileChooser.APPROVE_OPTION)
@@ -108,15 +109,20 @@ public class MainWindowController
             for (TreePath selection : selectedTreePaths)
             {
             	FileSystemTreeNode node = (FileSystemTreeNode) selection.getLastPathComponent();
-                File file = (File) node.getFile();
+                File file = node.getFile();
+                
                 if (file.isDirectory())
                 {
-                	System.out.println("Selected a directory");
-                	
+                	// If a directory is checked, all the children are unselected (this is a performance feature according to Jide)
+                	// so we have to iterate over all the files in that directory
+                	for (int i=0; i < node.getChildCount(); i++)
+                	{
+                		FileSystemTreeNode child = node.getChildAt(i);
+                		files.add(child.getFile());
+                	}
                 }
-                else if (file.isFile())
+                else
                 {
-                	System.out.println("Selected a file");
                 	files.add(file);
                 }
             }
@@ -236,9 +242,7 @@ public class MainWindowController
     {
         try
         {
-            Vector<FileFilter> filters = new Vector<FileFilter>();
-            filters.add(new SVGFilter());
-            mainwindow.fileHeirarchy.setModel(new FileSystemTreeModel(root, filters));
+            mainwindow.fileHeirarchy.setModel(new FileSystemTreeModel(root, MainWindow.filters));
         } catch (Exception e)
         {
             // TODO notify user

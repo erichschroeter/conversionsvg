@@ -19,7 +19,7 @@
     along with ConversionSVG 1.0.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-package conversion.ui;
+package conversion.ui.filters;
 
 import javax.swing.filechooser.FileFilter;
 import java.io.File;
