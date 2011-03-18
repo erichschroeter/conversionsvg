@@ -546,8 +546,9 @@ public class MainWindowController
         {
             // TODO handle Apple Inc. or platform independent
         }
-
-        return executable;
+        
+        // only return the File object if the file actually exists on the system
+        return executable.exists() ? executable : null;
     }
 
     private class EventListener implements InkscapeProcessCompletedListener,
