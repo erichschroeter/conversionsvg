@@ -193,6 +193,7 @@ public class MainWindow extends JRibbonFrame
         // Main Window
         setTitle("ConversionSVG");
         setMinimumSize(new Dimension(600, 350));
+        setApplicationIcon(getResizableIconFromResource("conversion-svg.png"));
 
         GridBagConstraints constraints = new GridBagConstraints();
 
