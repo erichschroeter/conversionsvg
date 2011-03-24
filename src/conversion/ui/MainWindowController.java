@@ -23,21 +23,16 @@ import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.border.TitledBorder;
-import javax.swing.filechooser.FileSystemView;
 import javax.swing.tree.TreePath;
 
 import net.sf.fstreem.FileSystemTreeModel;
 import net.sf.fstreem.FileSystemTreeNode;
 
 import com.jidesoft.swing.CheckBoxTree;
-
-import conversion.support.Settings;
-import conversion.ui.filters.InkscapeFilter;
 
 /**
  * The MainWindowController class is somewhat self-explanatory. It is the
@@ -58,8 +53,8 @@ import conversion.ui.filters.InkscapeFilter;
 public class MainWindowController
 {
 	static final String				   SETTINGS_FILE	  = "preferences.properties";
-	File settings_file;
-	Properties settings;
+	static File settings_file;
+	static Properties settings;
     protected MainWindow               mainwindow;
     ResourceBundle                     languageBundle;
     EventListener                      eventListener;
@@ -99,9 +94,9 @@ public class MainWindowController
 
 		this.mainwindow.addWindowListener(eventListener);
 		        
-        // BEGIN	get user preferences
+        // BEGIN	get user settings/preferences
         settings = new Properties();
-        settings_file = new File(Settings.getSettingsDirectory(), SETTINGS_FILE);
+        settings_file = new File(SettingsDialog.getSettingsDirectory(), SETTINGS_FILE);
         
         try {
         	settings_file.createNewFile();
@@ -112,7 +107,7 @@ public class MainWindowController
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		// END	get user preferences
+		// END	get user settings/preferences
 
 		// BEGIN	get the path to Inkscape
 		String inkscape_location = settings.getProperty(INKSCAPE_PATH);
@@ -396,16 +391,22 @@ public class MainWindowController
             threadPool.shutdownNow();
         }
 
+        saveSettings(settings);
+        
+        System.exit(0);
+    }
+    
+    public static void saveSettings(Properties props)
+    {
         try {
 			OutputStream settings_stream = new FileOutputStream(settings_file);
+			settings.putAll(props);
 			settings.store(settings_stream, "These are the settings for conversion-svg");
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		
-        System.exit(0);
     }
 
     /**

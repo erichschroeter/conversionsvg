@@ -7,11 +7,15 @@ import java.awt.Insets;
 import java.awt.Window;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.WindowEvent;
+import java.awt.event.WindowListener;
+import java.io.File;
 import java.util.Properties;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JDialog;
+import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JPanel;
@@ -21,17 +25,23 @@ import javax.swing.ListSelectionModel;
 import javax.swing.border.BevelBorder;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
+import javax.swing.filechooser.FileSystemView;
 
 import com.bric.swing.ColorPicker;
+
+import conversion.ui.filters.InkscapeFilter;
 
 public class SettingsDialog extends JDialog {
 
 	private static final long serialVersionUID = 3236457818625822473L;
+	static String APPLICATION_DIR = ".conversion-svg";
+	
 	// Panel identifiers
 	public static final String PANEL_DEFAULTS = "Defaults";
 	public static final String PANEL_PREFERENCES = "Preferences";
 	
 	static Window parent;
+	Properties props;
 	
 	JPanel defaultsPanel;
 	JPanel preferencesPanel;
@@ -41,6 +51,7 @@ public class SettingsDialog extends JDialog {
 		super(parent, ModalityType.APPLICATION_MODAL);
 		SettingsDialog.parent = parent;
 		setLocationRelativeTo(parent);
+		this.props = props;
 		init(props);
 	}
 	
@@ -93,6 +104,34 @@ public class SettingsDialog extends JDialog {
 
 		// perform the selection after everything has been created to avoid NullPointerException
 		categories.setSelectedIndex(0);
+		
+		// set up listener to save settings when the window is closed
+		addWindowListener(new WindowListener() {
+			
+			@Override
+			public void windowOpened(WindowEvent e) { }
+			
+			@Override
+			public void windowIconified(WindowEvent e) { }
+			
+			@Override
+			public void windowDeiconified(WindowEvent e) { }
+			
+			@Override
+			public void windowDeactivated(WindowEvent e) { }
+			
+			@Override
+			public void windowClosing(WindowEvent e) {
+				saveSettings();
+			}
+			
+			@Override
+			public void windowClosed(WindowEvent e) { }
+			
+			@Override
+			public void windowActivated(WindowEvent e) { }
+		});
+		
 		pack();
 	}
 	
@@ -107,6 +146,31 @@ public class SettingsDialog extends JDialog {
 		}
 		pack();
 	}
+	
+	public void saveSettings() {
+		MainWindowController.saveSettings(props);
+	}
+	
+    /**
+     * Returns the user's settings directory located in their home directory.
+     * If the directory does not exist, it is created.
+     * @author McDowell from http://stackoverflow.com/questions/193474/how-to-create-an-ini-file-to-store-some-settings-in-java
+     * @return The settings directory
+     */
+    public static File getSettingsDirectory() {
+        String userHome = System.getProperty("user.home");
+        if(userHome == null) {
+            throw new IllegalStateException("user.home == null");
+        }
+        File home = new File(userHome);
+        File settingsDirectory = new File(home, APPLICATION_DIR);
+        if(!settingsDirectory.exists()) {
+            if(!settingsDirectory.mkdir()) {
+                throw new IllegalStateException(settingsDirectory.toString());
+            }
+        }
+        return settingsDirectory;
+    }
 
 	// Helper function for creating a labeled text field
 	public static JPanel createLabeledField(String title)
@@ -191,8 +255,12 @@ class PreferencesPanel extends JPanel
 {
 	private static final long serialVersionUID = 6958329148117270930L;
 	private static PreferencesPanel instance = null;
+	private Properties props;
+	
+	JTextField inkscapeField;
 
 	protected PreferencesPanel(Properties props) {
+		this.props = props;
 		init(props);
 	}
 
@@ -208,14 +276,38 @@ class PreferencesPanel extends JPanel
 		setLayout(new GridBagLayout());
 		
 		GridBagConstraints constraints;
+
+		// Inkscape binary location
+		JButton inkscapeButton = new JButton("Inkscape");
+		inkscapeButton.setToolTipText("The location of the Inkscape executable on your system");
+		inkscapeButton.addActionListener(new ActionListener() {
+			
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				JFileChooser inkscapeChooser = new JFileChooser(FileSystemView.getFileSystemView().getHomeDirectory());
+				inkscapeChooser.setFileFilter(new InkscapeFilter());
+				inkscapeChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
+				if (inkscapeChooser.showOpenDialog(SettingsDialog.parent) == JFileChooser.APPROVE_OPTION)
+				{
+					setInkscapePath(inkscapeChooser.getSelectedFile().getAbsolutePath());
+				}
+			}
+		});
+		constraints = new GridBagConstraints(0, 0, 1, 1, 1, 0, GridBagConstraints.NORTHWEST, GridBagConstraints.HORIZONTAL, new Insets(5, 5, 5, 5), 0, 0);
+		add(inkscapeButton, constraints);
+		constraints = new GridBagConstraints(1, 0, 1, 1, 1, 0, GridBagConstraints.NORTHWEST, GridBagConstraints.HORIZONTAL, new Insets(5, 5, 5, 5), 0, 0);
+		add(inkscapeField = new JTextField(20), constraints);
+		inkscapeField.setText(props.getProperty(MainWindowController.INKSCAPE_PATH) != null ? props.getProperty(MainWindowController.INKSCAPE_PATH) : null);
 		
 		// Core and Maximum Threads in ThreadPool
-		constraints = new GridBagConstraints(0, 0, 1, 1, 1, 0, GridBagConstraints.NORTHWEST, GridBagConstraints.HORIZONTAL, new Insets(5, 5, 5, 5), 0, 0);
-		add(SettingsDialog.createLabeledField("Inkscape", "The location of the Inkscape executable on your system"), constraints);
 		constraints = new GridBagConstraints(0, 1, 1, 1, 1, 0, GridBagConstraints.NORTHWEST, GridBagConstraints.HORIZONTAL, new Insets(5, 5, 5, 5), 0, 0);
 		add(SettingsDialog.createLabeledField("Core Threads", "The number of threads guaranteed to be in the thread pool"), constraints);
 		constraints = new GridBagConstraints(0, 2, 1, 1, 1, 0, GridBagConstraints.NORTHWEST, GridBagConstraints.HORIZONTAL, new Insets(5, 5, 5, 5), 0, 0);
 		add(SettingsDialog.createLabeledField("Max Threads", "The maximum number of threads allowed in the thread pool"), constraints);
 		
+	}
+	
+	public void setInkscapePath(String path) {
+		props.setProperty(MainWindowController.INKSCAPE_PATH, path);
 	}
 }
