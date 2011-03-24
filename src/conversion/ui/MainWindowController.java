@@ -5,12 +5,19 @@ import java.awt.Component;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Properties;
 import java.util.ResourceBundle;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -29,6 +36,7 @@ import net.sf.fstreem.FileSystemTreeNode;
 
 import com.jidesoft.swing.CheckBoxTree;
 
+import conversion.support.Settings;
 import conversion.ui.filters.InkscapeFilter;
 
 /**
@@ -49,6 +57,9 @@ import conversion.ui.filters.InkscapeFilter;
  */
 public class MainWindowController
 {
+	static final String				   SETTINGS_FILE	  = "preferences.properties";
+	File settings_file;
+	Properties settings;
     protected MainWindow               mainwindow;
     ResourceBundle                     languageBundle;
     EventListener                      eventListener;
@@ -58,40 +69,111 @@ public class MainWindowController
 
     protected File                     inkscapeExecutable;
 
-    // ThreadPool
+    // ThreadPool defaults
     int                                corePoolSize       = 2;
     int                                maximumPoolSize    = 2;
     long                               keepAliveTime      = 10;
-    final PriorityBlockingQueue<Runnable> queue              = new PriorityBlockingQueue<Runnable>(5);
+    private PriorityBlockingQueue<Runnable> queue;
     private ThreadPoolExecutor         threadPool;
     int                                completedProcesses = 0;
+    
+    SettingsDialog settingsDialog;
 
+    /* *************************************************
+     * Properties KEYS
+     * *************************************************
+     */
+    public static final String	INKSCAPE_PATH = "inkscape_path";
+    
+    public static final String	MAXIMUM_POOL_SIZE = "pool_size_max";
+    public static final String	CORE_POOL_SIZE = "pool_size_core";
+    public static final String	KEEP_ALIVE_TIME = "thread_keep_alive_time";
+    
     public MainWindowController(conversion.ui.MainWindow mainwindow,
             ResourceBundle resourceBundle)
     {
         this.mainwindow = mainwindow;
+		
         this.languageBundle = resourceBundle;
         eventListener = new EventListener();
-        if ((inkscapeExecutable = findInkscapeExecutable()) == null)
-        {
-            JFileChooser inkscapeChooser = new JFileChooser(FileSystemView.getFileSystemView().getHomeDirectory());
-            inkscapeChooser.setFileFilter(new InkscapeFilter());
-            inkscapeChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
-            if (inkscapeChooser.showOpenDialog(mainwindow) == JFileChooser.APPROVE_OPTION)
-            {
-                inkscapeExecutable = inkscapeChooser.getSelectedFile();
-            } else
-            {
-                System.exit(0);
-            }
-        }
-        threadPool = new ThreadPoolExecutor(corePoolSize, maximumPoolSize, keepAliveTime, TimeUnit.SECONDS, queue);
 
+		this.mainwindow.addWindowListener(eventListener);
+		        
+        // BEGIN	get user preferences
+        settings = new Properties();
+        settings_file = new File(Settings.getSettingsDirectory(), SETTINGS_FILE);
+        
+        try {
+        	settings_file.createNewFile();
+			InputStream settings_input_stream = new FileInputStream(settings_file);
+			settings.load(settings_input_stream);
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		// END	get user preferences
+
+		// BEGIN	get the path to Inkscape
+		String inkscape_location = settings.getProperty(INKSCAPE_PATH);
+		if (inkscape_location != null) {
+			inkscapeExecutable = new File(inkscape_location);
+		} else {
+			inkscapeExecutable = findInkscapeExecutable();
+		}
+		
+		if (!inkscapeExecutable.exists()) {
+			JOptionPane.showMessageDialog(mainwindow, "The Inkscape executable location does not exist. Please enter the correct location in the Settings.");
+		} else {
+			settings.setProperty(INKSCAPE_PATH, inkscapeExecutable.getAbsolutePath());
+		}
+		// END	get the path to Inkscape
+		
+//		if ((inkscapeExecutable = findInkscapeExecutable()) == null)
+//        {
+//            JFileChooser inkscapeChooser = new JFileChooser(FileSystemView.getFileSystemView().getHomeDirectory());
+//            inkscapeChooser.setFileFilter(new InkscapeFilter());
+//            inkscapeChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
+//            if (inkscapeChooser.showOpenDialog(mainwindow) == JFileChooser.APPROVE_OPTION)
+//            {
+//                inkscapeExecutable = inkscapeChooser.getSelectedFile();
+//                settings.setProperty("inkscape_location", inkscapeExecutable.getAbsolutePath());
+//            } else
+//            {
+//                System.exit(0);
+//            }
+//        }
+		
+		// BEGIN	configure thread pool
+		corePoolSize = getSettingOrDefault(Integer.getInteger(System.getProperty(CORE_POOL_SIZE)), corePoolSize);
+		maximumPoolSize = getSettingOrDefault(Integer.getInteger(System.getProperty(MAXIMUM_POOL_SIZE)), maximumPoolSize);
+		
+        queue = new PriorityBlockingQueue<Runnable>(corePoolSize);
+        threadPool = new ThreadPoolExecutor(corePoolSize, maximumPoolSize, keepAliveTime, TimeUnit.SECONDS, queue);
+        // END	configure thread pool
+        
+        settingsDialog = new SettingsDialog(mainwindow, settings);
+        
         progressDialog = new ProgressDialog(mainwindow);
         progressDialog.addWindowListener(eventListener);
-
     }
-
+    
+    /**
+     * Handles the boolean logic for returning the value stored in the properties/settings over the default value.
+     * If the setting's value is not null, the value is returned. If it is null, then the given default value
+     * is returned.
+     * @param <T>
+     * @param setting The stored value in a properties file.
+     * @param defaultValue The value to return if the stored property value is null.
+     * @return
+     */
+    private <T> T getSettingOrDefault(T setting, T defaultValue) {
+    	if (setting == null) {
+    		return defaultValue;
+    	}
+    	return setting;
+    }
+    
     /**
      * Returns a list of Files that the user has checked in the CheckBoxTree on
      * the MainWindow's file select panel.
@@ -243,6 +325,8 @@ public class MainWindowController
         try
         {
             mainwindow.fileHeirarchy.setModel(new FileSystemTreeModel(root, MainWindow.filters));
+            settings.setProperty("last_root", root.getAbsolutePath());
+            
         } catch (Exception e)
         {
             // TODO notify user
@@ -310,8 +394,18 @@ public class MainWindowController
         if (proceed == JOptionPane.OK_OPTION)
         {
             threadPool.shutdownNow();
-            System.exit(0);
         }
+
+        try {
+			OutputStream settings_stream = new FileOutputStream(settings_file);
+			settings.store(settings_stream, "These are the settings for conversion-svg");
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
+        System.exit(0);
     }
 
     /**
@@ -609,6 +703,9 @@ public class MainWindowController
             if (e.getSource().equals(progressDialog))
             {
                 progressDialog.setVisible(false);
+            } else if(e.getSource().equals(mainwindow))
+            {
+            	quit();
             }
         }
 

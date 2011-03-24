@@ -94,6 +94,7 @@ public class MainWindow extends JRibbonFrame
     RibbonApplicationMenu menuApplicationButton;
     RibbonApplicationMenuEntryPrimary saveMenuButton;
     RibbonApplicationMenuEntryPrimary aboutMenuButton;
+    RibbonApplicationMenuEntryPrimary settingsMenuButton;
     RibbonApplicationMenuEntrySecondary inkscapeMenuButton;
     RibbonApplicationMenuEntryFooter quitMenuButton;
     
@@ -172,7 +173,6 @@ public class MainWindow extends JRibbonFrame
     {
         try
         {
-            setDefaultCloseOperation(EXIT_ON_CLOSE);
             init();
         } catch (Exception exception)
         {
@@ -191,6 +191,7 @@ public class MainWindow extends JRibbonFrame
         controller = new MainWindowController(this, languageBundle);
      
         // Main Window
+        setDefaultCloseOperation(EXIT_ON_CLOSE);
         setTitle("ConversionSVG");
         setMinimumSize(new Dimension(600, 350));
         setApplicationIcon(getResizableIconFromResource("conversion-svg.png"));
@@ -232,6 +233,7 @@ public class MainWindow extends JRibbonFrame
         
         saveMenuButton = new RibbonApplicationMenuEntryPrimary(getResizableIconFromResource("media-floppy.png"), languageBundle.getString("Save"), eventListener, CommandButtonKind.ACTION_ONLY);
         aboutMenuButton = new RibbonApplicationMenuEntryPrimary(getResizableIconFromResource("help-browser.png"), languageBundle.getString("About"), eventListener, CommandButtonKind.ACTION_AND_POPUP_MAIN_ACTION);
+        settingsMenuButton = new RibbonApplicationMenuEntryPrimary(getResizableIconFromResource("applications-system.png"), languageBundle.getString("Settings"), eventListener, CommandButtonKind.ACTION_AND_POPUP_MAIN_ACTION);
         inkscapeMenuButton = new RibbonApplicationMenuEntrySecondary(getResizableIconFromResource("inkscape.png"), "Inkscape", eventListener, CommandButtonKind.ACTION_ONLY);
         aboutMenuButton.addSecondaryMenuGroup("Information", inkscapeMenuButton);
         
@@ -239,6 +241,7 @@ public class MainWindow extends JRibbonFrame
         
         menuApplicationButton.addMenuEntry(saveMenuButton);
         menuApplicationButton.addMenuSeparator();
+        menuApplicationButton.addMenuEntry(settingsMenuButton);
         menuApplicationButton.addMenuEntry(aboutMenuButton);
         menuApplicationButton.addFooterEntry(quitMenuButton);
         
@@ -519,6 +522,14 @@ public class MainWindow extends JRibbonFrame
         {
             Object obj = e.getSource();
 
+            // There must be a bug in Flamingo's comparison implementation. Comparing obj.getSource()
+            // to a JCommandMenuButton does not work, so this is the only way I can get it to work
+            if (obj.getClass() == JCommandMenuButton.class) {
+            	JCommandMenuButton btn = (JCommandMenuButton) obj;
+            	if (btn.getText().equals(settingsMenuButton.getText())) {
+            		controller.settingsDialog.setVisible(true);
+            	}
+            }
             // File Select
             if (obj.equals(singleOutputDirectoryRadio))
             {
