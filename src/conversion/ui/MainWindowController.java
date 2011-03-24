@@ -34,6 +34,8 @@ import net.sf.fstreem.FileSystemTreeNode;
 
 import com.jidesoft.swing.CheckBoxTree;
 
+import conversion.ui.settings.SettingsDialog;
+
 /**
  * The MainWindowController class is somewhat self-explanatory. It is the
  * Controller in the Model View Controller (MVC) framework. It handles
