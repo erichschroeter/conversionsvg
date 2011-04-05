@@ -28,31 +28,64 @@ public class SettingsDialog extends JDialog {
 	private static final long serialVersionUID = 3236457818625822473L;
 	static String APPLICATION_DIR = ".conversion-svg";
 	
+	private static SettingsDialog instance = null;
+	
 	// Panel identifiers
 	public static final String PANEL_DEFAULTS = "Defaults";
 	public static final String PANEL_PREFERENCES = "Preferences";
+	private String[] categories_list = {PANEL_DEFAULTS, PANEL_PREFERENCES};
 	
 	static Window parent;
-	Properties props;
+	Properties properties;
 	
 	JPanel defaultsPanel;
 	JPanel preferencesPanel;
+
+	/**
+	 * This method provides access to the singleton instance of the SettingsDialog.
+	 * @param parent The parent window
+	 * @return The singleton instance
+	 */
+	public static SettingsDialog getInstance(Window parent) {
+		if (instance == null) {
+			instance = new SettingsDialog(parent);
+		}
+		return instance;
+	}
+
+	/**
+	 * This method provides access to the singleton instance of the SettingsDialog.
+	 * @param parent The parent window
+	 * @param props The properties associated with this panel 
+	 * @return The singleton instance
+	 */
+	public static SettingsDialog getInstance(Window parent, Properties props) {
+		if (instance == null) {
+			instance = new SettingsDialog(parent, props);
+		}
+		return instance;
+	}
 	
-	public SettingsDialog(Window parent, Properties props)
+	/**
+	 * This constructor calls the JDialog's constructor setting the parent Window
+	 * and the ModalityType to APPLICATION_MODAL.
+	 * @param parent The parent Window
+	 * @param props The properties this dialog modifies
+	 */
+	private SettingsDialog(Window parent, Properties props)
 	{
 		super(parent, ModalityType.APPLICATION_MODAL);
 		SettingsDialog.parent = parent;
-		setLocationRelativeTo(parent);
-		this.props = props;
+		this.properties = props != null ? props : new Properties();
 		init(props);
 	}
 	
-	public SettingsDialog(Window parent)
+	private SettingsDialog(Window parent)
 	{
 		this(parent, null);
 	}
 
-	public SettingsDialog(Properties props)
+	private SettingsDialog(Properties props)
 	{
 		this(null, props);
 	}
@@ -60,10 +93,13 @@ public class SettingsDialog extends JDialog {
 	private void init(Properties props)
 	{
 		setModal(true);
+		super.setVisible(false);
 		setTitle("Settings Dialog");
 		setLayout(new GridBagLayout());
 		
-		String[] categories_list = {PANEL_DEFAULTS, PANEL_PREFERENCES};
+		//
+		// Category
+		//
 		JList categories = new JList(categories_list);
 		categories.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 		categories.setBorder(BorderFactory.createBevelBorder(BevelBorder.LOWERED));
@@ -126,6 +162,15 @@ public class SettingsDialog extends JDialog {
 		
 		pack();
 	}
+
+	@Override
+	public void setVisible(boolean b) {
+		int x = parent.getX() + (parent.getWidth() / 2 - getWidth() / 2);
+		int y = parent.getY() + (parent.getHeight() / 2 - getHeight() / 2);
+		setLocation(x, y);
+		
+		super.setVisible(b);
+	}
 	
 	public void show(String panel)
 	{
@@ -136,11 +181,10 @@ public class SettingsDialog extends JDialog {
 			defaultsPanel.setVisible(false);
 			preferencesPanel.setVisible(true);
 		}
-		pack();
 	}
 	
 	public void saveSettings() {
-		MainWindowController.saveSettings(props);
+		MainWindowController.saveSettings(properties);
 	}
 	
     /**

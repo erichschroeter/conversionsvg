@@ -29,6 +29,9 @@ import javax.swing.JTextField;
 import javax.swing.border.TitledBorder;
 import javax.swing.tree.TreePath;
 
+import org.apache.log4j.Level;
+import org.apache.log4j.Logger;
+
 import net.sf.fstreem.FileSystemTreeModel;
 import net.sf.fstreem.FileSystemTreeNode;
 
@@ -148,8 +151,6 @@ public class MainWindowController
         queue = new PriorityBlockingQueue<Runnable>(corePoolSize);
         threadPool = new ThreadPoolExecutor(corePoolSize, maximumPoolSize, keepAliveTime, TimeUnit.SECONDS, queue);
         // END	configure thread pool
-        
-        settingsDialog = new SettingsDialog(mainwindow, settings);
         
         progressDialog = new ProgressDialog(mainwindow);
         progressDialog.addWindowListener(eventListener);
@@ -304,6 +305,11 @@ public class MainWindowController
                 }
             }
         }
+    }
+    
+    public void convert(List<File> files)
+    {
+    	
     }
 
     private int showVerificationDialog(Locale locale)
@@ -462,6 +468,10 @@ public class MainWindowController
         border.setTitle(text);
     }
 
+	public void showSettingsDialog() {
+        SettingsDialog.getInstance(mainwindow, settings).setVisible(true);
+	}
+	
     /**
      * Disable all user inputs to prevent unwanted/unnecessary interactions
      * while Inkscape handles converting images.
@@ -659,6 +669,11 @@ public class MainWindowController
                     + "... " + languageBundle.getString("Done"));
             progressDialog.progressBar.setValue(completedProcesses);
 
+            // TODO log4j
+            Logger logger = Logger.getRootLogger();
+            logger.setLevel(Level.INFO);
+            logger.info(getExportedFile(info));
+            
             if (threadPool.getQueue().size() == 0)
             {
                 // enable GUI input

@@ -527,7 +527,7 @@ public class MainWindow extends JRibbonFrame
             if (obj.getClass() == JCommandMenuButton.class) {
             	JCommandMenuButton btn = (JCommandMenuButton) obj;
             	if (btn.getText().equals(settingsMenuButton.getText())) {
-            		controller.settingsDialog.setVisible(true);
+            		controller.showSettingsDialog();
             	}
             }
             // File Select
