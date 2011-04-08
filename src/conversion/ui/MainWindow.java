@@ -527,7 +527,7 @@ public class MainWindow extends JRibbonFrame
             if (obj.getClass() == JCommandMenuButton.class) {
             	JCommandMenuButton btn = (JCommandMenuButton) obj;
             	if (btn.getText().equals(settingsMenuButton.getText())) {
-            		controller.showSettingsDialog();
+            		controller.handleSettings();
             	}
             }
             // File Select
@@ -555,7 +555,7 @@ public class MainWindow extends JRibbonFrame
                 chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
                 if (chooser.showSaveDialog(mainwindow) == JFileChooser.APPROVE_OPTION)
                 {
-                    controller.changeRoot(chooser.getSelectedFile());
+                    controller.handleChangeRoot(chooser.getSelectedFile());
                 }
             }
 
@@ -596,10 +596,10 @@ public class MainWindow extends JRibbonFrame
             // Ribbon
             else if (obj.equals(convertButton))
             {
-                controller.convert();
+                controller.handleConvert();
             } else if (obj.equals(cancelButton))
             {
-                controller.cancel();
+                controller.handleCancel();
             } else if (obj.equals(statusMonitorButton))
             {
                 controller.showStatus();

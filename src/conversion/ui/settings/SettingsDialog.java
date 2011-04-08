@@ -4,8 +4,6 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.Window;
-import java.awt.event.WindowEvent;
-import java.awt.event.WindowListener;
 import java.io.File;
 import java.util.Properties;
 
@@ -20,8 +18,6 @@ import javax.swing.ListSelectionModel;
 import javax.swing.border.BevelBorder;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
-
-import conversion.ui.MainWindowController;
 
 public class SettingsDialog extends JDialog {
 
@@ -133,33 +129,6 @@ public class SettingsDialog extends JDialog {
 		// perform the selection after everything has been created to avoid NullPointerException
 		categories.setSelectedIndex(0);
 		
-		// set up listener to save settings when the window is closed
-		addWindowListener(new WindowListener() {
-			
-			@Override
-			public void windowOpened(WindowEvent e) { }
-			
-			@Override
-			public void windowIconified(WindowEvent e) { }
-			
-			@Override
-			public void windowDeiconified(WindowEvent e) { }
-			
-			@Override
-			public void windowDeactivated(WindowEvent e) { }
-			
-			@Override
-			public void windowClosing(WindowEvent e) {
-				saveSettings();
-			}
-			
-			@Override
-			public void windowClosed(WindowEvent e) { }
-			
-			@Override
-			public void windowActivated(WindowEvent e) { }
-		});
-		
 		pack();
 	}
 
@@ -181,10 +150,6 @@ public class SettingsDialog extends JDialog {
 			defaultsPanel.setVisible(false);
 			preferencesPanel.setVisible(true);
 		}
-	}
-	
-	public void saveSettings() {
-		MainWindowController.saveSettings(properties);
 	}
 	
     /**

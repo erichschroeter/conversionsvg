@@ -62,7 +62,7 @@ public class PreferencesPanel extends JPanel {
 		add(inkscapeButton, constraints);
 		constraints = new GridBagConstraints(1, 0, 1, 1, 1, 0, GridBagConstraints.NORTHWEST, GridBagConstraints.HORIZONTAL, new Insets(5, 5, 5, 5), 0, 0);
 		add(inkscapeField = new JTextField(20), constraints);
-		inkscapeField.setText(props.getProperty(MainWindowController.INKSCAPE_PATH) != null ? props.getProperty(MainWindowController.INKSCAPE_PATH) : null);
+		inkscapeField.setText(props.getProperty(MainWindowController.KEY_INKSCAPE_PATH) != null ? props.getProperty(MainWindowController.KEY_INKSCAPE_PATH) : null);
 		
 		// Core and Maximum Threads in ThreadPool
 		constraints = new GridBagConstraints(0, 1, 1, 1, 1, 0, GridBagConstraints.NORTHWEST, GridBagConstraints.HORIZONTAL, new Insets(5, 5, 5, 5), 0, 0);
@@ -73,6 +73,6 @@ public class PreferencesPanel extends JPanel {
 	}
 	
 	public void setInkscapePath(String path) {
-		props.setProperty(MainWindowController.INKSCAPE_PATH, path);
+		props.setProperty(MainWindowController.KEY_INKSCAPE_PATH, path);
 	}
 }
