@@ -12,6 +12,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Properties;
 import java.util.ResourceBundle;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -26,7 +27,6 @@ import javax.swing.tree.TreePath;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.prefs.DefaultPreferenceNode;
-import org.prefs.DefaultPreferencePage;
 import org.prefs.PreferenceDialog;
 import org.prefs.PreferenceManager;
 import org.prefs.PreferencePage;
@@ -37,6 +37,7 @@ import net.sf.fstreem.FileSystemTreeNode;
 
 import com.jidesoft.swing.CheckBoxTree;
 
+import conversion.ui.settings.AdvancedPreferencePage;
 import conversion.ui.settings.DefaultsPreferencePage;
 
 /**
@@ -67,12 +68,12 @@ public class MainWindowController implements IMainWindowController {
 	protected File inkscapeExecutable;
 
 	// ThreadPool defaults
-	int corePoolSize = 2;
-	int maximumPoolSize = 2;
-	long keepAliveTime = 10;
+	private int corePoolSize = 2;
+	private int maximumPoolSize = 2;
+	private long keepAliveTime = 10;
 	private PriorityBlockingQueue<Runnable> queue;
 	private ThreadPoolExecutor threadPool;
-	int completedProcesses = 0;
+	private int completedProcesses = 0;
 
 	//
 	// Preferences
@@ -90,6 +91,9 @@ public class MainWindowController implements IMainWindowController {
 	public static final String KEY_CORE_POOL_SIZE = "pool_size_core";
 	public static final String KEY_MAXIMUM_POOL_SIZE = "pool_size_max";
 	public static final String KEY_KEEP_ALIVE_TIME = "thread_keep_alive_time";
+	public static final String KEY_INKSCAPE_EXPORT_WIDTH = "inkscape_export_width";
+	public static final String KEY_INKSCAPE_EXPORT_HEIGHT = "inkscape_export_height";
+	public static final String KEY_INKSCAPE_EXPORT_COLOR = "inkscape_export_color";
 
 	public MainWindowController(conversion.ui.MainWindow mainwindow,
 			ResourceBundle resourceBundle) {
@@ -104,7 +108,9 @@ public class MainWindowController implements IMainWindowController {
 		try {
 			prefsFile = new File(SETTINGS_FILE);
 			prefsFile.createNewFile();
-			prefs = new PreferenceStore(prefsFile);
+			prefs = new PreferenceStore(prefsFile,
+					"This file contains preference settings for ConversionSVG",
+					getDefaults());
 
 			prefs.load();
 		} catch (IOException e) {
@@ -113,16 +119,21 @@ public class MainWindowController implements IMainWindowController {
 		// END get user settings/preferences
 
 		prefsManager = new PreferenceManager(prefs);
-		
+
 		PreferencePage defaultsPage = new DefaultsPreferencePage("Defaults",
 				"Specify the default preferences to be populated when ConversionSVG starts up");
+		defaultsPage.initialize(prefs);
+		PreferencePage advancedPage = new AdvancedPreferencePage("Advanced",
+				"Configure advanced features ConversionSVG uses.");
+		advancedPage.initialize(prefs);
 
 		prefsManager.add(new DefaultPreferenceNode(defaultsPage, "Defaults"));
-		prefsManager.add(new DefaultPreferenceNode(new DefaultPreferencePage(), "Advanced"));
+		prefsManager.add(new DefaultPreferenceNode(advancedPage, "Advanced"));
 
 		dlg = new PreferenceDialog(mainwindow, prefsManager);
-		
+
 		defaultsPage.setPageContainer(dlg);
+		advancedPage.setPageContainer(dlg);
 
 		// BEGIN get the path to Inkscape
 		String inkscape_location = prefs.getValue(KEY_INKSCAPE_PATH);
@@ -138,8 +149,8 @@ public class MainWindowController implements IMainWindowController {
 							mainwindow,
 							"The Inkscape executable location does not exist. Please enter the correct location in the Settings.");
 		} else {
-			prefs.setValue(KEY_INKSCAPE_PATH,
-					inkscapeExecutable.getAbsolutePath());
+			prefs.setValue(KEY_INKSCAPE_PATH, inkscapeExecutable
+					.getAbsolutePath());
 		}
 		// END get the path to Inkscape
 
@@ -162,12 +173,13 @@ public class MainWindowController implements IMainWindowController {
 		// }
 
 		// BEGIN configure thread pool
-		corePoolSize = getSettingOrDefault(
-				Integer.getInteger(System.getProperty(KEY_CORE_POOL_SIZE)),
-				corePoolSize);
-		maximumPoolSize = getSettingOrDefault(
-				Integer.getInteger(System.getProperty(KEY_MAXIMUM_POOL_SIZE)),
-				maximumPoolSize);
+		String value;
+		corePoolSize = (value = prefs.getValue(KEY_CORE_POOL_SIZE)) != null ? Integer
+				.valueOf(value)
+				: corePoolSize;
+		maximumPoolSize = (value = prefs.getValue(KEY_MAXIMUM_POOL_SIZE)) != null ? Integer
+				.valueOf(prefs.getValue(KEY_MAXIMUM_POOL_SIZE))
+				: maximumPoolSize;
 
 		queue = new PriorityBlockingQueue<Runnable>(corePoolSize);
 		threadPool = new ThreadPoolExecutor(corePoolSize, maximumPoolSize,
@@ -179,32 +191,35 @@ public class MainWindowController implements IMainWindowController {
 	}
 
 	/**
-	 * Handles the boolean logic for returning the value stored in the
-	 * properties/settings over the default value. If the setting's value is not
-	 * null, the value is returned. If it is null, then the given default value
-	 * is returned.
+	 * Returns a <code>Properties</code> instance populated with the default
+	 * values <code>MainWindowController</code> uses.
 	 * 
-	 * @param <T>
-	 * @param setting
-	 *            The stored value in a properties file.
-	 * @param defaultValue
-	 *            The value to return if the stored property value is null.
-	 * @return
+	 * @return the default properties used by <code>MainWindowController</code>
 	 */
-	private <T> T getSettingOrDefault(T setting, T defaultValue) {
-		if (setting == null) {
-			return defaultValue;
-		}
-		return setting;
+	private Properties getDefaults() {
+		Properties defaults = new Properties();
+		defaults
+				.setProperty(KEY_CORE_POOL_SIZE, Integer.toString(corePoolSize));
+		defaults.setProperty(KEY_MAXIMUM_POOL_SIZE, Integer
+				.toString(maximumPoolSize));
+		defaults.setProperty(KEY_KEEP_ALIVE_TIME, Long.toString(keepAliveTime));
+		defaults.setProperty(KEY_INKSCAPE_EXPORT_COLOR,
+				sanitizeColor(Color.WHITE));
+		defaults.setProperty(KEY_INKSCAPE_EXPORT_HEIGHT, "");
+		defaults.setProperty(KEY_INKSCAPE_EXPORT_WIDTH, "");
+		return defaults;
 	}
 
 	/**
-	 * Returns a list of Files that the user has checked in the CheckBoxTree on
-	 * the MainWindow's file select panel.
+	 * Returns a list of <code>File</code>s that the user has checked in the
+	 * <code>CheckBoxTree</code> on the <code>MainWindow</code>'s file select
+	 * panel.
 	 * 
 	 * @param The
-	 *            checkbox tree to retrieve a list of checked files from.
-	 * @return A list of Files checked in the MainWindow's file select panel.
+	 *            <code>CheckBoxTree</code> to retrieve a list of checked files
+	 *            from
+	 * @return list of <code>File</code>'s checked in the
+	 *         <code>MainWindow</code>'s file select panel
 	 */
 	public List<File> getFiles(CheckBoxTree tree) {
 		List<File> files = new ArrayList<File>();
@@ -220,8 +235,7 @@ public class MainWindowController implements IMainWindowController {
 				if (file.isDirectory()) {
 					// If a directory is checked, all the children are
 					// unselected (this is a performance feature according to
-					// Jide)
-					// so we have to iterate over all the files in that
+					// Jide) so we have to iterate over all the files in that
 					// directory
 					for (int i = 0; i < node.getChildCount(); i++) {
 						FileSystemTreeNode child = node.getChildAt(i);
@@ -244,16 +258,15 @@ public class MainWindowController implements IMainWindowController {
 				languageBundle.getString("No"),
 				languageBundle.getString("NoToAll"),
 				languageBundle.getString("Cancel") };
-		return JOptionPane.showOptionDialog(mainwindow,
-				languageBundle.getString("FileExistsModalMessage"),
-				languageBundle.getString("FileExists"),
-				JOptionPane.DEFAULT_OPTION, JOptionPane.INFORMATION_MESSAGE,
-				null, choices, choices[2]);
+		return JOptionPane.showOptionDialog(mainwindow, languageBundle
+				.getString("FileExistsModalMessage"), languageBundle
+				.getString("FileExists"), JOptionPane.DEFAULT_OPTION,
+				JOptionPane.INFORMATION_MESSAGE, null, choices, choices[2]);
 	}
 
 	/**
 	 * Displays the Progress dialog. If the progressDialog field has not been
-	 * instanciated, then nothing occurs.
+	 * instantiated, then nothing occurs.
 	 */
 	public void showStatus() {
 		if (progressDialog != null) {
@@ -262,39 +275,12 @@ public class MainWindowController implements IMainWindowController {
 	}
 
 	/**
-	 * A helper function to get a formatted message using parameters for a
-	 * specific Locale.
-	 * 
-	 * @return Returns a formatted string.
-	 */
-	public String sprintf(String pattern, Object[] args, Locale locale) {
-		MessageFormat formatter = new MessageFormat("");
-		formatter.setLocale(locale);
-		formatter.applyPattern(pattern);
-		return formatter.format(args);
-	}
-
-	/**
-	 * Handles changing the text the user sees on the application's screen to
-	 * the selected language.
-	 * 
-	 * @param locale
-	 *            The Locale language to change to.
-	 */
-	public void changeLanguage(Locale locale) {
-
-	}
-
-	// simple helper function to save code in changeLanguage()
-	private void changeBorderLanguage(TitledBorder border, String text) {
-		border.setTitle(text);
-	}
-
-	/**
 	 * Disable all user inputs to prevent unwanted/unnecessary interactions
 	 * while Inkscape handles converting images.
 	 * 
 	 * @param enable
+	 *            <code>true</code> to enable input, <code>false</code> to
+	 *            disable input
 	 */
 	public void enableInput(boolean enable) {
 
@@ -308,11 +294,15 @@ public class MainWindowController implements IMainWindowController {
 	}
 
 	/**
-	 * Disables all the components contained in the JPanel. This is intended to
-	 * be used by disableInput() prior to converting.
+	 * Disables all the <code>Component</code>s contained in the
+	 * <code>JPanel</code>. This is intended to be used by
+	 * <code>enableInput(boolean)</code> prior to converting.
 	 * 
 	 * @param panel
+	 *            the panel in which to disable the <code>Component</code>s
 	 * @param enable
+	 *            <code>true</code> to enable input, <code>false</code> to
+	 *            disable input
 	 */
 	private void enablePanel(JPanel panel, boolean enable) {
 		for (Component component : panel.getComponents()) {
@@ -327,38 +317,17 @@ public class MainWindowController implements IMainWindowController {
 	 * @return A map populated with switches and their arguments (also known as
 	 *         options).
 	 */
-	public HashMap<String, String> getInkscapeCommandlineOptions() {
+	private HashMap<String, String> getInkscapeCommandlineOptions() {
 		HashMap<String, String> options = new HashMap<String, String>();
 
 		options.put("-b", sanitizeColor(mainwindow.colorPicker.getColor()));
-		options.put("-y",
-				String.valueOf(mainwindow.colorPicker.getColor().getAlpha()));
+		options.put("-y", String.valueOf(mainwindow.colorPicker.getColor()
+				.getAlpha()));
 		setCommandlineOption(options, "-h", mainwindow.heightTextField);
 		setCommandlineOption(options, "-w", mainwindow.widthTextField);
 		options.putAll(getExportArea());
 
 		return options;
-	}
-
-	// helper function used for checking if anything was entered into the text
-	// field.
-	private void setCommandlineOption(HashMap<String, String> options,
-			String option, JTextField field) {
-		if (!field.getText().isEmpty()) {
-			options.put(option, field.getText());
-		}
-	}
-
-	/**
-	 * Inkscape requires the background color to be a string in a certain
-	 * format. We are choosing to use the rgb(255,255,255) format.
-	 * 
-	 * @param color
-	 * @return A sanitized String formatted as rgb(255,255,255).
-	 */
-	private String sanitizeColor(Color color) {
-		return "rgb(" + color.getRed() + "," + color.getGreen() + ","
-				+ color.getBlue() + ")";
 	}
 
 	/**
@@ -391,10 +360,8 @@ public class MainWindowController implements IMainWindowController {
 		HashMap<String, String> option = new HashMap<String, String>();
 
 		if (mainwindow.singleOutputDirectoryRadio.isSelected()) {
-			addOutputFormats(
-					option,
-					changeDirectory(file,
-							mainwindow.outputDirectoryTextField.getText()));
+			addOutputFormats(option, changeDirectory(file,
+					mainwindow.outputDirectoryTextField.getText()));
 		} else if (mainwindow.sameOutputDirectoryRadio.isSelected()) {
 			addOutputFormats(option, file.getAbsolutePath());
 		}
@@ -454,6 +421,85 @@ public class MainWindowController implements IMainWindowController {
 
 		// only return the File object if the file actually exists on the system
 		return executable.exists() ? executable : null;
+	}
+
+	//
+	// Helper functions
+	//
+
+	/**
+	 * A helper function to get a formatted message using parameters for a
+	 * specific <code>Locale</code>.
+	 * 
+	 * @return Returns a formatted string.
+	 */
+	public String sprintf(String pattern, Object[] args, Locale locale) {
+		MessageFormat formatter = new MessageFormat("");
+		formatter.setLocale(locale);
+		formatter.applyPattern(pattern);
+		return formatter.format(args);
+	}
+
+	/**
+	 * Inkscape requires the background color to be a string in a certain
+	 * format. We are choosing to use the rgb(255,255,255) format.
+	 * 
+	 * @param color
+	 * @return A sanitized String formatted as rgb(255,255,255).
+	 */
+	private String sanitizeColor(Color color) {
+		return "rgb(" + color.getRed() + "," + color.getGreen() + ","
+				+ color.getBlue() + ")";
+	}
+
+	/**
+	 * Helper function to save code in <code>handleChangeLanguage()</code>. This
+	 * saves lines of code for each border that needs the language changed.
+	 * <p>
+	 * We can write the following:
+	 * </p>
+	 * 
+	 * <pre>
+	 * {@code
+	 * changeBorderLanguage(
+	 *     (TitledBorder) mainwindow.outputFormatPanel.getBorder(),
+	 *     resourceBundle.getString("FormatPanel"));
+	 * }
+	 * </pre>
+	 * 
+	 * <p>
+	 * instead of:
+	 * </p>
+	 * 
+	 * <pre>
+	 * {
+	 * 	&#064;code
+	 * 	TitledBorder border = (TitledBorder) mainwindow.outputFormatPanel
+	 * 			.getBorder();
+	 * 	border.setTitle(resourceBundle.getString(&quot;FormatPanel&quot;));
+	 * }
+	 * </pre>
+	 * 
+	 * @param border
+	 * @param text
+	 */
+	private void changeBorderLanguage(TitledBorder border, String text) {
+		border.setTitle(text);
+	}
+
+	/**
+	 * helper function used for checking if anything was entered into the text
+	 * field.
+	 * 
+	 * @param options
+	 * @param option
+	 * @param field
+	 */
+	private void setCommandlineOption(HashMap<String, String> options,
+			String option, JTextField field) {
+		if (!field.getText().isEmpty()) {
+			options.put(option, field.getText());
+		}
 	}
 
 	private class EventListener implements InkscapeProcessCompletedListener,
@@ -584,8 +630,8 @@ public class MainWindowController implements IMainWindowController {
 					} else if (noToAll) {
 						break;
 					} else { // only show the dialog if neither yesToAll or
-								// noToAll
-								// have been set to TRUE
+						// noToAll
+						// have been set to TRUE
 						choice = showVerificationDialog(selectedLocale);
 					}
 
@@ -623,9 +669,10 @@ public class MainWindowController implements IMainWindowController {
 		if (queued > 0) {
 			threadPool.shutdown();
 			Object[] args = { queued };
-			progressDialog.statusOutput.addElement(sprintf(
-					languageBundle.getString("CancelledRemainingQueue"), args,
-					selectedLocale));
+			progressDialog.statusOutput
+					.addElement(sprintf(languageBundle
+							.getString("CancelledRemainingQueue"), args,
+							selectedLocale));
 			enableInput(true);
 		}
 	}
@@ -661,12 +708,10 @@ public class MainWindowController implements IMainWindowController {
 				.getString("ShortcutsButton"));
 
 		// Option Panel
-		changeBorderLanguage(
-				(TitledBorder) mainwindow.outputFormatPanel.getBorder(),
-				resourceBundle.getString("FormatPanel"));
-		changeBorderLanguage(
-				(TitledBorder) mainwindow.exportAreaPanel.getBorder(),
-				resourceBundle.getString("ExportAreaPanel"));
+		changeBorderLanguage((TitledBorder) mainwindow.outputFormatPanel
+				.getBorder(), resourceBundle.getString("FormatPanel"));
+		changeBorderLanguage((TitledBorder) mainwindow.exportAreaPanel
+				.getBorder(), resourceBundle.getString("ExportAreaPanel"));
 		changeBorderLanguage((TitledBorder) mainwindow.sizePanel.getBorder(),
 				resourceBundle.getString("SizePanel"));
 		changeBorderLanguage((TitledBorder) mainwindow.colorPicker.getBorder(),
@@ -720,8 +765,8 @@ public class MainWindowController implements IMainWindowController {
 		int proceed = JOptionPane.OK_OPTION;
 
 		if (threadPool.getActiveCount() != 0) {
-			proceed = JOptionPane.showConfirmDialog(mainwindow,
-					languageBundle.getString("ActiveProcessesModalMessage"));
+			proceed = JOptionPane.showConfirmDialog(mainwindow, languageBundle
+					.getString("ActiveProcessesModalMessage"));
 		}
 
 		if (proceed == JOptionPane.OK_OPTION) {

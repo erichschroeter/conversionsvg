@@ -287,7 +287,7 @@ public class MainWindow extends JRibbonFrame
                     @Override
                     public void actionPerformed(ActionEvent e)
                     {
-                        controller.changeLanguage(finalLocale);
+                        controller.handleChangeLanguage(finalLocale);
                     }
                 });
                 return button;

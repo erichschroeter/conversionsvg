@@ -6,7 +6,6 @@ import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.io.IOException;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
@@ -15,9 +14,12 @@ import javax.swing.JPanel;
 import javax.swing.JTextField;
 
 import org.prefs.IPreferencePageContainer;
+import org.prefs.IPreferenceStore;
 import org.prefs.PreferencePage;
 
 import com.bric.swing.ColorPicker;
+
+import conversion.ui.MainWindowController;
 
 public class DefaultsPreferencePage extends PreferencePage {
 
@@ -37,6 +39,8 @@ public class DefaultsPreferencePage extends PreferencePage {
 	 */
 	private boolean dirty;
 
+	JTextField widthTextField;
+	JTextField heightTextField;
 	JTextField colorTextField;
 
 	/**
@@ -57,8 +61,8 @@ public class DefaultsPreferencePage extends PreferencePage {
 	 * <i>title</i>, and <i>description</i>.
 	 * 
 	 * @param container
-	 *            The container in which this
-	 *            <code>DefaultsPreferencePage</code> is being held.
+	 *            The container in which this <code>PreferencePage</code> is
+	 *            being held.
 	 * @param title
 	 *            The title. If value is <code>null</code> the <i>title</i>
 	 *            attribute is set to empty string ( <code>""</code>)
@@ -74,30 +78,12 @@ public class DefaultsPreferencePage extends PreferencePage {
 		createContents();
 	}
 
-	/**
-	 * Sets the container in which this <code>PreferencePage</code> is being
-	 * held.
-	 * 
-	 * @param container
-	 *            The container in which this <code>PreferencePage</code> is
-	 *            being held.
-	 * @throws NullPointerException
-	 *             if the container argument is <code>null</code>.
-	 */
-	public void setPageContainer(IPreferencePageContainer container)
-			throws NullPointerException {
-		if (container == null) {
-			throw new NullPointerException("container cannot be set to null");
+	public void showColorChooser() {
+		if ((selectedColor = ColorPicker.showDialog(container.getWindow(),
+				selectedColor != null ? selectedColor : Color.WHITE)) != null) {
+			colorTextField
+					.setText(Integer.toHexString(selectedColor.getRGB() & 0xffffffff));
 		}
-		this.container = container;
-	}
-
-	/**
-	 * Returns the container in which this <code>PreferencePage</code> is being
-	 * held.
-	 */
-	public IPreferencePageContainer getPageContainer() {
-		return container;
 	}
 
 	//
@@ -127,7 +113,7 @@ public class DefaultsPreferencePage extends PreferencePage {
 				GridBagConstraints.NORTHWEST, GridBagConstraints.HORIZONTAL,
 				new Insets(5, 5, 5, 5), 0, 0);
 		// TODO set the current settings value
-		JTextField heightTextField = new JTextField();
+		heightTextField = new JTextField();
 		sizePanel.add(heightTextField, c);
 
 		// Width
@@ -141,7 +127,7 @@ public class DefaultsPreferencePage extends PreferencePage {
 				GridBagConstraints.NORTHWEST, GridBagConstraints.HORIZONTAL,
 				new Insets(5, 5, 5, 5), 0, 0);
 		// TODO set the current settings value
-		JTextField widthTextField = new JTextField();
+		widthTextField = new JTextField();
 		sizePanel.add(widthTextField, c);
 		//
 		// Size Panel end
@@ -180,13 +166,7 @@ public class DefaultsPreferencePage extends PreferencePage {
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				if ((selectedColor = ColorPicker.showDialog(
-						SettingsDialog.parent,
-						selectedColor != null ? selectedColor : Color.WHITE,
-						true)) != null) {
-					colorTextField.setText(Integer.toHexString(selectedColor
-							.getRGB() & 0xffffffff));
-				}
+				showColorChooser();
 			}
 		});
 		backgroundPanel.add(colorButton, c);
@@ -205,8 +185,25 @@ public class DefaultsPreferencePage extends PreferencePage {
 	}
 
 	@Override
+	public void initialize(IPreferenceStore store) {
+		String value;
+		widthTextField
+				.setText((value = store
+						.getValue(MainWindowController.KEY_INKSCAPE_EXPORT_WIDTH)) != null ? value
+						: store.getDefault(MainWindowController.KEY_INKSCAPE_EXPORT_WIDTH));
+		heightTextField
+				.setText((value = store
+						.getValue(MainWindowController.KEY_INKSCAPE_EXPORT_HEIGHT)) != null ? value
+						: store.getDefault(MainWindowController.KEY_INKSCAPE_EXPORT_HEIGHT));
+		colorTextField
+				.setText((value = store
+						.getValue(MainWindowController.KEY_INKSCAPE_EXPORT_COLOR)) != null ? value
+						: store.getDefault(MainWindowController.KEY_INKSCAPE_EXPORT_COLOR));
+	}
+
+	@Override
 	public boolean okToLeave() {
-		return dirty;
+		return !dirty;
 	}
 
 	@Override
@@ -217,17 +214,53 @@ public class DefaultsPreferencePage extends PreferencePage {
 
 	@Override
 	public boolean performOk() {
-		try {
-			container.getPreferenceStore().save();
-		} catch (IOException e) {
-			return false;
-		}
+		container.getPreferenceStore().setValue(
+				MainWindowController.KEY_INKSCAPE_EXPORT_WIDTH,
+				widthTextField.getText());
+		container.getPreferenceStore().setValue(
+				MainWindowController.KEY_INKSCAPE_EXPORT_HEIGHT,
+				heightTextField.getText());
+		container.getPreferenceStore().setValue(
+				MainWindowController.KEY_INKSCAPE_EXPORT_COLOR,
+				colorTextField.getText());
 		return true;
 	}
 
 	@Override
 	public boolean performDefault() {
+		widthTextField.setText(container.getPreferenceStore().getDefault(
+				MainWindowController.KEY_INKSCAPE_EXPORT_WIDTH));
+		heightTextField.setText(container.getPreferenceStore().getDefault(
+				MainWindowController.KEY_INKSCAPE_EXPORT_HEIGHT));
+		colorTextField.setText(container.getPreferenceStore().getDefault(
+				MainWindowController.KEY_INKSCAPE_EXPORT_COLOR));
 		return true;
+	}
+
+	/**
+	 * Sets the container in which this <code>PreferencePage</code> is being
+	 * held.
+	 * 
+	 * @param container
+	 *            The container in which this <code>PreferencePage</code> is
+	 *            being held.
+	 * @throws NullPointerException
+	 *             if the container argument is <code>null</code>.
+	 */
+	public void setPageContainer(IPreferencePageContainer container)
+			throws NullPointerException {
+		if (container == null) {
+			throw new NullPointerException("container cannot be set to null");
+		}
+		this.container = container;
+	}
+
+	/**
+	 * Returns the container in which this <code>PreferencePage</code> is being
+	 * held.
+	 */
+	public IPreferencePageContainer getPageContainer() {
+		return container;
 	}
 
 	@Override
