@@ -84,17 +84,6 @@ public class MainWindowController implements IMainWindowController {
 	private static final String SETTINGS_FILE = "preferences.properties";
 	private static File prefsFile;
 
-	//
-	// Properties KEYS
-	//
-	public static final String KEY_INKSCAPE_PATH = "inkscape_path";
-	public static final String KEY_CORE_POOL_SIZE = "pool_size_core";
-	public static final String KEY_MAXIMUM_POOL_SIZE = "pool_size_max";
-	public static final String KEY_KEEP_ALIVE_TIME = "thread_keep_alive_time";
-	public static final String KEY_INKSCAPE_EXPORT_WIDTH = "inkscape_export_width";
-	public static final String KEY_INKSCAPE_EXPORT_HEIGHT = "inkscape_export_height";
-	public static final String KEY_INKSCAPE_EXPORT_COLOR = "inkscape_export_color";
-
 	public MainWindowController(conversion.ui.MainWindow mainwindow,
 			ResourceBundle resourceBundle) {
 		this.mainwindow = mainwindow;
@@ -120,23 +109,18 @@ public class MainWindowController implements IMainWindowController {
 
 		prefsManager = new PreferenceManager(prefs);
 
-		PreferencePage defaultsPage = new DefaultsPreferencePage("Defaults",
+		PreferencePage defaultsPage = new DefaultsPreferencePage(prefsManager, "Defaults",
 				"Specify the default preferences to be populated when ConversionSVG starts up");
-		defaultsPage.initialize(prefs);
-		PreferencePage advancedPage = new AdvancedPreferencePage("Advanced",
+		PreferencePage advancedPage = new AdvancedPreferencePage(prefsManager, "Advanced",
 				"Configure advanced features ConversionSVG uses.");
-		advancedPage.initialize(prefs);
 
 		prefsManager.add(new DefaultPreferenceNode(defaultsPage, "Defaults"));
 		prefsManager.add(new DefaultPreferenceNode(advancedPage, "Advanced"));
 
 		dlg = new PreferenceDialog(mainwindow, prefsManager);
 
-		defaultsPage.setPageContainer(dlg);
-		advancedPage.setPageContainer(dlg);
-
 		// BEGIN get the path to Inkscape
-		String inkscape_location = prefs.getValue(KEY_INKSCAPE_PATH);
+		String inkscape_location = prefs.getValue(ConversionSVG.KEY_INKSCAPE_PATH);
 		if (inkscape_location != null) {
 			inkscapeExecutable = new File(inkscape_location);
 		} else {
@@ -149,7 +133,7 @@ public class MainWindowController implements IMainWindowController {
 							mainwindow,
 							"The Inkscape executable location does not exist. Please enter the correct location in the Settings.");
 		} else {
-			prefs.setValue(KEY_INKSCAPE_PATH, inkscapeExecutable
+			prefs.setValue(ConversionSVG.KEY_INKSCAPE_PATH, inkscapeExecutable
 					.getAbsolutePath());
 		}
 		// END get the path to Inkscape
@@ -174,11 +158,11 @@ public class MainWindowController implements IMainWindowController {
 
 		// BEGIN configure thread pool
 		String value;
-		corePoolSize = (value = prefs.getValue(KEY_CORE_POOL_SIZE)) != null ? Integer
+		corePoolSize = (value = prefs.getValue(ConversionSVG.KEY_CORE_POOL_SIZE)) != null ? Integer
 				.valueOf(value)
 				: corePoolSize;
-		maximumPoolSize = (value = prefs.getValue(KEY_MAXIMUM_POOL_SIZE)) != null ? Integer
-				.valueOf(prefs.getValue(KEY_MAXIMUM_POOL_SIZE))
+		maximumPoolSize = (value = prefs.getValue(ConversionSVG.KEY_MAXIMUM_POOL_SIZE)) != null ? Integer
+				.valueOf(prefs.getValue(ConversionSVG.KEY_MAXIMUM_POOL_SIZE))
 				: maximumPoolSize;
 
 		queue = new PriorityBlockingQueue<Runnable>(corePoolSize);
@@ -199,14 +183,14 @@ public class MainWindowController implements IMainWindowController {
 	private Properties getDefaults() {
 		Properties defaults = new Properties();
 		defaults
-				.setProperty(KEY_CORE_POOL_SIZE, Integer.toString(corePoolSize));
-		defaults.setProperty(KEY_MAXIMUM_POOL_SIZE, Integer
+				.setProperty(ConversionSVG.KEY_CORE_POOL_SIZE, Integer.toString(corePoolSize));
+		defaults.setProperty(ConversionSVG.KEY_MAXIMUM_POOL_SIZE, Integer
 				.toString(maximumPoolSize));
-		defaults.setProperty(KEY_KEEP_ALIVE_TIME, Long.toString(keepAliveTime));
-		defaults.setProperty(KEY_INKSCAPE_EXPORT_COLOR,
+		defaults.setProperty(ConversionSVG.KEY_KEEP_ALIVE_TIME, Long.toString(keepAliveTime));
+		defaults.setProperty(ConversionSVG.KEY_INKSCAPE_EXPORT_COLOR,
 				sanitizeColor(Color.WHITE));
-		defaults.setProperty(KEY_INKSCAPE_EXPORT_HEIGHT, "");
-		defaults.setProperty(KEY_INKSCAPE_EXPORT_WIDTH, "");
+		defaults.setProperty(ConversionSVG.KEY_INKSCAPE_EXPORT_HEIGHT, "");
+		defaults.setProperty(ConversionSVG.KEY_INKSCAPE_EXPORT_WIDTH, "");
 		return defaults;
 	}
 

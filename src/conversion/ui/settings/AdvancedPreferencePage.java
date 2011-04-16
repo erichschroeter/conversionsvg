@@ -14,21 +14,16 @@ import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.filechooser.FileSystemView;
 
-import org.prefs.IPreferencePageContainer;
 import org.prefs.IPreferenceStore;
+import org.prefs.PreferenceManager;
 import org.prefs.PreferencePage;
 
-import conversion.ui.MainWindowController;
+import conversion.ui.ConversionSVG;
 import conversion.ui.filters.InkscapeFilter;
 
 public class AdvancedPreferencePage extends PreferencePage {
 
 	private static final long serialVersionUID = -5609495319656181951L;
-
-	/**
-	 * The page container holding this <code>PreferencePage</code>.
-	 */
-	private IPreferencePageContainer container;
 
 	/**
 	 * Represents whether any setting on this page has changed.
@@ -39,22 +34,22 @@ public class AdvancedPreferencePage extends PreferencePage {
 	 */
 	private boolean dirty;
 
-	JTextField inkscapeField;
-	JTextField coreThreadsField;
-	JTextField maxThreadsField;
+	/**
+	 * The manager of the preferences being displayed on this page.
+	 */
+	private PreferenceManager manager;
 
-	public AdvancedPreferencePage(String title, String description) {
-		super(title, description);
-		createContents();
-	}
+	private JTextField inkscapeField;
+	private JTextField coreThreadsField;
+	private JTextField maxThreadsField;
 
 	/**
 	 * Creates a <code>AdvancedPreferencePage</code> object specifying the
-	 * <i>title</i>, and <i>description</i>.
+	 * <i>manager</i>, <i>title</i>, and <i>description</i>.
 	 * 
-	 * @param container
-	 *            The container in which this <code>PreferencePage</code> is
-	 *            being held.
+	 * @param manager
+	 *            The preference manager which manages the preferences being
+	 *            displayed on this <code>PreferencePage</code>
 	 * @param title
 	 *            The title. If value is <code>null</code> the <i>title</i>
 	 *            attribute is set to empty string ( <code>""</code>)
@@ -63,10 +58,9 @@ public class AdvancedPreferencePage extends PreferencePage {
 	 *            <i>description</i> attribute is set to empty string (
 	 *            <code>""</code>)
 	 */
-	public AdvancedPreferencePage(IPreferencePageContainer container,
-			String title, String description) {
-		super(title, description);
-		setPageContainer(container);
+	public AdvancedPreferencePage(PreferenceManager manager, String title,
+			String description) {
+		super(manager, title, description);
 		createContents();
 	}
 
@@ -90,12 +84,47 @@ public class AdvancedPreferencePage extends PreferencePage {
 	@Override
 	public void setVisible(boolean visible) {
 		super.setVisible(visible);
-		inkscapeField.setText(container.getPreferenceStore().getValue(
-				MainWindowController.KEY_INKSCAPE_PATH));
-		coreThreadsField.setText(container.getPreferenceStore().getValue(
-				MainWindowController.KEY_CORE_POOL_SIZE));
-		maxThreadsField.setText(container.getPreferenceStore().getValue(
-				MainWindowController.KEY_MAXIMUM_POOL_SIZE));
+		inkscapeField.setText(manager.getStore().getValue(
+				ConversionSVG.KEY_INKSCAPE_PATH));
+		coreThreadsField.setText(manager.getStore().getValue(
+				ConversionSVG.KEY_CORE_POOL_SIZE));
+		maxThreadsField.setText(manager.getStore().getValue(
+				ConversionSVG.KEY_MAXIMUM_POOL_SIZE));
+	}
+
+	/**
+	 * Returns the <code>PreferenceManager</code> managing the preferences that
+	 * are displayed on this <code>PreferencePage</code>.
+	 * 
+	 * @return the manager
+	 */
+	public PreferenceManager getManager() {
+		return manager;
+	}
+
+	/**
+	 * Sets the <code>PreferenceManager</code> managing the preferences that are
+	 * displayed on this <code>PreferencePage</code>.
+	 * 
+	 * @param manager
+	 *            the manager to set
+	 */
+	public void setManager(PreferenceManager manager) {
+		this.manager = manager;
+	}
+
+	public void initialize(IPreferenceStore store) {
+		String value;
+		inkscapeField.setText((value = store
+				.getValue(ConversionSVG.KEY_INKSCAPE_PATH)) != null ? value
+				: store.getDefault(ConversionSVG.KEY_INKSCAPE_PATH));
+		coreThreadsField.setText((value = store
+				.getValue(ConversionSVG.KEY_CORE_POOL_SIZE)) != null ? value
+				: store.getDefault(ConversionSVG.KEY_CORE_POOL_SIZE));
+		maxThreadsField
+				.setText((value = store
+						.getDefault(ConversionSVG.KEY_MAXIMUM_POOL_SIZE)) != null ? value
+						: store.getDefault(ConversionSVG.KEY_MAXIMUM_POOL_SIZE));
 	}
 
 	//
@@ -189,23 +218,6 @@ public class AdvancedPreferencePage extends PreferencePage {
 	}
 
 	@Override
-	public void initialize(IPreferenceStore store) {
-		String value;
-		inkscapeField
-				.setText((value = store
-						.getValue(MainWindowController.KEY_INKSCAPE_PATH)) != null ? value
-						: store.getDefault(MainWindowController.KEY_INKSCAPE_PATH));
-		coreThreadsField
-				.setText((value = store
-						.getValue(MainWindowController.KEY_CORE_POOL_SIZE)) != null ? value
-						: store.getDefault(MainWindowController.KEY_CORE_POOL_SIZE));
-		maxThreadsField
-				.setText((value = store
-						.getDefault(MainWindowController.KEY_MAXIMUM_POOL_SIZE)) != null ? value
-						: store.getDefault(MainWindowController.KEY_MAXIMUM_POOL_SIZE));
-	}
-
-	@Override
 	public boolean okToLeave() {
 		return !dirty;
 	}
@@ -218,58 +230,24 @@ public class AdvancedPreferencePage extends PreferencePage {
 
 	@Override
 	public boolean performOk() {
-		container.getPreferenceStore()
-				.setValue(MainWindowController.KEY_INKSCAPE_PATH,
-						inkscapeField.getText());
-		container.getPreferenceStore().setValue(
-				MainWindowController.KEY_CORE_POOL_SIZE,
+		manager.getStore().setValue(ConversionSVG.KEY_INKSCAPE_PATH,
+				inkscapeField.getText());
+		manager.getStore().setValue(ConversionSVG.KEY_CORE_POOL_SIZE,
 				coreThreadsField.getText());
-		container.getPreferenceStore().setValue(
-				MainWindowController.KEY_MAXIMUM_POOL_SIZE,
+		manager.getStore().setValue(ConversionSVG.KEY_MAXIMUM_POOL_SIZE,
 				maxThreadsField.getText());
 		return true;
 	}
 
 	@Override
 	public boolean performDefault() {
-		inkscapeField.setText(container.getPreferenceStore().getDefault(
-				MainWindowController.KEY_INKSCAPE_PATH));
-		coreThreadsField.setText(container.getPreferenceStore().getDefault(
-				MainWindowController.KEY_CORE_POOL_SIZE));
-		maxThreadsField.setText(container.getPreferenceStore().getDefault(
-				MainWindowController.KEY_MAXIMUM_POOL_SIZE));
+		inkscapeField.setText(manager.getStore().getDefault(
+				ConversionSVG.KEY_INKSCAPE_PATH));
+		coreThreadsField.setText(manager.getStore().getDefault(
+				ConversionSVG.KEY_CORE_POOL_SIZE));
+		maxThreadsField.setText(manager.getStore().getDefault(
+				ConversionSVG.KEY_MAXIMUM_POOL_SIZE));
 		return true;
-	}
-
-	/**
-	 * Sets the container in which this <code>PreferencePage</code> is being
-	 * held.
-	 * 
-	 * @param container
-	 *            The container in which this <code>PreferencePage</code> is
-	 *            being held.
-	 * @throws NullPointerException
-	 *             if the container argument is <code>null</code>.
-	 */
-	public void setPageContainer(IPreferencePageContainer container)
-			throws NullPointerException {
-		if (container == null) {
-			throw new NullPointerException("container cannot be set to null");
-		}
-		this.container = container;
-	}
-
-	/**
-	 * Returns the container in which this <code>PreferencePage</code> is being
-	 * held.
-	 */
-	public IPreferencePageContainer getPageContainer() {
-		return container;
-	}
-
-	@Override
-	public String getClassName() {
-		return "AdvancedPreferencePage";
 	}
 
 }

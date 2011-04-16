@@ -13,22 +13,17 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 
-import org.prefs.IPreferencePageContainer;
 import org.prefs.IPreferenceStore;
+import org.prefs.PreferenceManager;
 import org.prefs.PreferencePage;
 
 import com.bric.swing.ColorPicker;
 
-import conversion.ui.MainWindowController;
+import conversion.ui.ConversionSVG;
 
 public class DefaultsPreferencePage extends PreferencePage {
 
 	private static final long serialVersionUID = -8539690532878618137L;
-
-	/**
-	 * The page container holding this <code>PreferencePage</code>.
-	 */
-	private IPreferencePageContainer container;
 
 	/**
 	 * Represents whether any setting on this page has changed.
@@ -51,18 +46,13 @@ public class DefaultsPreferencePage extends PreferencePage {
 	 */
 	Color selectedColor = Color.WHITE;
 
-	public DefaultsPreferencePage(String title, String description) {
-		super(title, description);
-		createContents();
-	}
-
 	/**
 	 * Creates a <code>DefaultsPreferencePage</code> object specifying the
 	 * <i>title</i>, and <i>description</i>.
 	 * 
-	 * @param container
-	 *            The container in which this <code>PreferencePage</code> is
-	 *            being held.
+	 * @param manager
+	 *            The preference manager which manages the preferences being
+	 *            displayed on this <code>PreferencePage</code>
 	 * @param title
 	 *            The title. If value is <code>null</code> the <i>title</i>
 	 *            attribute is set to empty string ( <code>""</code>)
@@ -71,19 +61,39 @@ public class DefaultsPreferencePage extends PreferencePage {
 	 *            <i>description</i> attribute is set to empty string (
 	 *            <code>""</code>)
 	 */
-	public DefaultsPreferencePage(IPreferencePageContainer container,
-			String title, String description) {
-		super(title, description);
-		setPageContainer(container);
+	public DefaultsPreferencePage(PreferenceManager manager, String title,
+			String description) {
+		super(manager, title, description);
 		createContents();
 	}
 
 	public void showColorChooser() {
-		if ((selectedColor = ColorPicker.showDialog(container.getWindow(),
-				selectedColor != null ? selectedColor : Color.WHITE)) != null) {
-			colorTextField
-					.setText(Integer.toHexString(selectedColor.getRGB() & 0xffffffff));
-		}
+		// ColorChooser ch = new ColorChooser();
+		// ch.setVisible(true);
+		// if ((selectedColor = ColorPicker.showDialog(container.getWindow(),
+		// selectedColor != null ? selectedColor : Color.WHITE)) != null) {
+		// colorTextField
+		// .setText(Integer.toHexString(selectedColor.getRGB() & 0xffffffff));
+		// }
+	}
+
+	public void initialize(IPreferenceStore store) {
+		String value;
+		widthTextField
+				.setText((value = store
+						.getValue(ConversionSVG.KEY_INKSCAPE_EXPORT_WIDTH)) != null ? value
+						: store
+								.getDefault(ConversionSVG.KEY_INKSCAPE_EXPORT_WIDTH));
+		heightTextField
+				.setText((value = store
+						.getValue(ConversionSVG.KEY_INKSCAPE_EXPORT_HEIGHT)) != null ? value
+						: store
+								.getDefault(ConversionSVG.KEY_INKSCAPE_EXPORT_HEIGHT));
+		colorTextField
+				.setText((value = store
+						.getValue(ConversionSVG.KEY_INKSCAPE_EXPORT_COLOR)) != null ? value
+						: store
+								.getDefault(ConversionSVG.KEY_INKSCAPE_EXPORT_COLOR));
 	}
 
 	//
@@ -185,23 +195,6 @@ public class DefaultsPreferencePage extends PreferencePage {
 	}
 
 	@Override
-	public void initialize(IPreferenceStore store) {
-		String value;
-		widthTextField
-				.setText((value = store
-						.getValue(MainWindowController.KEY_INKSCAPE_EXPORT_WIDTH)) != null ? value
-						: store.getDefault(MainWindowController.KEY_INKSCAPE_EXPORT_WIDTH));
-		heightTextField
-				.setText((value = store
-						.getValue(MainWindowController.KEY_INKSCAPE_EXPORT_HEIGHT)) != null ? value
-						: store.getDefault(MainWindowController.KEY_INKSCAPE_EXPORT_HEIGHT));
-		colorTextField
-				.setText((value = store
-						.getValue(MainWindowController.KEY_INKSCAPE_EXPORT_COLOR)) != null ? value
-						: store.getDefault(MainWindowController.KEY_INKSCAPE_EXPORT_COLOR));
-	}
-
-	@Override
 	public boolean okToLeave() {
 		return !dirty;
 	}
@@ -214,58 +207,24 @@ public class DefaultsPreferencePage extends PreferencePage {
 
 	@Override
 	public boolean performOk() {
-		container.getPreferenceStore().setValue(
-				MainWindowController.KEY_INKSCAPE_EXPORT_WIDTH,
+		manager.getStore().setValue(ConversionSVG.KEY_INKSCAPE_EXPORT_WIDTH,
 				widthTextField.getText());
-		container.getPreferenceStore().setValue(
-				MainWindowController.KEY_INKSCAPE_EXPORT_HEIGHT,
+		manager.getStore().setValue(ConversionSVG.KEY_INKSCAPE_EXPORT_HEIGHT,
 				heightTextField.getText());
-		container.getPreferenceStore().setValue(
-				MainWindowController.KEY_INKSCAPE_EXPORT_COLOR,
+		manager.getStore().setValue(ConversionSVG.KEY_INKSCAPE_EXPORT_COLOR,
 				colorTextField.getText());
 		return true;
 	}
 
 	@Override
 	public boolean performDefault() {
-		widthTextField.setText(container.getPreferenceStore().getDefault(
-				MainWindowController.KEY_INKSCAPE_EXPORT_WIDTH));
-		heightTextField.setText(container.getPreferenceStore().getDefault(
-				MainWindowController.KEY_INKSCAPE_EXPORT_HEIGHT));
-		colorTextField.setText(container.getPreferenceStore().getDefault(
-				MainWindowController.KEY_INKSCAPE_EXPORT_COLOR));
+		widthTextField.setText(manager.getStore().getDefault(
+				ConversionSVG.KEY_INKSCAPE_EXPORT_WIDTH));
+		heightTextField.setText(manager.getStore().getDefault(
+				ConversionSVG.KEY_INKSCAPE_EXPORT_HEIGHT));
+		colorTextField.setText(manager.getStore().getDefault(
+				ConversionSVG.KEY_INKSCAPE_EXPORT_COLOR));
 		return true;
-	}
-
-	/**
-	 * Sets the container in which this <code>PreferencePage</code> is being
-	 * held.
-	 * 
-	 * @param container
-	 *            The container in which this <code>PreferencePage</code> is
-	 *            being held.
-	 * @throws NullPointerException
-	 *             if the container argument is <code>null</code>.
-	 */
-	public void setPageContainer(IPreferencePageContainer container)
-			throws NullPointerException {
-		if (container == null) {
-			throw new NullPointerException("container cannot be set to null");
-		}
-		this.container = container;
-	}
-
-	/**
-	 * Returns the container in which this <code>PreferencePage</code> is being
-	 * held.
-	 */
-	public IPreferencePageContainer getPageContainer() {
-		return container;
-	}
-
-	@Override
-	public String getClassName() {
-		return "DefaultsPreferencePage";
 	}
 
 }
