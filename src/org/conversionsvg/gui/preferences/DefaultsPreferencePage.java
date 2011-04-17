@@ -1,6 +1,7 @@
 package org.conversionsvg.gui.preferences;
 
 import java.awt.Color;
+import java.awt.Dialog;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
@@ -67,17 +68,17 @@ public class DefaultsPreferencePage extends PreferencePage {
 		createContents();
 	}
 
-	public void showColorChooser() {
-		// ColorChooser ch = new ColorChooser();
-		// ch.setVisible(true);
-		// if ((selectedColor = ColorPicker.showDialog(container.getWindow(),
-		// selectedColor != null ? selectedColor : Color.WHITE)) != null) {
-		// colorTextField
-		// .setText(Integer.toHexString(selectedColor.getRGB() & 0xffffffff));
-		// }
-	}
-
-	public void initialize(IPreferenceStore store) {
+	/**
+	 * Initializes the fields on this page with the values in the given store.
+	 * <p>
+	 * The <code>PreferencePage</code> knows which preferences to look for. If a
+	 * preference does not exist in the store, a default value is used.
+	 * </p>
+	 * 
+	 * @param store
+	 *            the store with the initial values
+	 */
+	public void setInitialValues(IPreferenceStore store) {
 		String value;
 		widthTextField
 				.setText((value = store
@@ -94,6 +95,26 @@ public class DefaultsPreferencePage extends PreferencePage {
 						.getValue(ConversionSVG.KEY_INKSCAPE_EXPORT_COLOR)) != null ? value
 						: store
 								.getDefault(ConversionSVG.KEY_INKSCAPE_EXPORT_COLOR));
+	}
+	
+	/**
+	 * @return an <code>ActionListener</code> which handles displaying a
+	 *         <code>JFileChooser</code> with an
+	 *         <code>{@link InkscapeFilter}</code>. The selected file is set as
+	 *         the value of {@link ConversionSVG#KEY_INKSCAPE_PATH}.
+	 */
+	private ActionListener colorActionListener() {
+		return new ActionListener() {
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				if ((selectedColor = ColorPicker.showDialog((Dialog) null,
+						selectedColor != null ? selectedColor : Color.WHITE)) != null) {
+					colorTextField.setText(Integer.toHexString(selectedColor
+							.getRGB() & 0xffffffff));
+				}
+			}
+		};
 	}
 
 	//
@@ -122,7 +143,6 @@ public class DefaultsPreferencePage extends PreferencePage {
 		c = new GridBagConstraints(1, 0, 1, 1, 1, 0,
 				GridBagConstraints.NORTHWEST, GridBagConstraints.HORIZONTAL,
 				new Insets(5, 5, 5, 5), 0, 0);
-		// TODO set the current settings value
 		heightTextField = new JTextField();
 		sizePanel.add(heightTextField, c);
 
@@ -136,12 +156,8 @@ public class DefaultsPreferencePage extends PreferencePage {
 		c = new GridBagConstraints(1, 1, 1, 1, 1, 0,
 				GridBagConstraints.NORTHWEST, GridBagConstraints.HORIZONTAL,
 				new Insets(5, 5, 5, 5), 0, 0);
-		// TODO set the current settings value
 		widthTextField = new JTextField();
 		sizePanel.add(widthTextField, c);
-		//
-		// Size Panel end
-		//
 
 		//
 		// Background
@@ -160,7 +176,6 @@ public class DefaultsPreferencePage extends PreferencePage {
 		c = new GridBagConstraints(1, 0, 1, 1, 1, 0,
 				GridBagConstraints.NORTHWEST, GridBagConstraints.HORIZONTAL,
 				new Insets(5, 5, 5, 5), 0, 0);
-		// TODO set the current settings value
 		colorTextField = new JTextField();
 		backgroundPanel.add(colorTextField, c);
 		c = new GridBagConstraints(2, 0, 1, 1, 1, 0,
@@ -172,18 +187,12 @@ public class DefaultsPreferencePage extends PreferencePage {
 		// this action listener handles converting the selected color w/ opacity
 		// to a
 		// hex value which can then stored in the properties
-		colorButton.addActionListener(new ActionListener() {
-
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				showColorChooser();
-			}
-		});
+		colorButton.addActionListener(colorActionListener());
 		backgroundPanel.add(colorButton, c);
+		
 		//
-		// Background end
+		// add all Panels
 		//
-
 		c = new GridBagConstraints(0, 0, 1, 1, 1, 0,
 				GridBagConstraints.NORTHWEST, GridBagConstraints.HORIZONTAL,
 				new Insets(5, 5, 5, 5), 0, 0);

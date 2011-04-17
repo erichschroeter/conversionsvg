@@ -21,7 +21,7 @@ import javax.swing.JScrollPane;
 public class ProgressDialog extends JDialog
 {
     private static final long serialVersionUID = -3110458696300312879L;
-    ResourceBundle languageBundle = ResourceBundle.getBundle("conversion.resources.i18ln.MainWindow", Locale.getDefault());
+    ResourceBundle languageBundle = ResourceBundle.getBundle("org.conversionsvg.gui.MainWindow", Locale.getDefault());
 
     JPanel                    panel            = new JPanel();
     JProgressBar              progressBar;

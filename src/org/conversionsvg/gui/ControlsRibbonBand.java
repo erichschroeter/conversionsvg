@@ -23,18 +23,18 @@ public class ControlsRibbonBand extends JRibbonBand {
 	private static final long serialVersionUID = -1492139421952545446L;
 	static final Logger logger = Logger.getLogger(ControlsRibbonBand.class);
 	static final ResourceBundle i18ln = ResourceBundle.getBundle(
-			"res/i18ln/ControlsRibbonBand", Locale.getDefault());
+			"org.conversionsvg.gui.ControlsRibbonBand", Locale.getDefault());
 
 	/**
 	 * The image displayed before the convert action is started.
 	 */
 	static final ResizableIcon CONVERT_IMAGE = Helpers
-			.getResizableIconFromResource("res/images/go-next.png");
+			.getResizableIconFromURL("res/images/go-next.png");
 	/**
 	 * The image displayed after the convert action has been started.
 	 */
 	static final ResizableIcon CANCEL_IMAGE = Helpers
-			.getResizableIconFromResource("res/images/process-stop.png");
+			.getResizableIconFromURL("res/images/process-stop.png");
 
 	/**
 	 * The <code>MainWindow</code> this <code>ControlsRibbonBand</code> is
@@ -51,6 +51,11 @@ public class ControlsRibbonBand extends JRibbonBand {
 	 * </p>
 	 */
 	JCommandToggleButton convertButton;
+
+	/**
+	 * Used to keep track of the state of the Convert toggle button.
+	 */
+	private boolean isPressed = false;
 
 	public ControlsRibbonBand(MainWindow window, String title,
 			ResizableIcon icon) {
@@ -82,15 +87,33 @@ public class ControlsRibbonBand extends JRibbonBand {
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				List<File> files = MainWindowController.getFiles(window.fileHeirarchy);
-				Map<String, String> options = MainWindowController
-						.getInkscapeCommandlineOptions(window.pngCheckBox, window.psCheckBox,
-								window.epsCheckBox, window.pdfCheckBox, window.colorPicker,
-								window.heightTextField, window.widthTextField,
-								window.pageRadioButton, window.drawingRadioButton);
-				// TODO disable input (buttons ...)
-				window.controller.handleConvert(files, options);
-				// TODO enable input
+				if (isPressed) {
+					window.controller.handleCancel();
+					convertButton.setIcon(CONVERT_IMAGE);
+				} else {
+					
+					List<File> files = MainWindowController
+							.getFiles(window.fileHeirarchy);
+					Map<String, String> options = MainWindowController
+							.getInkscapeCommandlineOptions(window.pngCheckBox,
+									window.psCheckBox, window.epsCheckBox,
+									window.pdfCheckBox, window.colorPicker,
+									window.heightTextField,
+									window.widthTextField,
+									window.pageRadioButton,
+									window.drawingRadioButton);
+					// TODO disable input (buttons ...)
+					convertButton.setIcon(CANCEL_IMAGE);
+					
+					window.controller.handleConvert(files, options);
+
+					convertButton.setIcon(CONVERT_IMAGE);
+					// TODO enable input
+				}
+				// for some reason DefaultButtonModel.isPressed() is not visible
+				// to us, so we have to keep the state of the convert toggle
+				// button updated
+				isPressed = isPressed ? false : true;
 			}
 		};
 	}

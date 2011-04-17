@@ -16,14 +16,40 @@ public class Helpers {
 
 	static final Logger logger = Logger.getLogger(Helpers.class);
 
-	public static ResizableIcon getResizableIconFromResource(String resource) {
+	/**
+	 * Returns a <code>ResizableIcon</code> from the given URL location.
+	 * <p>
+	 * The <i>resource</i> argument is used to create a <code>URL</code> object
+	 * which is then passed to
+	 * <code>ImageWrapperResizableIcon.getIcon(URL, Dimension)</code>
+	 * </p>
+	 * 
+	 * @param resource
+	 *            the location
+	 * @return a new <code>ResizableIcon</code>
+	 */
+	public static ResizableIcon getResizableIconFromURL(String resource) {
 		URL url = null;
 		try {
-			url = new URL(resource);
+			File file = new File(resource);
+			url = file.toURI().toURL();
 		} catch (MalformedURLException e) {
 			logger.error(e.getMessage());
+			e.printStackTrace();
 		}
 		return ImageWrapperResizableIcon.getIcon(url, new Dimension(48, 48));
+	}
+
+	/**
+	 * Returns a <code>ResizableIcon</code> from the given resource location.
+	 * 
+	 * @param resource
+	 *            the location
+	 * @return a new <code>ResizableIcon</code>
+	 */
+	public static ResizableIcon getResizableIconFromResource(String resource) {
+		return ImageWrapperResizableIcon.getIcon(Helpers.class.getClassLoader()
+				.getResource(resource), new Dimension(48, 48));
 	}
 
 	/**
@@ -64,8 +90,10 @@ public class Helpers {
 	 * <i>file</i>, but with the file extension changed to the given
 	 * <i>extension</i>.
 	 * 
-	 * @param file the base file
-	 * @param extension the new extension
+	 * @param file
+	 *            the base file
+	 * @param extension
+	 *            the new extension
 	 * @return a new <code>File</code>
 	 */
 	public static File changeExtension(File file, String extension) {
@@ -75,4 +103,15 @@ public class Helpers {
 		return new File(path);
 	}
 
+	/**
+	 * Returns a new <code>File</code> with the path changed to the <i>path</i>
+	 * specified, but the same file name.
+	 * 
+	 * @param file the file to change
+	 * @param path the path to move to
+	 * @return the changed <code>File</code>
+	 */
+	public static File changePath(File file, File path) {
+		return new File(path.getPath() + System.getProperty("file.separator") + file.getName());
+	}
 }

@@ -36,14 +36,13 @@ import java.awt.event.ActionListener;
 
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
-import javax.swing.event.TreeSelectionEvent;
-import javax.swing.event.TreeSelectionListener;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 
 import net.sf.fstreem.FileSystemTreeModel;
 
 import org.apache.log4j.Logger;
 import org.conversionsvg.util.Helpers;
-import org.pushingpixels.flamingo.api.common.JCommandMenuButton;
 import org.pushingpixels.flamingo.api.common.JCommandButton.CommandButtonKind;
 import org.pushingpixels.flamingo.api.ribbon.JRibbonBand;
 import org.pushingpixels.flamingo.api.ribbon.JRibbonFrame;
@@ -74,7 +73,7 @@ public class MainWindow extends JRibbonFrame {
 	private static final long serialVersionUID = 6987289183119465870L;
 	static final Logger logger = Logger.getLogger(MainWindow.class);
 	static final ResourceBundle i18ln = ResourceBundle.getBundle(
-			"res/i18ln/MainWindow", Locale.getDefault());
+			"org.conversionsvg.gui.MainWindow", Locale.getDefault());
 
 	IMainWindowController controller;
 
@@ -161,15 +160,14 @@ public class MainWindow extends JRibbonFrame {
 
 	JLabel lblPercent = new JLabel();
 
-	// Event Listener
-	EventListener eventListener = new EventListener(this);
-
 	public MainWindow(IMainWindowController controller) {
 		this.controller = controller;
 		try {
 			init();
 		} catch (Exception e) {
 			logger.error(e.getMessage());
+
+			e.printStackTrace();
 		}
 	}
 
@@ -184,7 +182,7 @@ public class MainWindow extends JRibbonFrame {
 		setTitle("ConversionSVG");
 		setMinimumSize(new Dimension(600, 350));
 		setApplicationIcon(Helpers
-				.getResizableIconFromResource("conversion-svg.png"));
+				.getResizableIconFromURL("res/images/conversion-svg.png"));
 
 		GridBagConstraints constraints = new GridBagConstraints();
 
@@ -230,26 +228,27 @@ public class MainWindow extends JRibbonFrame {
 		menuApplicationButton = new RibbonApplicationMenu();
 
 		saveMenuButton = new RibbonApplicationMenuEntryPrimary(Helpers
-				.getResizableIconFromResource("media-floppy.png"), i18ln
-				.getString("Save"), eventListener,
+				.getResizableIconFromURL("res/images/media-floppy.png"), i18ln
+				.getString("Save"), saveActionListener(),
 				CommandButtonKind.ACTION_ONLY);
 		aboutMenuButton = new RibbonApplicationMenuEntryPrimary(Helpers
-				.getResizableIconFromResource("help-browser.png"), i18ln
+				.getResizableIconFromURL("res/images/help-browser.png"), i18ln
 				.getString("About"), aboutActionListener(),
 				CommandButtonKind.ACTION_AND_POPUP_MAIN_ACTION);
 		settingsMenuButton = new RibbonApplicationMenuEntryPrimary(Helpers
-				.getResizableIconFromResource("applications-system.png"), i18ln
-				.getString("Settings"), settingsActionListener(),
+				.getResizableIconFromURL("res/images/applications-system.png"),
+				i18ln.getString("Settings"), settingsActionListener(),
 				CommandButtonKind.ACTION_AND_POPUP_MAIN_ACTION);
 		inkscapeMenuButton = new RibbonApplicationMenuEntrySecondary(Helpers
-				.getResizableIconFromResource("inkscape.png"), "Inkscape",
-				inkscapeActionListener(), CommandButtonKind.ACTION_ONLY);
+				.getResizableIconFromURL("res/images/inkscape.png"),
+				"Inkscape", inkscapeActionListener(),
+				CommandButtonKind.ACTION_ONLY);
 		aboutMenuButton
 				.addSecondaryMenuGroup("Information", inkscapeMenuButton);
 
 		quitMenuButton = new RibbonApplicationMenuEntryFooter(Helpers
-				.getResizableIconFromResource("system-log-out.png"), i18ln
-				.getString("Quit"), quitActionListener());
+				.getResizableIconFromURL("res/images/system-log-out.png"),
+				i18ln.getString("Quit"), quitActionListener());
 
 		menuApplicationButton.addMenuEntry(saveMenuButton);
 		menuApplicationButton.addMenuSeparator();
@@ -499,7 +498,7 @@ public class MainWindow extends JRibbonFrame {
 		outputDirectoryGroup.add(singleOutputDirectoryRadio);
 		outputDirectoryGroup.add(sameOutputDirectoryRadio);
 		sameOutputDirectoryRadio.setSelected(true);
-		singleOutputDirectoryRadio.addChangeListener(eventListener);
+		singleOutputDirectoryRadio.addChangeListener(singleDirChangeListener());
 		changeRootButton.setText("...");
 		changeRootButton.addActionListener(changeRootActionListener());
 
@@ -528,6 +527,8 @@ public class MainWindow extends JRibbonFrame {
 		constraints = new GridBagConstraints(0, 4, 1, 1, 1, 0,
 				GridBagConstraints.NORTHWEST, GridBagConstraints.HORIZONTAL,
 				new Insets(2, 2, 2, 2), 0, 0);
+		outputDirectoryTextField.getDocument().addDocumentListener(
+				outputDirDocumentListener());
 		fileSelectPanel.add(outputDirectoryTextField, constraints);
 		constraints = new GridBagConstraints(1, 4, 1, 1, 0, 0,
 				GridBagConstraints.NORTHWEST, GridBagConstraints.HORIZONTAL,
@@ -571,13 +572,8 @@ public class MainWindow extends JRibbonFrame {
 		// File Select
 		// fileHeirarchy.addTreeSelectionListener(eventListener);
 		// fileHeirarchy.addTreeSelectionListener(eventListener);
-		fileHeirarchy.getCheckBoxTreeSelectionModel().addTreeSelectionListener(
-				eventListener);
 		widthTextField.addKeyListener(new NumberKeyAdapter(this));
 		heightTextField.addKeyListener(new NumberKeyAdapter(this));
-		singleOutputDirectoryRadio.addActionListener(eventListener);
-		sameOutputDirectoryRadio.addActionListener(eventListener);
-		outputDirectoryEllipse.addActionListener(eventListener);
 
 		pack();
 	}
@@ -608,7 +604,7 @@ public class MainWindow extends JRibbonFrame {
 	 * 
 	 * @return this instance
 	 */
-	private MainWindow getInstace() {
+	private MainWindow getInstance() {
 		return this;
 	}
 
@@ -651,6 +647,20 @@ public class MainWindow extends JRibbonFrame {
 	//
 	// Action Listeners
 	//
+
+	/**
+	 * @return an <code>ActionListener</code> which handles calling the
+	 *         <i>controller</i>'s <code>handleSave()</code> function.
+	 */
+	private ActionListener saveActionListener() {
+		return new ActionListener() {
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				controller.handleSave();
+			}
+		};
+	}
 
 	/**
 	 * @return an <code>ActionListener</code> which handles calling the
@@ -734,10 +744,35 @@ public class MainWindow extends JRibbonFrame {
 			public void actionPerformed(ActionEvent e) {
 				JFileChooser chooser = new JFileChooser();
 				chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-				if (chooser.showSaveDialog(getInstace()) == JFileChooser.APPROVE_OPTION) {
+				if (chooser.showSaveDialog(getInstance()) == JFileChooser.APPROVE_OPTION) {
 					outputDirectoryTextField.setText(chooser.getSelectedFile()
 							.getAbsolutePath());
 				}
+			}
+		};
+	}
+
+	private DocumentListener outputDirDocumentListener() {
+		return new DocumentListener() {
+
+			@Override
+			public void removeUpdate(DocumentEvent e) {
+				updateSingleOutputDir();
+			}
+
+			@Override
+			public void insertUpdate(DocumentEvent e) {
+				updateSingleOutputDir();
+			}
+
+			@Override
+			public void changedUpdate(DocumentEvent e) {
+				updateSingleOutputDir();
+			}
+
+			private void updateSingleOutputDir() {
+				MainWindowController.setSingleOutputDirectory(new File(
+						outputDirectoryTextField.getText()));
 			}
 		};
 	}
@@ -755,7 +790,7 @@ public class MainWindow extends JRibbonFrame {
 			public void actionPerformed(ActionEvent e) {
 				JFileChooser chooser = new JFileChooser();
 				chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-				if (chooser.showSaveDialog(getInstace()) == JFileChooser.APPROVE_OPTION) {
+				if (chooser.showSaveDialog(getInstance()) == JFileChooser.APPROVE_OPTION) {
 					controller.handleChangeRoot(fileHeirarchy, chooser
 							.getSelectedFile());
 				}
@@ -764,93 +799,21 @@ public class MainWindow extends JRibbonFrame {
 	}
 
 	/**
-	 * Private class to handle the MainWindow events
-	 * 
-	 * @author Erich Schroeter
+	 * @return an <code>ChangeListener</code> which handles calling
+	 *         <code>{@link #checkSingleOutputDirectoryOption(boolean)</code>
 	 */
-	private class EventListener implements ActionListener,
-			TreeSelectionListener, ChangeListener {
-		MainWindow mainwindow;
+	private ChangeListener singleDirChangeListener() {
+		return new ChangeListener() {
 
-		public EventListener(MainWindow mainwindow) {
-			this.mainwindow = mainwindow;
-		}
-
-		@Override
-		public void actionPerformed(ActionEvent e) {
-			Object obj = e.getSource();
-
-			// There must be a bug in Flamingo's comparison implementation.
-			// Comparing obj.getSource()
-			// to a JCommandMenuButton does not work, so this is the only way I
-			// can get it to work
-			if (obj.getClass() == JCommandMenuButton.class) {
-				JCommandMenuButton btn = (JCommandMenuButton) obj;
-				if (btn.getText().equals(settingsMenuButton.getText())) {
-					controller.handleSettings();
+			@Override
+			public void stateChanged(ChangeEvent e) {
+				Object obj = e.getSource();
+				if (obj.equals(singleOutputDirectoryRadio)) {
+					checkSingleOutputDirectoryOption(singleOutputDirectoryRadio
+							.isSelected());
 				}
 			}
-			// File Select
-			if (obj.equals(singleOutputDirectoryRadio)) {
-				// handle set flag to only allow one output directory
-
-			} else if (obj.equals(sameOutputDirectoryRadio)) {
-				// handle exporting all images to their respective same
-				// directory
-				// sameOutputDir_actionPerformed()
-
-			} else if (obj.equals(outputDirectoryEllipse)) {
-			} else if (obj.equals(changeRootButton)) {
-			}
-
-			// Output Format
-			else if (obj.equals(pngCheckBox)) {
-				// TODO handle updating whoever needs to know what else to
-				// export
-			} else if (obj.equals(pdfCheckBox)) {
-				// TODO handle updating whoever needs to know what else to
-				// export
-			} else if (obj.equals(epsCheckBox)) {
-				// TODO handle updating whoever needs to know what else to
-				// export
-			} else if (obj.equals(psCheckBox)) {
-				// TODO handle updating whoever needs to know what else to
-				// export
-			}
-
-			// Export Area
-			else if (obj.equals(drawingRadioButton)) {
-				// TODO handle updating converter with the switch
-			} else if (obj.equals(pageRadioButton)) {
-				// TODO handle updating converter with the switch
-			}
-
-			// Size
-			else if (obj.equals(unitComboBox)) {
-				// TODO handle updating converter with the switch(es)
-			}
-		}
-
-		@Override
-		public void valueChanged(TreeSelectionEvent e) {
-			// TODO if singleDirectoryCheckbox isSelected() then set output
-			// directory to e.getPath();
-			// controller.setFiles(files)
-			// for (TreePath path : e.getPaths())
-			// {
-			// System.out.println(path);
-			// }
-		}
-
-		@Override
-		public void stateChanged(ChangeEvent e) {
-			Object obj = e.getSource();
-			if (obj.equals(singleOutputDirectoryRadio)) {
-				mainwindow
-						.checkSingleOutputDirectoryOption(singleOutputDirectoryRadio
-								.isSelected());
-			}
-		}
+		};
 	}
 }
 

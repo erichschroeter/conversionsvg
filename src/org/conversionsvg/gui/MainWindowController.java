@@ -51,11 +51,17 @@ public class MainWindowController implements IMainWindowController {
 
 	static final Logger logger = Logger.getLogger(MainWindowController.class);
 	static final ResourceBundle i18ln = ResourceBundle.getBundle(
-			"res.i18ln.MainWindow", Locale.getDefault());
+			"org.conversionsvg.gui.MainWindow", Locale.getDefault());
 
 	private PreferenceManager manager;
 
-	protected File inkscapeExecutable;
+	/**
+	 * The Inkscape executable. This is used in
+	 * <code>{@link #handleConvert(List, Map)}</code> to add to a
+	 * <code>List</code> of commands which in turn are passed to a
+	 * <code>Converter</code> object..
+	 */
+	private File inkscapeExecutable;
 
 	private PreferenceDialog preferenceDialog;
 
@@ -64,6 +70,13 @@ public class MainWindowController implements IMainWindowController {
 	 * avoid showing the <code>ConfirmAllDialog</code>.
 	 */
 	private boolean yesToAll = false;
+
+	/**
+	 * Used by <code>{@link #handleConvert(List, Map)}</code> to determine
+	 * whether to change the directory path of the file to be converted or just
+	 * the extension.
+	 */
+	private static File singleDirectoryOutput = null;
 
 	// ThreadPool defaults
 	private int corePoolSize = 2;
@@ -96,24 +109,6 @@ public class MainWindowController implements IMainWindowController {
 					inkscapeExecutable.getAbsolutePath());
 		}
 		// END get the path to Inkscape
-
-		// if ((inkscapeExecutable = findInkscapeExecutable()) == null)
-		// {
-		// JFileChooser inkscapeChooser = new
-		// JFileChooser(FileSystemView.getFileSystemView().getHomeDirectory());
-		// inkscapeChooser.setFileFilter(new InkscapeFilter());
-		// inkscapeChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
-		// if (inkscapeChooser.showOpenDialog(mainwindow) ==
-		// JFileChooser.APPROVE_OPTION)
-		// {
-		// inkscapeExecutable = inkscapeChooser.getSelectedFile();
-		// settings.setProperty("inkscape_location",
-		// inkscapeExecutable.getAbsolutePath());
-		// } else
-		// {
-		// System.exit(0);
-		// }
-		// }
 
 		// BEGIN configure thread pool
 		String value;
@@ -271,28 +266,34 @@ public class MainWindowController implements IMainWindowController {
 				// progressBar.setValue(completedProcesses);
 				logger.debug("TODO\t" + "update the ProgressBar");
 				File file;
-				if (info.options.contains("-e")) {
-					file = new File(info.options
-							.get(info.options.indexOf("-e")));
+				if (info.command.contains("-e")) {
+					file = new File(info.command
+							.get(info.command.indexOf("-e") + 1));
 					logger.info(file.getAbsoluteFile());
 				}
-				if (info.options.contains("-E")) {
-					file = new File(info.options
-							.get(info.options.indexOf("-E")));
+				if (info.command.contains("-E")) {
+					file = new File(info.command
+							.get(info.command.indexOf("-E") + 1));
 					logger.info(file.getAbsoluteFile());
 				}
-				if (info.options.contains("-A")) {
-					file = new File(info.options
-							.get(info.options.indexOf("-A")));
+				if (info.command.contains("-A")) {
+					file = new File(info.command
+							.get(info.command.indexOf("-A") + 1));
 					logger.info(file.getAbsoluteFile());
 				}
-				if (info.options.contains("-P")) {
-					file = new File(info.options
-							.get(info.options.indexOf("-P")));
+				if (info.command.contains("-P")) {
+					file = new File(info.command
+							.get(info.command.indexOf("-P") + 1));
 					logger.info(file.getAbsoluteFile());
 				}
 			}
 		};
+	}
+
+	public static void setSingleOutputDirectory(File dir) {
+		if (dir.isDirectory()) {
+			singleDirectoryOutput = dir;
+		}
 	}
 
 	//
@@ -348,18 +349,30 @@ public class MainWindowController implements IMainWindowController {
 
 		for (File file : files) {
 			command = new ArrayList<String>();
+			command.add(inkscapeExecutable.getAbsolutePath());
 
 			int choice = ConfirmAllDialog.NONE;
 			File exportFile;
 
 			// PNG
 			if (options.containsKey("-e")) {
-				exportFile = Helpers.changeExtension(file, "png");
+				// TODO if singleDir is selected change the path and extension
+				// TODO if sameDir is selected just change extension
+				exportFile = singleDirectoryOutput != null ? Helpers
+						.changePath(Helpers.changeExtension(file, "png"),
+								singleDirectoryOutput) : Helpers
+						.changeExtension(file, "png");
 
 				if (!yesToAll) {
-					choice = ConfirmAllDialog.showDialog(file.getAbsolutePath()
-							+ i18ln.getString("FileExistsModalMessage"), i18ln
-							.getString("FileExists"));
+					choice = exportFile.exists() ? ConfirmAllDialog
+							.showDialog(
+									"<"
+											+ file.getAbsolutePath()
+											+ "> "
+											+ i18ln
+													.getString("FileExistsModalMessage"),
+									i18ln.getString("FileExists"))
+							: ConfirmAllDialog.NONE;
 					if (choice == ConfirmAllDialog.NO) {
 						continue;
 					} else if (choice == ConfirmAllDialog.NO_TO_ALL) {
@@ -380,9 +393,15 @@ public class MainWindowController implements IMainWindowController {
 				exportFile = Helpers.changeExtension(file, "ps");
 
 				if (!yesToAll) {
-					choice = ConfirmAllDialog.showDialog(file.getAbsolutePath()
-							+ i18ln.getString("FileExistsModalMessage"), i18ln
-							.getString("FileExists"));
+					choice = exportFile.exists() ? ConfirmAllDialog
+							.showDialog(
+									"<"
+											+ file.getAbsolutePath()
+											+ "> "
+											+ i18ln
+													.getString("FileExistsModalMessage"),
+									i18ln.getString("FileExists"))
+							: ConfirmAllDialog.NONE;
 					if (choice == ConfirmAllDialog.NO) {
 						continue;
 					} else if (choice == ConfirmAllDialog.NO_TO_ALL) {
@@ -403,9 +422,15 @@ public class MainWindowController implements IMainWindowController {
 				exportFile = Helpers.changeExtension(file, "pdf");
 
 				if (!yesToAll) {
-					choice = ConfirmAllDialog.showDialog(file.getAbsolutePath()
-							+ i18ln.getString("FileExistsModalMessage"), i18ln
-							.getString("FileExists"));
+					choice = exportFile.exists() ? ConfirmAllDialog
+							.showDialog(
+									"<"
+											+ file.getAbsolutePath()
+											+ "> "
+											+ i18ln
+													.getString("FileExistsModalMessage"),
+									i18ln.getString("FileExists"))
+							: ConfirmAllDialog.NONE;
 					if (choice == ConfirmAllDialog.NO) {
 						continue;
 					} else if (choice == ConfirmAllDialog.NO_TO_ALL) {
@@ -426,9 +451,15 @@ public class MainWindowController implements IMainWindowController {
 				exportFile = Helpers.changeExtension(file, "eps");
 
 				if (!yesToAll) {
-					choice = ConfirmAllDialog.showDialog(file.getAbsolutePath()
-							+ i18ln.getString("FileExistsModalMessage"), i18ln
-							.getString("FileExists"));
+					choice = exportFile.exists() ? ConfirmAllDialog
+							.showDialog(
+									"<"
+											+ file.getAbsolutePath()
+											+ "> "
+											+ i18ln
+													.getString("FileExistsModalMessage"),
+									i18ln.getString("FileExists"))
+							: ConfirmAllDialog.NONE;
 					if (choice == ConfirmAllDialog.NO) {
 						continue;
 					} else if (choice == ConfirmAllDialog.NO_TO_ALL) {
