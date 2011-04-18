@@ -26,6 +26,7 @@ import java.awt.Dimension;
 import java.awt.GridBagConstraints;
 
 import javax.swing.DefaultComboBoxModel;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 
@@ -69,7 +70,7 @@ import java.util.Vector;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class MainWindow extends JRibbonFrame {
+public class MainWindow extends JRibbonFrame implements IProgressListener {
 	private static final long serialVersionUID = 6987289183119465870L;
 	static final Logger logger = Logger.getLogger(MainWindow.class);
 	static final ResourceBundle i18ln = ResourceBundle.getBundle(
@@ -79,7 +80,6 @@ public class MainWindow extends JRibbonFrame {
 
 	ResourceBundle imageBundle;
 	JSplitPane splitPane;
-	Container contentPane;
 
 	// ------------------------------------------------
 	// Ribbon
@@ -93,21 +93,11 @@ public class MainWindow extends JRibbonFrame {
 
 	RibbonTask homeTask;
 
-	// JRibbonBand controlsBand;
-	// JRibbonBand preferencesBand;
-	// JRibbonBand monitorBand;
 	//
-	// JCommandButton convertButton;
-	// JCommandButton cancelButton;
-	// JCommandButton languageButton;
-	// JCommandButton accessibilityButton;
-	// JCommandButton fontButton;
-	// JCommandButton shortcutsButton;
-	// JCommandButton statusMonitorButton;
+	// Options
+	//
 
-	// ------------------------------------------------
 	// Options Panel
-	// ------------------------------------------------
 	JPanel optionsPanel = new JPanel();
 
 	// Output Format
@@ -136,19 +126,23 @@ public class MainWindow extends JRibbonFrame {
 	// Background Color Picker
 	ColorPicker colorPicker = new ColorPicker(true, true);
 
-	// ------------------------------------------------
-	// END Options Panel
-	// ------------------------------------------------
+	//
+	// File Hierarchy
+	//
 
-	// File Select
-	File root = new File(System.getProperty("user.home"));
-	// these filters filter what WILL be displayed (meaning if it doesn't match
-	// one
-	// of these filters, then it won't be shown)
+	// CheckBoxTree
+	/**
+	 * Used to initialize {@link #filters}.
+	 */
 	static final FileFilter[] heirarchy_filters = { new SVGFilter(),
 			new NonHiddenDirectoryFilter() };
+	/**
+	 * These filters filter what <i>WILL</i> be displayed (meaning if it doesn't
+	 * match one of these filters, then it won't be shown)
+	 */
 	static final Vector<FileFilter> filters = new Vector<FileFilter>(Arrays
 			.asList(heirarchy_filters));
+	File root = new File(System.getProperty("user.home"));
 	JPanel fileSelectPanel = new JPanel();
 	CheckBoxTree fileHeirarchy;
 	JButton changeRootButton = new JButton();
@@ -158,7 +152,15 @@ public class MainWindow extends JRibbonFrame {
 	JTextField outputDirectoryTextField = new JTextField();
 	JButton outputDirectoryEllipse = new JButton("...");
 
-	JLabel lblPercent = new JLabel();
+	/**
+	 * The progress bar which displays the progress of the conversion.
+	 */
+	JProgressBar progressBar;
+
+	/**
+	 * Used as the progress indicator for the {@link #progressBar}.
+	 */
+	private int completedProcesses = 0;
 
 	public MainWindow(IMainWindowController controller) {
 		this.controller = controller;
@@ -172,7 +174,36 @@ public class MainWindow extends JRibbonFrame {
 	}
 
 	/**
-	 * Initialisation du composant.
+	 * Initializes the <code>MainWindow</code> graphical components.
+	 * 
+	 * <pre>
+	 * _____________________________________________________________
+	 * |															|
+	 * |						Ribbon								|
+	 * |____________________________________________________________|
+	 * |							|								|
+	 * |							|								|
+	 * |							|								|
+	 * |							|								|
+	 * |							|								|
+	 * |							|								|
+	 * |							|								|
+	 * |							|								|
+	 * |							|								|
+	 * |		Options				|		File Hierarchy			|
+	 * |							|								|
+	 * |							|								|
+	 * |							|								|
+	 * |							|								|
+	 * |							|								|
+	 * |							|								|
+	 * |							|								|
+	 * |							|								|
+	 * |							|								|
+	 * |____________________________|_______________________________|
+	 * |______________________Progress Bar__________________________|
+	 * 
+	 * <pre>
 	 * 
 	 * @throws java.lang.Exception
 	 */
@@ -184,47 +215,54 @@ public class MainWindow extends JRibbonFrame {
 		setApplicationIcon(Helpers
 				.getResizableIconFromURL("res/images/conversion-svg.png"));
 
-		GridBagConstraints constraints = new GridBagConstraints();
+		GridBagConstraints c;
 
+		//
 		// ContentPane
-		contentPane = getContentPane();
+		//
+
+		// SplitPane
 		splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
 		splitPane.setResizeWeight(0);
 		splitPane.setDividerSize(9);
 		splitPane.setOneTouchExpandable(true);
-		contentPane.add(splitPane, BorderLayout.CENTER);
+		getContentPane().add(splitPane, BorderLayout.CENTER);
 
 		JScrollPane optionsPanelScrollPane = new JScrollPane(optionsPanel);
 		splitPane.setTopComponent(optionsPanelScrollPane);
 		splitPane.setRightComponent(fileSelectPanel);
+
+		// Progress
+		progressBar = new JProgressBar();
+		progressBar.setStringPainted(true);
+		controller.addProgressListener(this);
+		getContentPane().add(progressBar, BorderLayout.SOUTH);
 
 		// Options Panel
 		optionsPanel.setLayout(new GridBagLayout());
 		optionsPanel.setMinimumSize(new Dimension(400, 600));
 		optionsPanel.setPreferredSize(new Dimension(400, 600));
 
-		// (gridx, gridy, gridwidth, gridheight, weightx, weighty, anchor, fill,
-		// insets, ipadx, ipady)
-		constraints = new GridBagConstraints(0, 0, 1, 1, 0, 0,
+		c = new GridBagConstraints(0, 0, 1, 1, 0, 0,
 				GridBagConstraints.NORTHWEST, GridBagConstraints.HORIZONTAL,
 				new Insets(5, 5, 5, 5), 0, 0);
-		optionsPanel.add(outputFormatPanel, constraints);
-		constraints = new GridBagConstraints(0, 1, 1, 1, 0, 0,
+		optionsPanel.add(outputFormatPanel, c);
+		c = new GridBagConstraints(0, 1, 1, 1, 0, 0,
 				GridBagConstraints.NORTHWEST, GridBagConstraints.HORIZONTAL,
 				new Insets(5, 5, 5, 5), 0, 0);
-		optionsPanel.add(exportAreaPanel, constraints);
-		constraints = new GridBagConstraints(0, 2, 1, 1, 0, 0,
+		optionsPanel.add(exportAreaPanel, c);
+		c = new GridBagConstraints(0, 2, 1, 1, 0, 0,
 				GridBagConstraints.NORTHWEST, GridBagConstraints.HORIZONTAL,
 				new Insets(5, 5, 5, 5), 0, 0);
-		optionsPanel.add(sizePanel, constraints);
-		constraints = new GridBagConstraints(0, 3, 1, 1, 1, 0,
+		optionsPanel.add(sizePanel, c);
+		c = new GridBagConstraints(0, 3, 1, 1, 1, 0,
 				GridBagConstraints.NORTHWEST, GridBagConstraints.BOTH,
 				new Insets(5, 5, 5, 5), 0, 0);
-		optionsPanel.add(colorPicker, constraints);
+		optionsPanel.add(colorPicker, c);
 
-		// ------------------------------------------------
+		//
 		// Ribbon
-		// ------------------------------------------------
+		//
 		menuApplicationButton = new RibbonApplicationMenu();
 
 		saveMenuButton = new RibbonApplicationMenuEntryPrimary(Helpers
@@ -258,134 +296,22 @@ public class MainWindow extends JRibbonFrame {
 
 		getRibbon().setApplicationMenu(menuApplicationButton);
 
-		// Controls Band ----------------------------------
-		// convertButton = new JCommandButton(i18ln
-		// .getString("ConvertButton"),
-		// getResizableIconFromResource("go-next.png"));
-		// cancelButton = new JCommandButton(i18ln.getString("Cancel"),
-		// getResizableIconFromResource("process-stop.png"));
 		//
-		// controlsBand = new JRibbonBand(i18ln
-		// .getString("ControlsRibbonBand"), getApplicationIcon());
-		// controlsBand.addCommandButton(convertButton,
-		// RibbonElementPriority.TOP);
-		// controlsBand.addCommandButton(cancelButton,
-		// RibbonElementPriority.TOP);
+		// ControlsRibbonBand
 		//
-		// List<RibbonBandResizePolicy> resizePolicies = new
-		// ArrayList<RibbonBandResizePolicy>();
-		// resizePolicies.add(new CoreRibbonResizePolicies.Mirror(controlsBand
-		// .getControlPanel()));
-		// resizePolicies.add(new CoreRibbonResizePolicies.High2Mid(controlsBand
-		// .getControlPanel()));
-		// controlsBand.setResizePolicies(resizePolicies);
 		JRibbonBand controlsBand = new ControlsRibbonBand(this, "Controls",
 				getApplicationIcon());
-		// END --------------------------------------------
 
-		// Preferences Band -------------------------------
-		// languageButton = new JCommandButton(i18ln
-		// .getString("LanguageButton"),
-		// getResizableIconFromResource("preferences-desktop-locale.png"));
-		// languageButton.setCommandButtonKind(CommandButtonKind.POPUP_ONLY);
-		// languageButton.setPopupCallback(new PopupPanelCallback() {
 		//
-		// @Override
-		// public JPopupPanel getPopupPanel(JCommandButton commandButton) {
-		// JCommandPopupMenu menu = new JCommandPopupMenu();
-		// menu.addMenuButton(createLanguageButton(i18ln
-		// .getString("en"), Locale.US));
-		// menu.addMenuButton(createLanguageButton(i18ln
-		// .getString("fr"), Locale.FRANCE));
-		// return menu;
-		// }
+		// add all bands to task
 		//
-		// private JCommandMenuButton createLanguageButton(
-		// String languageText, Locale locale) {
-		// final Locale finalLocale = locale; // needed for the inner class
-		// // NOTE this method depends on a standard naming convention of
-		// // the flag image
-		// JCommandMenuButton button = new JCommandMenuButton(
-		// languageText, getResizableIconFromResource("flag-"
-		// + locale.getCountry().toLowerCase() + ".png"));
-		// button.addActionListener(new ActionListener() {
-		//
-		// @Override
-		// public void actionPerformed(ActionEvent e) {
-		// controller.handleChangeLanguage(finalLocale);
-		// }
-		// });
-		// return button;
-		// }
-		// });
-		// accessibilityButton = new JCommandButton(
-		// i18ln.getString("AccessibilityButton"),
-		// getResizableIconFromResource("preferences-desktop-accessibility.png"));
-		// fontButton = new JCommandButton(i18ln.getString("FontButton"),
-		// getResizableIconFromResource("preferences-desktop-font.png"));
-		// shortcutsButton = new JCommandButton(
-		// i18ln.getString("ShortcutsButton"),
-		// getResizableIconFromResource("preferences-desktop-keyboard-shortcuts.png"));
-
-		// -----------------------------------------------
-		// Remove button disabling once functionality is implemented
-		// -----------------------------------------------
-		// accessibilityButton.setEnabled(false);
-		// fontButton.setEnabled(false);
-		// shortcutsButton.setEnabled(false);
-		//
-		// preferencesBand = new JRibbonBand(i18ln
-		// .getString("PreferencesRibbonBand"), getApplicationIcon());
-		// preferencesBand.addCommandButton(languageButton,
-		// RibbonElementPriority.TOP);
-		// preferencesBand.addCommandButton(accessibilityButton,
-		// RibbonElementPriority.MEDIUM);
-		// preferencesBand.addCommandButton(fontButton,
-		// RibbonElementPriority.MEDIUM);
-		// preferencesBand.addCommandButton(shortcutsButton,
-		// RibbonElementPriority.MEDIUM);
-		//
-		// resizePolicies = new ArrayList<RibbonBandResizePolicy>();
-		// resizePolicies.add(new
-		// CoreRibbonResizePolicies.Mirror(preferencesBand
-		// .getControlPanel()));
-		// resizePolicies.add(new CoreRibbonResizePolicies.High2Mid(
-		// preferencesBand.getControlPanel()));
-		// resizePolicies.add(new
-		// CoreRibbonResizePolicies.Mid2Low(preferencesBand
-		// .getControlPanel()));
-		// preferencesBand.setResizePolicies(resizePolicies);
-		// END --------------------------------------------
-
-		// Monitor Band -----------------------------------
-		// statusMonitorButton = new JCommandButton(i18ln
-		// .getString("StatusMonitorButton"),
-		// getResizableIconFromResource("utilities-system-monitor.png"));
-		//
-		// monitorBand = new JRibbonBand(i18ln
-		// .getString("MonitorRibbonBand"), getApplicationIcon());
-		// monitorBand.addCommandButton(statusMonitorButton,
-		// RibbonElementPriority.TOP);
-
-		// -----------------------------------------------
-		// Remove button disabling once functionality is implemented
-		// -----------------------------------------------
-		// statusMonitorButton.setEnabled(false);
-		//
-		// resizePolicies = new ArrayList<RibbonBandResizePolicy>();
-		// resizePolicies.add(new CoreRibbonResizePolicies.Mirror(monitorBand
-		// .getControlPanel()));
-		// resizePolicies.add(new CoreRibbonResizePolicies.Mid2Low(monitorBand
-		// .getControlPanel()));
-		// monitorBand.setResizePolicies(resizePolicies);
-		// END --------------------------------------------
-
 		homeTask = new RibbonTask(i18ln.getString("HomeRibbonTask"),
 				controlsBand);
 		getRibbon().addTask(homeTask);
-		// ------------------------------------------------
-		// END Ribbon
-		// ------------------------------------------------
+
+		//
+		// Options Panel
+		//
 
 		// Output Format
 		GroupLayout layout = new GroupLayout(outputFormatPanel);
@@ -438,38 +364,35 @@ public class MainWindow extends JRibbonFrame {
 		widthTextField.setBorder(BorderFactory.createLoweredBevelBorder());
 		heightTextField.setColumns(10);
 
+		widthTextField.addKeyListener(new NumberKeyAdapter(this));
+		heightTextField.addKeyListener(new NumberKeyAdapter(this));
+
 		ComboBoxModel unitModel = new DefaultComboBoxModel(units);
 		unitComboBox.setModel(unitModel);
 		unitComboBox.setEnabled(false);
 
-		// (gridx, gridy, gridwidth, gridheight, weightx, weighty, anchor, fill,
-		// insets, ipadx, ipady)
 		sizePanel.setLayout(new GridBagLayout());
-		constraints = new GridBagConstraints(0, 0, 1, 1, 0, 0,
-				GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(5,
-						5, 5, 5), 0, 0);
-		sizePanel.add(heightLabel, constraints);
-		constraints = new GridBagConstraints(0, 1, 1, 1, 0, 0,
-				GridBagConstraints.EAST, GridBagConstraints.NONE, new Insets(5,
-						5, 5, 5), 0, 0);
-		sizePanel.add(widthLabel, constraints);
-		constraints = new GridBagConstraints(1, 0, 1, 1, 0, 0,
+		c = new GridBagConstraints(0, 0, 1, 1, 0, 0, GridBagConstraints.EAST,
+				GridBagConstraints.NONE, new Insets(5, 5, 5, 5), 0, 0);
+		sizePanel.add(heightLabel, c);
+		c = new GridBagConstraints(0, 1, 1, 1, 0, 0, GridBagConstraints.EAST,
+				GridBagConstraints.NONE, new Insets(5, 5, 5, 5), 0, 0);
+		sizePanel.add(widthLabel, c);
+		c = new GridBagConstraints(1, 0, 1, 1, 0, 0,
 				GridBagConstraints.NORTHWEST, GridBagConstraints.HORIZONTAL,
 				new Insets(5, 5, 5, 5), 0, 0);
-		sizePanel.add(heightTextField, constraints);
-		constraints = new GridBagConstraints(1, 1, 1, 1, 0, 0,
+		sizePanel.add(heightTextField, c);
+		c = new GridBagConstraints(1, 1, 1, 1, 0, 0,
 				GridBagConstraints.NORTHWEST, GridBagConstraints.HORIZONTAL,
 				new Insets(5, 5, 5, 5), 0, 0);
-		sizePanel.add(widthTextField, constraints);
-		constraints = new GridBagConstraints(2, 0, 1, 2, 0, 0,
-				GridBagConstraints.CENTER, GridBagConstraints.HORIZONTAL,
-				new Insets(5, 5, 5, 5), 0, 0);
-		sizePanel.add(unitComboBox, constraints);
+		sizePanel.add(widthTextField, c);
+		c = new GridBagConstraints(2, 0, 1, 2, 0, 0, GridBagConstraints.CENTER,
+				GridBagConstraints.HORIZONTAL, new Insets(5, 5, 5, 5), 0, 0);
+		sizePanel.add(unitComboBox, c);
 		// and a spacer to make everything anchor to the EAST
-		constraints = new GridBagConstraints(3, 0, 1, 2, 1, 0,
-				GridBagConstraints.CENTER, GridBagConstraints.HORIZONTAL,
-				new Insets(5, 5, 5, 5), 0, 0);
-		sizePanel.add(new JPanel(), constraints);
+		c = new GridBagConstraints(3, 0, 1, 2, 1, 0, GridBagConstraints.CENTER,
+				GridBagConstraints.HORIZONTAL, new Insets(5, 5, 5, 5), 0, 0);
+		sizePanel.add(new JPanel(), c);
 
 		sizePanel.setBorder(BorderFactory.createTitledBorder(i18ln
 				.getString("SizePanel")));
@@ -480,9 +403,11 @@ public class MainWindow extends JRibbonFrame {
 				.getString("BackgroundPanel")));
 		colorPicker.setEnabled(false);
 
-		// ------------------------------------------------
-		// File Select
-		// ------------------------------------------------
+		//
+		// File Select Panel
+		//
+
+		// Tree Hierarchy
 		FileSystemTreeModel model = new FileSystemTreeModel(root, filters);
 		fileHeirarchy = new CheckBoxTree(model);
 		JScrollPane fileSelectScrollPane = new JScrollPane(fileHeirarchy);
@@ -502,39 +427,37 @@ public class MainWindow extends JRibbonFrame {
 		changeRootButton.setText("...");
 		changeRootButton.addActionListener(changeRootActionListener());
 
-		// (gridx, gridy, gridwidth, gridheight, weightx, weighty, anchor, fill,
-		// insets, ipadx, ipady)
-		constraints = new GridBagConstraints(1, 0, 1, 1, 0, 0,
+		c = new GridBagConstraints(1, 0, 1, 1, 0, 0,
 				GridBagConstraints.NORTHWEST, GridBagConstraints.HORIZONTAL,
 				new Insets(2, 2, 2, 2), 0, 0);
-		fileSelectPanel.add(changeRootButton, constraints);
-		constraints = new GridBagConstraints(0, 0, 1, 1, 1, 0,
+		fileSelectPanel.add(changeRootButton, c);
+		c = new GridBagConstraints(0, 0, 1, 1, 1, 0,
 				GridBagConstraints.NORTHWEST, GridBagConstraints.HORIZONTAL,
 				new Insets(2, 2, 2, 2), 0, 0);
-		fileSelectPanel.add(directoryTextField, constraints);
-		constraints = new GridBagConstraints(0, 1, 2, 1, 1, 1,
+		fileSelectPanel.add(directoryTextField, c);
+		c = new GridBagConstraints(0, 1, 2, 1, 1, 1,
 				GridBagConstraints.NORTHWEST, GridBagConstraints.BOTH,
 				new Insets(2, 2, 2, 2), 0, 0);
-		fileSelectPanel.add(fileSelectScrollPane, constraints);
-		constraints = new GridBagConstraints(0, 2, 2, 1, 0, 0,
+		fileSelectPanel.add(fileSelectScrollPane, c);
+		c = new GridBagConstraints(0, 2, 2, 1, 0, 0,
 				GridBagConstraints.NORTHWEST, GridBagConstraints.HORIZONTAL,
 				new Insets(2, 2, 2, 2), 0, 0);
-		fileSelectPanel.add(sameOutputDirectoryRadio, constraints);
-		constraints = new GridBagConstraints(0, 3, 2, 1, 0, 0,
+		fileSelectPanel.add(sameOutputDirectoryRadio, c);
+		c = new GridBagConstraints(0, 3, 2, 1, 0, 0,
 				GridBagConstraints.NORTHWEST, GridBagConstraints.HORIZONTAL,
 				new Insets(2, 2, 2, 2), 0, 0);
-		fileSelectPanel.add(singleOutputDirectoryRadio, constraints);
-		constraints = new GridBagConstraints(0, 4, 1, 1, 1, 0,
+		fileSelectPanel.add(singleOutputDirectoryRadio, c);
+		c = new GridBagConstraints(0, 4, 1, 1, 1, 0,
 				GridBagConstraints.NORTHWEST, GridBagConstraints.HORIZONTAL,
 				new Insets(2, 2, 2, 2), 0, 0);
 		outputDirectoryTextField.getDocument().addDocumentListener(
 				outputDirDocumentListener());
-		fileSelectPanel.add(outputDirectoryTextField, constraints);
-		constraints = new GridBagConstraints(1, 4, 1, 1, 0, 0,
+		fileSelectPanel.add(outputDirectoryTextField, c);
+		c = new GridBagConstraints(1, 4, 1, 1, 0, 0,
 				GridBagConstraints.NORTHWEST, GridBagConstraints.HORIZONTAL,
 				new Insets(2, 2, 2, 2), 0, 0);
 		outputDirectoryEllipse.addActionListener(outputDirActionListener());
-		fileSelectPanel.add(outputDirectoryEllipse, constraints);
+		fileSelectPanel.add(outputDirectoryEllipse, c);
 
 		sameOutputDirectoryRadio.setText(i18ln
 				.getString("SameDirectoryRadioButton"));
@@ -542,40 +465,33 @@ public class MainWindow extends JRibbonFrame {
 		singleOutputDirectoryRadio.setText(i18ln
 				.getString("SingleDirectoryRadioButton"));
 		checkSingleOutputDirectoryOption(false);
-		// END File Select --------------------------------
-
-		// Status Information
-		// lblPercent.setHorizontalAlignment(SwingConstants.CENTER);
-		// lblPercent.setText("100%");
-		// numberOfImageLabel.setHorizontalAlignment(SwingConstants.CENTER);
-		//
-		// statusBarPanel.setLayout(new GridBagLayout());
-		//
-		// numberOfImageLabel.setBorder(BorderFactory.createLoweredBevelBorder());
-		// numberOfImageLabel.setText("0/100");
-		// nameOfImageLabel.setBorder(BorderFactory.createLoweredBevelBorder());
-		// nameOfImageLabel.setText("/home/erich/Public/ConversionSVG/characature.svg");
-		// constraints = new GridBagConstraints(0, 0, 1, 1, 0.1, 0,
-		// GridBagConstraints.SOUTHWEST, GridBagConstraints.HORIZONTAL, new
-		// Insets(2, 2, 2, 2), 0, 0);
-		// statusBarPanel.add(numberOfImageLabel, constraints);
-		// constraints = new GridBagConstraints(1, 0, 1, 1, 0.9, 0,
-		// GridBagConstraints.SOUTHWEST, GridBagConstraints.HORIZONTAL, new
-		// Insets(2, 2, 2, 2), 0, 0);
-		// statusBarPanel.add(nameOfImageLabel, constraints);
-
-		// Event Listeners
-		// convertButton.addActionListener(convertActionListener());
-		// cancelButton.addActionListener(cancelActionListener());
-		// statusMonitorButton.addActionListener(statusActionListener());
-
-		// File Select
-		// fileHeirarchy.addTreeSelectionListener(eventListener);
-		// fileHeirarchy.addTreeSelectionListener(eventListener);
-		widthTextField.addKeyListener(new NumberKeyAdapter(this));
-		heightTextField.addKeyListener(new NumberKeyAdapter(this));
 
 		pack();
+	}
+
+	@Override
+	public void updateProgressBar(InkscapeProcessInfo info) {
+		completedProcesses++;
+
+		File file;
+		if (info.command.contains("-e")) {
+			file = new File(info.command.get(info.command.indexOf("-e") + 1));
+			logger.info(file.getAbsoluteFile());
+		}
+		if (info.command.contains("-E")) {
+			file = new File(info.command.get(info.command.indexOf("-E") + 1));
+			logger.info(file.getAbsoluteFile());
+		}
+		if (info.command.contains("-A")) {
+			file = new File(info.command.get(info.command.indexOf("-A") + 1));
+			logger.info(file.getAbsoluteFile());
+		}
+		if (info.command.contains("-P")) {
+			file = new File(info.command.get(info.command.indexOf("-P") + 1));
+			logger.info(file.getAbsoluteFile());
+		}
+		progressBar.setString(completedProcesses + " / " + progressBar.getMaximum());
+		progressBar.setValue(completedProcesses);
 	}
 
 	public void checkSingleOutputDirectoryOption(boolean enable) {
@@ -588,12 +504,41 @@ public class MainWindow extends JRibbonFrame {
 		}
 	}
 
-	// public ResizableIcon getResizableIconFromResource(String resource) {
-	// return ImageWrapperResizableIcon.getIcon(MainWindow.class
-	// .getClassLoader().getResource(
-	// "conversion/resources/" + resource), new Dimension(48,
-	// 48));
-	// }
+	/**
+	 * Disable all user inputs to prevent unwanted/unnecessary interactions
+	 * while Inkscape handles converting images.
+	 * 
+	 * @param enable
+	 *            <code>true</code> to enable input, <code>false</code> to
+	 *            disable input
+	 */
+	public void enableInput(boolean enable) {
+
+		// enable/disable the necessary JPanels
+		enablePanel(colorPicker, enable);
+		enablePanel(sizePanel, enable);
+		unitComboBox.setEnabled(false);
+		// Special case until it is actually implemented
+		enablePanel(outputFormatPanel, enable);
+		enablePanel(exportAreaPanel, enable);
+	}
+
+	/**
+	 * Disables all the <code>Component</code>s contained in the
+	 * <code>JPanel</code>. This is intended to be used by
+	 * <code>enableInput(boolean)</code> prior to converting.
+	 * 
+	 * @param panel
+	 *            the panel in which to disable the <code>Component</code>s
+	 * @param enable
+	 *            <code>true</code> to enable input, <code>false</code> to
+	 *            disable input
+	 */
+	private void enablePanel(JPanel panel, boolean enable) {
+		for (Component component : panel.getComponents()) {
+			component.setEnabled(enable);
+		}
+	}
 
 	/**
 	 * Returns this <code>MainWindow</code> instance.
@@ -607,42 +552,6 @@ public class MainWindow extends JRibbonFrame {
 	private MainWindow getInstance() {
 		return this;
 	}
-
-	/**
-	 * Disable all user inputs to prevent unwanted/unnecessary interactions
-	 * while Inkscape handles converting images.
-	 * 
-	 * @param enable
-	 *            <code>true</code> to enable input, <code>false</code> to
-	 *            disable input
-	 */
-	// public void enableInput(boolean enable) {
-	//
-	// // enable/disable the necessary JPanels
-	// enablePanel(mainwindow.colorPicker, enable);
-	// enablePanel(mainwindow.sizePanel, enable);
-	// mainwindow.unitComboBox.setEnabled(false);// Special case until it is
-	// // actually implemented
-	// enablePanel(mainwindow.outputFormatPanel, enable);
-	// enablePanel(mainwindow.exportAreaPanel, enable);
-	// }
-
-	/**
-	 * Disables all the <code>Component</code>s contained in the
-	 * <code>JPanel</code>. This is intended to be used by
-	 * <code>enableInput(boolean)</code> prior to converting.
-	 * 
-	 * @param panel
-	 *            the panel in which to disable the <code>Component</code>s
-	 * @param enable
-	 *            <code>true</code> to enable input, <code>false</code> to
-	 *            disable input
-	 */
-	// private void enablePanel(JPanel panel, boolean enable) {
-	// for (Component component : panel.getComponents()) {
-	// component.setEnabled(enable);
-	// }
-	// }
 
 	//
 	// Action Listeners
@@ -815,6 +724,7 @@ public class MainWindow extends JRibbonFrame {
 			}
 		};
 	}
+
 }
 
 class NumberKeyAdapter extends KeyAdapter {

@@ -19,6 +19,21 @@ public class Helpers {
 	/**
 	 * Returns a <code>ResizableIcon</code> from the given URL location.
 	 * <p>
+	 * Calls {@code getResizableIconFromURL(resource, new Dimension(48, 48)}
+	 * </p>
+	 * 
+	 * @see {@link #getResizableIconFromURL(String, Dimension)}
+	 * @param resource
+	 *            the location
+	 * @return a new <code>ResizableIcon</code>
+	 */
+	public static ResizableIcon getResizableIconFromURL(String resource) {
+		return getResizableIconFromURL(resource, new Dimension(48, 48));
+	}
+
+	/**
+	 * Returns a <code>ResizableIcon</code> from the given URL location.
+	 * <p>
 	 * The <i>resource</i> argument is used to create a <code>URL</code> object
 	 * which is then passed to
 	 * <code>ImageWrapperResizableIcon.getIcon(URL, Dimension)</code>
@@ -26,9 +41,12 @@ public class Helpers {
 	 * 
 	 * @param resource
 	 *            the location
+	 * @param size
+	 *            the size of the returned icon
 	 * @return a new <code>ResizableIcon</code>
 	 */
-	public static ResizableIcon getResizableIconFromURL(String resource) {
+	public static ResizableIcon getResizableIconFromURL(String resource,
+			Dimension size) {
 		URL url = null;
 		try {
 			File file = new File(resource);
@@ -37,7 +55,7 @@ public class Helpers {
 			logger.error(e.getMessage());
 			e.printStackTrace();
 		}
-		return ImageWrapperResizableIcon.getIcon(url, new Dimension(48, 48));
+		return ImageWrapperResizableIcon.getIcon(url, size);
 	}
 
 	/**
@@ -68,7 +86,7 @@ public class Helpers {
 	 */
 	public static String toRGB(Color color, boolean alpha) {
 		return "rgb(" + color.getRed() + ", " + color.getGreen() + ", "
-				+ color.getBlue() + ", " + (alpha ? color.getAlpha() : "")
+				+ color.getBlue() + (alpha ? ", " + color.getAlpha() : "")
 				+ ")";
 	}
 
@@ -107,11 +125,14 @@ public class Helpers {
 	 * Returns a new <code>File</code> with the path changed to the <i>path</i>
 	 * specified, but the same file name.
 	 * 
-	 * @param file the file to change
-	 * @param path the path to move to
+	 * @param file
+	 *            the file to change
+	 * @param path
+	 *            the path to move to
 	 * @return the changed <code>File</code>
 	 */
 	public static File changePath(File file, File path) {
-		return new File(path.getPath() + System.getProperty("file.separator") + file.getName());
+		return new File(path.getPath() + System.getProperty("file.separator")
+				+ file.getName());
 	}
 }

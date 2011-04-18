@@ -44,6 +44,8 @@ public class ConversionSVG {
 	public static final String KEY_INKSCAPE_EXPORT_HEIGHT = "inkscape_export_height";
 	public static final String KEY_INKSCAPE_EXPORT_COLOR = "inkscape_export_color";
 	public static final String KEY_LAST_ROOT= "last_root";
+	public static final String KEY_BACKGROUND_COLOR = "background_color";
+	public static final String KEY_BACKGROUND_OPACITY = "background_opacity";
 
 	/**
 	 * Creates an instance of the ConversionSVG application.

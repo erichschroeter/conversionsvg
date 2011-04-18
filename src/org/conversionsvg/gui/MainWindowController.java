@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.ResourceBundle;
+import java.util.Vector;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -53,8 +54,6 @@ public class MainWindowController implements IMainWindowController {
 	static final ResourceBundle i18ln = ResourceBundle.getBundle(
 			"org.conversionsvg.gui.MainWindow", Locale.getDefault());
 
-	private PreferenceManager manager;
-
 	/**
 	 * The Inkscape executable. This is used in
 	 * <code>{@link #handleConvert(List, Map)}</code> to add to a
@@ -63,6 +62,21 @@ public class MainWindowController implements IMainWindowController {
 	 */
 	private File inkscapeExecutable;
 
+	/**
+	 * The list of <code>IProgresslistener</code>'s listening to the progress of
+	 * converting.
+	 */
+	private List<IProgressListener> progressListeners;
+
+	/**
+	 * Used by the {@link #preferenceDialog}
+	 */
+	private PreferenceManager manager;
+
+	/**
+	 * The dialog which presents the user with all the preferences available for
+	 * ConversionSVG.
+	 */
 	private PreferenceDialog preferenceDialog;
 
 	/**
@@ -84,11 +98,11 @@ public class MainWindowController implements IMainWindowController {
 	private long keepAliveTime = 10;
 	private PriorityBlockingQueue<Runnable> queue;
 	private ThreadPoolExecutor threadPool;
-	private int completedProcesses = 0;
 
 	public MainWindowController(PreferenceManager manager) {
 		this.manager = manager;
-		preferenceDialog = new PreferenceDialog(null, manager);
+		progressListeners = new Vector<IProgressListener>();
+		preferenceDialog = new PreferenceDialog(manager);
 
 		// BEGIN get the path to Inkscape
 		String inkscape_location = manager.getStore().getValue(
@@ -124,6 +138,11 @@ public class MainWindowController implements IMainWindowController {
 		threadPool = new ThreadPoolExecutor(corePoolSize, maximumPoolSize,
 				keepAliveTime, TimeUnit.SECONDS, queue);
 		// END configure thread pool
+	}
+
+	@Override
+	public void addProgressListener(IProgressListener listener) {
+		progressListeners.add(listener);
 	}
 
 	/**
@@ -256,44 +275,33 @@ public class MainWindowController implements IMainWindowController {
 		}
 	}
 
+	/**
+	 * Sets the {@link #singleDirectoryOutput} attribute.
+	 * <p>
+	 * The <i>dir</i> value is checked to make sure it is a directory. If it is
+	 * not a directory, nothing is done.
+	 * </p>
+	 * 
+	 * @param dir
+	 *            the directory to output all converted files to
+	 */
+	public static void setSingleOutputDirectory(File dir) {
+		if (dir.isDirectory()) {
+			singleDirectoryOutput = dir;
+		}
+	}
+
 	private InkscapeProcessCompletedListener progressListener() {
 		return new InkscapeProcessCompletedListener() {
 
 			@Override
 			public void processCompleted(InkscapeProcessInfo info) {
-				completedProcesses++;
-				// TODO update the ProgressBar
-				// progressBar.setValue(completedProcesses);
-				logger.debug("TODO\t" + "update the ProgressBar");
-				File file;
-				if (info.command.contains("-e")) {
-					file = new File(info.command
-							.get(info.command.indexOf("-e") + 1));
-					logger.info(file.getAbsoluteFile());
-				}
-				if (info.command.contains("-E")) {
-					file = new File(info.command
-							.get(info.command.indexOf("-E") + 1));
-					logger.info(file.getAbsoluteFile());
-				}
-				if (info.command.contains("-A")) {
-					file = new File(info.command
-							.get(info.command.indexOf("-A") + 1));
-					logger.info(file.getAbsoluteFile());
-				}
-				if (info.command.contains("-P")) {
-					file = new File(info.command
-							.get(info.command.indexOf("-P") + 1));
-					logger.info(file.getAbsoluteFile());
+				// notify all listeners
+				for (IProgressListener l : progressListeners) {
+					l.updateProgressBar(info);
 				}
 			}
 		};
-	}
-
-	public static void setSingleOutputDirectory(File dir) {
-		if (dir.isDirectory()) {
-			singleDirectoryOutput = dir;
-		}
 	}
 
 	//
@@ -343,6 +351,7 @@ public class MainWindowController implements IMainWindowController {
 		// TODO output begin time stamp
 		// TODO start ProgressBar
 		// progressBar.setMaximum(files.size());
+		InkscapeProcessCompletedListener progressListener = progressListener();
 
 		List<String> command;
 		Converter inkscapeProcess;
@@ -356,8 +365,6 @@ public class MainWindowController implements IMainWindowController {
 
 			// PNG
 			if (options.containsKey("-e")) {
-				// TODO if singleDir is selected change the path and extension
-				// TODO if sameDir is selected just change extension
 				exportFile = singleDirectoryOutput != null ? Helpers
 						.changePath(Helpers.changeExtension(file, "png"),
 								singleDirectoryOutput) : Helpers
@@ -479,7 +486,7 @@ public class MainWindowController implements IMainWindowController {
 			command.add(file.getAbsolutePath());
 
 			inkscapeProcess = new Converter(inkscapeExecutable, command);
-			inkscapeProcess.addProcessCompletedListener(progressListener());
+			inkscapeProcess.addProcessCompletedListener(progressListener);
 			threadPool.execute(inkscapeProcess);
 		}
 		// TODO output completed time stamp
@@ -490,12 +497,18 @@ public class MainWindowController implements IMainWindowController {
 		int queued = threadPool.getQueue().size();
 		if (queued > 0) {
 			threadPool.shutdown();
-			// TODO output number of remaining threads
+			logger.info(queued + " queued threads were cancelled");
 		}
 	}
 
 	@Override
 	public void handleChangeLanguage(Locale locale) {
+		// TODO restart application using the java command line options to
+		// specify the Locale
+		logger
+				.debug("TODO\t"
+						+ "restart application using the java command line options to specify the Locale");
+
 		// ResourceBundle resourceBundle = ResourceBundle.getBundle(
 		// "conversion.resources.i18ln.MainWindow", locale);
 		// selectedLocale = locale;
@@ -566,8 +579,8 @@ public class MainWindowController implements IMainWindowController {
 
 	@Override
 	public void handleSave() {
-		// TODO Auto-generated method stub
-
+		// TODO save the user's preferences
+		logger.debug("TODO\t" + "save the user's preferences");
 	}
 
 	/**
@@ -593,6 +606,7 @@ public class MainWindowController implements IMainWindowController {
 		try {
 			manager.getStore().save();
 		} catch (IOException e) {
+			logger.error(e.getMessage());
 			e.printStackTrace();
 		}
 
@@ -601,7 +615,8 @@ public class MainWindowController implements IMainWindowController {
 
 	@Override
 	public void handleAbout() {
-		// TODO Auto-generated method stub
+		// TODO create About dialog
+		// TODO display About dialog
 		logger.debug("TODO\t" + "create About dialog");
 		logger.debug("TODO\t" + "display About dialog");
 	}
@@ -610,4 +625,5 @@ public class MainWindowController implements IMainWindowController {
 	public void handleSettings() {
 		preferenceDialog.setVisible(true);
 	}
+
 }

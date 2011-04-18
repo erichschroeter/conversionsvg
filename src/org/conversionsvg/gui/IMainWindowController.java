@@ -17,6 +17,16 @@ import com.jidesoft.swing.CheckBoxTree;
 public interface IMainWindowController {
 
 	/**
+	 * Adds the given <code>IProgressListener</code> to a container which keeps
+	 * track of the listeners that will be notified of the progress made on a
+	 * conversion.
+	 * 
+	 * @param listener
+	 *            the listener
+	 */
+	public void addProgressListener(IProgressListener listener);
+
+	/**
 	 * Converts the Scalable Vector Graphic (SVG) images selected by the user to
 	 * the selected output file types also selected by the user.
 	 * 

@@ -48,15 +48,14 @@ public class ProgressDialog extends JDialog
         closeButton.addActionListener(eventListener);
 
         panel.setLayout(new GridBagLayout());
-        GridBagConstraints constraints;
-        // gridx, gridy, gridwidth, gridheight, weightx, weighty, anchor, fill,
-        // insets, ipadx, ipady
-        constraints = new GridBagConstraints(0, 0, 1, 1, 1, 1, GridBagConstraints.NORTHWEST, GridBagConstraints.BOTH, new Insets(2, 2, 2, 2), 0, 0);
-        panel.add(completedTasksScrollPane, constraints);
-        constraints = new GridBagConstraints(0, 1, 1, 1, 1, 0, GridBagConstraints.NORTHWEST, GridBagConstraints.HORIZONTAL, new Insets(2, 2, 2, 2), 0, 0);
-        panel.add(progressBar, constraints);
-        constraints = new GridBagConstraints(0, 2, 1, 1, 1, 0, GridBagConstraints.NORTHWEST, GridBagConstraints.HORIZONTAL, new Insets(2, 2, 2, 2), 0, 0);
-        panel.add(closeButton, constraints);
+        GridBagConstraints c;
+
+        c = new GridBagConstraints(0, 0, 1, 1, 1, 1, GridBagConstraints.NORTHWEST, GridBagConstraints.BOTH, new Insets(2, 2, 2, 2), 0, 0);
+        panel.add(completedTasksScrollPane, c);
+        c = new GridBagConstraints(0, 1, 1, 1, 1, 0, GridBagConstraints.NORTHWEST, GridBagConstraints.HORIZONTAL, new Insets(2, 2, 2, 2), 0, 0);
+        panel.add(progressBar, c);
+        c = new GridBagConstraints(0, 2, 1, 1, 1, 0, GridBagConstraints.NORTHWEST, GridBagConstraints.HORIZONTAL, new Insets(2, 2, 2, 2), 0, 0);
+        panel.add(closeButton, c);
 
         add(panel);
         setLocationRelativeTo(getParent());

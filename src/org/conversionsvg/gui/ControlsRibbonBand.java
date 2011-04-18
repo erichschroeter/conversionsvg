@@ -11,7 +11,7 @@ import java.util.ResourceBundle;
 
 import org.apache.log4j.Logger;
 import org.conversionsvg.util.Helpers;
-import org.pushingpixels.flamingo.api.common.JCommandToggleButton;
+import org.pushingpixels.flamingo.api.common.JCommandButton;
 import org.pushingpixels.flamingo.api.common.icon.ResizableIcon;
 import org.pushingpixels.flamingo.api.ribbon.JRibbonBand;
 import org.pushingpixels.flamingo.api.ribbon.RibbonElementPriority;
@@ -45,18 +45,53 @@ public class ControlsRibbonBand extends JRibbonBand {
 	/**
 	 * The button which performs the convert action.
 	 * <p>
-	 * When pressed, and the convert action has began, this button switches
-	 * images to an image which notifies the user that they may cancel the
-	 * conversion process.
+	 * When pressed, and the convert action has began, this button is disabled
+	 * in order to prevent the user from duplicating the conversion action.
 	 * </p>
 	 */
-	JCommandToggleButton convertButton;
+	JCommandButton convertButton;
 
 	/**
-	 * Used to keep track of the state of the Convert toggle button.
+	 * The button which performs the cancel action.
+	 * <p>
+	 * This button is not visible until the {@link #convertButton} is pressed.
+	 * When this button is pressed the
+	 * <code>{@link IMainWindowController#handleCancel()}</code> function is
+	 * called and then this is hidden again.
+	 * </p>
 	 */
-	private boolean isPressed = false;
+	JCommandButton cancelButton;
 
+	/**
+	 * Used to keep track of the state of the Convert and Cancel buttons.
+	 * <p>
+	 * <ul>
+	 * <li>If a conversion is in progress, the {@link #convertButton} is
+	 * disabled and the {@link #cancelButton} is set visible.</li>
+	 * <li>If no conversion is in progress, the {@link #cancelButton} is hidden</li>
+	 * </ul>
+	 * </p>
+	 */
+	private boolean converting = false;
+
+	/**
+	 * Creates a <code>ControlsRibbonBand</code> with the given <i>title</i> and
+	 * <i>icon</i>.
+	 * <p>
+	 * This <code>JRibbonBand</code> is highly coupled with
+	 * <code>MainWindow</code>, as it uses attributes in the
+	 * <code>MainWindow</code> to gather values. These values are aggregated and
+	 * passed to the <code>MainWindow</code>'s
+	 * <code>IMainWindowController</code>.
+	 * </p>
+	 * 
+	 * @param window
+	 *            the <code>MainWindow</code> this band belongs to
+	 * @param title
+	 *            the title of the band
+	 * @param icon
+	 *            the icon of the band
+	 */
 	public ControlsRibbonBand(MainWindow window, String title,
 			ResizableIcon icon) {
 		super(title, icon);
@@ -71,61 +106,79 @@ public class ControlsRibbonBand extends JRibbonBand {
 				getControlPanel()));
 		setResizePolicies(resizePolicies);
 
-		convertButton = new JCommandToggleButton(i18ln
-				.getString("ConvertButton"), CONVERT_IMAGE);
+		convertButton = new JCommandButton(i18ln.getString("ConvertButton"),
+				CONVERT_IMAGE);
 		convertButton.addActionListener(convertActionListener());
 
+		cancelButton = new JCommandButton(i18ln.getString("CancelButton"),
+				CANCEL_IMAGE);
+		cancelButton.setVisible(false);
+		cancelButton.addActionListener(cancelActionListener());
+
 		addCommandButton(convertButton, RibbonElementPriority.TOP);
+		addCommandButton(cancelButton, RibbonElementPriority.TOP);
 	}
 
 	/**
 	 * @return an <code>ActionListener</code> which handles calling the
-	 *         <i>controller</i>'s <code>handleConvert()</code> function.
+	 *         <i>controller</i>'s
+	 *         <code>{@link IMainWindowController#handleCancel()}</code>
+	 *         function.
+	 */
+	private ActionListener cancelActionListener() {
+		return new ActionListener() {
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				if (converting) {
+					window.controller.handleCancel();
+				}
+			}
+		};
+	}
+
+	/**
+	 * @return an <code>ActionListener</code> which handles calling the
+	 *         <i>controller</i>'s
+	 *         <code>{@link IMainWindowController#handleConvert(List, Map)}</code>
+	 *         function.
 	 */
 	private ActionListener convertActionListener() {
 		return new ActionListener() {
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				if (isPressed) {
-					window.controller.handleCancel();
-					convertButton.setIcon(CONVERT_IMAGE);
-				} else {
-					
+				if (!converting) {
 					List<File> files = MainWindowController
 							.getFiles(window.fileHeirarchy);
-					Map<String, String> options = MainWindowController
-							.getInkscapeCommandlineOptions(window.pngCheckBox,
-									window.psCheckBox, window.epsCheckBox,
-									window.pdfCheckBox, window.colorPicker,
-									window.heightTextField,
-									window.widthTextField,
-									window.pageRadioButton,
-									window.drawingRadioButton);
-					// TODO disable input (buttons ...)
-					convertButton.setIcon(CANCEL_IMAGE);
-					
-					window.controller.handleConvert(files, options);
+					// only attempt to convert if there are 1 or more files
+					if (files.size() > 0) {
+						// initialize the ProgressBar
+						window.progressBar.setMaximum(files.size());
 
-					convertButton.setIcon(CONVERT_IMAGE);
-					// TODO enable input
+						Map<String, String> options = MainWindowController
+								.getInkscapeCommandlineOptions(
+										window.pngCheckBox, window.psCheckBox,
+										window.epsCheckBox, window.pdfCheckBox,
+										window.colorPicker,
+										window.heightTextField,
+										window.widthTextField,
+										window.pageRadioButton,
+										window.drawingRadioButton);
+						// TODO disable input (buttons ...)
+						window.enableInput(false);
+						cancelButton.setVisible(true);
+						
+						converting = true;
+						
+						window.controller.handleConvert(files, options);
+						// TODO enable input
+						window.enableInput(true);
+						converting = false;
+						cancelButton.setVisible(false);
+					}
 				}
-				// for some reason DefaultButtonModel.isPressed() is not visible
-				// to us, so we have to keep the state of the convert toggle
-				// button updated
-				isPressed = isPressed ? false : true;
 			}
 		};
 	}
-	//
-	// private ActionListener convertActionListener() {
-	// return new ActionListener() {
-	//
-	// @Override
-	// public void actionPerformed(ActionEvent e) {
-	// logger.debug("TODO\t" + "handle convert");
-	// logger.debug("TODO\t" + "handle cancel");
-	// }
-	// };
-	// }
 }

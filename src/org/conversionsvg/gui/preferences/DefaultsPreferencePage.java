@@ -2,6 +2,7 @@ package org.conversionsvg.gui.preferences;
 
 import java.awt.Color;
 import java.awt.Dialog;
+import java.awt.Dimension;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
@@ -21,6 +22,7 @@ import org.prefs.PreferencePage;
 import com.bric.swing.ColorPicker;
 
 import org.conversionsvg.gui.ConversionSVG;
+import org.conversionsvg.util.Helpers;
 
 public class DefaultsPreferencePage extends PreferencePage {
 
@@ -38,6 +40,7 @@ public class DefaultsPreferencePage extends PreferencePage {
 	JTextField widthTextField;
 	JTextField heightTextField;
 	JTextField colorTextField;
+	JTextField opacityTextField;
 
 	/**
 	 * The color last selected from a <code>ColorPicker</code>.
@@ -96,12 +99,12 @@ public class DefaultsPreferencePage extends PreferencePage {
 						: store
 								.getDefault(ConversionSVG.KEY_INKSCAPE_EXPORT_COLOR));
 	}
-	
+
 	/**
 	 * @return an <code>ActionListener</code> which handles displaying a
-	 *         <code>JFileChooser</code> with an
-	 *         <code>{@link InkscapeFilter}</code>. The selected file is set as
-	 *         the value of {@link ConversionSVG#KEY_INKSCAPE_PATH}.
+	 *         <code>ColorPicker</code>. The selected color is set as the value
+	 *         of {@link ConversionSVG#KEY_BACKGROUND_COLOR} and
+	 *         {@link ConversionSVG#KEY_BACKGROUND_OPACITY}.
 	 */
 	private ActionListener colorActionListener() {
 		return new ActionListener() {
@@ -109,9 +112,11 @@ public class DefaultsPreferencePage extends PreferencePage {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				if ((selectedColor = ColorPicker.showDialog((Dialog) null,
-						selectedColor != null ? selectedColor : Color.WHITE)) != null) {
-					colorTextField.setText(Integer.toHexString(selectedColor
-							.getRGB() & 0xffffffff));
+						selectedColor != null ? selectedColor : Color.WHITE,
+						true)) != null) {
+					colorTextField.setText(Helpers.toRGB(selectedColor, false));
+					opacityTextField.setText(Integer.toString(selectedColor
+							.getAlpha()));
 				}
 			}
 		};
@@ -167,29 +172,35 @@ public class DefaultsPreferencePage extends PreferencePage {
 				.createTitledBorder("Background"));
 
 		// Background Color
-		c = new GridBagConstraints(0, 0, 1, 1, 1, 0,
-				GridBagConstraints.NORTHWEST, GridBagConstraints.HORIZONTAL,
+		c = new GridBagConstraints(0, 0, 1, 1, 0.0, 0.0,
+				GridBagConstraints.NORTHWEST, GridBagConstraints.NONE,
 				new Insets(5, 5, 5, 5), 0, 0);
 		JLabel colorLabel = new JLabel("Color");
 		colorLabel.setToolTipText("The background color (including opacity)");
 		backgroundPanel.add(colorLabel, c);
-		c = new GridBagConstraints(1, 0, 1, 1, 1, 0,
+
+		c = new GridBagConstraints(1, 0, 1, 1, 0.0, 0.0,
+				GridBagConstraints.NORTHWEST, GridBagConstraints.NONE,
+				new Insets(0, 0, 0, 0), 0, 0);
+		JButton colorButton = new JButton(Helpers.getResizableIconFromURL(
+				"res/images/colorpicker.png", new Dimension(16, 16)));
+		colorButton.setMargin(new Insets(0, 0, 0, 0));
+		colorButton.setMaximumSize(new Dimension(16, 16));
+		colorButton.addActionListener(colorActionListener());
+		backgroundPanel.add(colorButton, c);
+
+		c = new GridBagConstraints(2, 0, 1, 1, 0.8, 0.0,
 				GridBagConstraints.NORTHWEST, GridBagConstraints.HORIZONTAL,
 				new Insets(5, 5, 5, 5), 0, 0);
 		colorTextField = new JTextField();
 		backgroundPanel.add(colorTextField, c);
-		c = new GridBagConstraints(2, 0, 1, 1, 1, 0,
+
+		c = new GridBagConstraints(3, 0, 1, 1, 0.2, 0.0,
 				GridBagConstraints.NORTHWEST, GridBagConstraints.HORIZONTAL,
 				new Insets(5, 5, 5, 5), 0, 0);
-		// TODO use the color picker logo from Dropbox
-		JButton colorButton = new JButton("...");
-		// TODO set selectedColor to the settings value
-		// this action listener handles converting the selected color w/ opacity
-		// to a
-		// hex value which can then stored in the properties
-		colorButton.addActionListener(colorActionListener());
-		backgroundPanel.add(colorButton, c);
-		
+		opacityTextField = new JTextField();
+		backgroundPanel.add(opacityTextField, c);
+
 		//
 		// add all Panels
 		//
