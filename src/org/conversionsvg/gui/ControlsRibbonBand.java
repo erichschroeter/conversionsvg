@@ -12,6 +12,7 @@ import java.util.ResourceBundle;
 import org.apache.log4j.Logger;
 import org.conversionsvg.util.Helpers;
 import org.pushingpixels.flamingo.api.common.JCommandButton;
+import org.pushingpixels.flamingo.api.common.JCommandButton.CommandButtonKind;
 import org.pushingpixels.flamingo.api.common.icon.ResizableIcon;
 import org.pushingpixels.flamingo.api.ribbon.JRibbonBand;
 import org.pushingpixels.flamingo.api.ribbon.RibbonElementPriority;
@@ -108,11 +109,15 @@ public class ControlsRibbonBand extends JRibbonBand {
 
 		convertButton = new JCommandButton(i18ln.getString("ConvertButton"),
 				CONVERT_IMAGE);
+		convertButton.setCommandButtonKind(CommandButtonKind.ACTION_ONLY);
+		convertButton.setFlat(false);
 		convertButton.addActionListener(convertActionListener());
 
 		cancelButton = new JCommandButton(i18ln.getString("CancelButton"),
 				CANCEL_IMAGE);
-		cancelButton.setVisible(false);
+		cancelButton.setCommandButtonKind(CommandButtonKind.ACTION_ONLY);
+		cancelButton.setFlat(false);
+		cancelButton.setEnabled(false);
 		cancelButton.addActionListener(cancelActionListener());
 
 		addCommandButton(convertButton, RibbonElementPriority.TOP);
@@ -178,6 +183,7 @@ public class ControlsRibbonBand extends JRibbonBand {
 						// TODO disable input (buttons ...)
 						window.enableInput(false);
 						cancelButton.setVisible(true);
+						cancelButton.setEnabled(true);
 
 						converting = true;
 
@@ -186,6 +192,7 @@ public class ControlsRibbonBand extends JRibbonBand {
 						window.enableInput(true);
 						converting = false;
 						cancelButton.setVisible(false);
+						cancelButton.setEnabled(false);
 					}
 				}
 			}
