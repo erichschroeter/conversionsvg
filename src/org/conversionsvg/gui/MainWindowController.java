@@ -71,7 +71,7 @@ public class MainWindowController implements IMainWindowController {
 	/**
 	 * Used by the {@link #preferenceDialog}
 	 */
-	private PreferenceManager manager;
+	private PreferenceManager preferenceManager;
 
 	/**
 	 * The dialog which presents the user with all the preferences available for
@@ -100,7 +100,7 @@ public class MainWindowController implements IMainWindowController {
 	private ThreadPoolExecutor threadPool;
 
 	public MainWindowController(PreferenceManager manager) {
-		this.manager = manager;
+		this.preferenceManager = manager;
 		progressListeners = new Vector<IProgressListener>();
 		preferenceDialog = new PreferenceDialog(manager);
 
@@ -199,16 +199,16 @@ public class MainWindowController implements IMainWindowController {
 		HashMap<String, String> options = new HashMap<String, String>();
 
 		if (png.isSelected()) {
-			options.put("-e", "-e");
+			options.put("-e", "true");
 		}
 		if (ps.isSelected()) {
-			options.put("-P", "-P");
+			options.put("-P", "true");
 		}
 		if (eps.isSelected()) {
-			options.put("-E", "-E");
+			options.put("-E", "true");
 		}
 		if (pdf.isSelected()) {
-			options.put("-A", "-A");
+			options.put("-A", "true");
 		}
 		options.put("-b", Helpers.toRGB(picker.getColor(), false));
 		options.put("-y", String.valueOf(picker.getColor().getAlpha()));
@@ -229,9 +229,9 @@ public class MainWindowController implements IMainWindowController {
 			JRadioButton drawing) {
 		HashMap<String, String> option = new HashMap<String, String>();
 		if (page.isSelected()) {
-			option.put("-C", "");
+			option.put("-C", "true");
 		} else if (drawing.isSelected()) {
-			option.put("-D", "");
+			option.put("-D", "true");
 		} // TODO future -a --export-area=x0:y0:x1:y1
 		return option;
 	}
@@ -352,6 +352,7 @@ public class MainWindowController implements IMainWindowController {
 		// TODO start ProgressBar
 		// progressBar.setMaximum(files.size());
 		InkscapeProcessCompletedListener progressListener = progressListener();
+		
 
 		List<String> command;
 		Converter inkscapeProcess;
@@ -484,7 +485,40 @@ public class MainWindowController implements IMainWindowController {
 
 			command.add("-f");
 			command.add(file.getAbsolutePath());
+			
+			// Color
+			if (options.containsKey("-b")) {
+				command.add("-b");
+				command.add(options.get("-b"));
+			}
 
+			// Opacity
+			if (options.containsKey("-y")) {
+				command.add("-y");
+				command.add(options.get("-y"));
+			}
+
+			// Height
+			if (options.containsKey("-h")) {
+				command.add("-h");
+				command.add(options.get("-h"));
+			}
+
+			// Width
+			if (options.containsKey("-w")) {
+				command.add("-w");
+				command.add(options.get("-w"));
+			}
+
+			// Drawing or Page
+			if (options.containsKey("-D")) {
+				// Drawing
+				command.add("-D");
+			} else if (options.containsKey("-C")) {
+				// Page
+				command.add("-C");
+			}
+			
 			inkscapeProcess = new Converter(inkscapeExecutable, command);
 			inkscapeProcess.addProcessCompletedListener(progressListener);
 			threadPool.execute(inkscapeProcess);
@@ -569,7 +603,7 @@ public class MainWindowController implements IMainWindowController {
 	public void handleChangeRoot(CheckBoxTree tree, File root) {
 		try {
 			tree.setModel(new FileSystemTreeModel(root, MainWindow.filters));
-			manager.getStore().setValue(ConversionSVG.KEY_LAST_ROOT,
+			preferenceManager.getStore().setValue(ConversionSVG.KEY_LAST_ROOT,
 					root.getAbsolutePath());
 
 		} catch (Exception e) {
@@ -579,8 +613,11 @@ public class MainWindowController implements IMainWindowController {
 
 	@Override
 	public void handleSave() {
-		// TODO save the user's preferences
-		logger.debug("TODO\t" + "save the user's preferences");
+		try {
+			preferenceManager.getStore().save();
+		} catch (IOException e) {
+			logger.error(e.getMessage());
+		}
 	}
 
 	/**
@@ -604,7 +641,7 @@ public class MainWindowController implements IMainWindowController {
 		}
 
 		try {
-			manager.getStore().save();
+			preferenceManager.getStore().save();
 		} catch (IOException e) {
 			logger.error(e.getMessage());
 			e.printStackTrace();

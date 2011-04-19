@@ -235,6 +235,7 @@ public class MainWindow extends JRibbonFrame implements IProgressListener {
 		// Progress
 		progressBar = new JProgressBar();
 		progressBar.setStringPainted(true);
+		progressBar.setForeground(Color.BLACK);
 		controller.addProgressListener(this);
 		getContentPane().add(progressBar, BorderLayout.SOUTH);
 
@@ -467,6 +468,13 @@ public class MainWindow extends JRibbonFrame implements IProgressListener {
 		checkSingleOutputDirectoryOption(false);
 
 		pack();
+	}
+	
+	/**
+	 * Sets the {@link #completedProcesses} to <code>0</code>.
+	 */
+	public void resetProgressBar() {
+		completedProcesses = 0;
 	}
 
 	@Override

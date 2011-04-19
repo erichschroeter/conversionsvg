@@ -153,9 +153,6 @@ public class ControlsRibbonBand extends JRibbonBand {
 							.getFiles(window.fileHeirarchy);
 					// only attempt to convert if there are 1 or more files
 					if (files.size() > 0) {
-						// initialize the ProgressBar
-						window.progressBar.setMaximum(files.size());
-
 						Map<String, String> options = MainWindowController
 								.getInkscapeCommandlineOptions(
 										window.pngCheckBox, window.psCheckBox,
@@ -165,12 +162,25 @@ public class ControlsRibbonBand extends JRibbonBand {
 										window.widthTextField,
 										window.pageRadioButton,
 										window.drawingRadioButton);
+						// initialize the ProgressBar
+						// int exportTypes = 0;
+						// exportTypes = options.containsKey("-e") ?
+						// exportTypes++ : exportTypes;
+						// exportTypes = options.containsKey("-P") ?
+						// exportTypes++ : exportTypes;
+						// exportTypes = options.containsKey("-E") ?
+						// exportTypes++ : exportTypes;
+						// exportTypes = options.containsKey("-A") ?
+						// exportTypes++ : exportTypes;
+						window.resetProgressBar();
+						window.progressBar.setMaximum(files.size());
+
 						// TODO disable input (buttons ...)
 						window.enableInput(false);
 						cancelButton.setVisible(true);
-						
+
 						converting = true;
-						
+
 						window.controller.handleConvert(files, options);
 						// TODO enable input
 						window.enableInput(true);
