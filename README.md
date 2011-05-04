@@ -63,7 +63,7 @@ research I came across the flamingo swing component suite. [Flamingo library][fl
 
 I wanted to improve the way I selected files to convert, and thought of the
 checkbox tree I've seen in Windows. After some searching, I came across the
-CheckBoxTree the jide library provides. [JIDE Common Layer][jide]
+CheckBoxTree the jide library provides. [Powered by JIDE (http://www.jidesoft.com)][jide] and [JIDE Common Layer][jide-common]
 
 The background color selection in the original app was too slow for me, so I
 wondered if there was existing code that implemented a color picker. I came
@@ -81,7 +81,8 @@ The flags used for language icons are a set created by Go Squared Ltd. [GoSquare
 [inkscape]: http://inkscape.org/ "Open source vector graphics editor"
 [sfConversionSVG]: http://sourceforge.net/projects/conversionsvg/ "The original application"
 [flamingo]: https://flamingo.dev.java.net/ "A collection of components for Swing applications"
-[jide]: https://jide-oss.dev.java.net/ "JIDE Common Layer (Professional Swing Components)"
+[jide-common]: https://jide-oss.dev.java.net/ "JIDE Common Layer (Professional Swing Components)"
+[jide]: http://www.jidesoft.com "Powered by JIDE (http://www.jidesoft.com)"
 [colorchooser]: https://colorchooser.dev.java.net/ "A Swing widget for selecting colors with single mouse gesture"
 [fstreem]: http://sourceforge.net/projects/fstreem/files/ "SourceForge File System TreeModel"
 [tango]: http://tango.freedesktop.org/Tango_Icon_Library "The Tango Desktop Project"
