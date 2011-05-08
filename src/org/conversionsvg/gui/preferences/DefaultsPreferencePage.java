@@ -15,18 +15,16 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 
-import org.prefs.IPreferenceStore;
-import org.prefs.PreferenceManager;
-import org.prefs.PreferencePage;
-
 import com.bric.swing.ColorPicker;
 
 import org.conversionsvg.gui.ConversionSVG;
 import org.conversionsvg.util.Helpers;
+import org.jpreferences.IPreferenceManager;
+import org.jpreferences.storage.IPreferenceStore;
+import org.jpreferences.ui.PreferencePage;
 
+@SuppressWarnings("serial")
 public class DefaultsPreferencePage extends PreferencePage {
-
-	private static final long serialVersionUID = -8539690532878618137L;
 
 	/**
 	 * Represents whether any setting on this page has changed.
@@ -65,7 +63,7 @@ public class DefaultsPreferencePage extends PreferencePage {
 	 *            <i>description</i> attribute is set to empty string (
 	 *            <code>""</code>)
 	 */
-	public DefaultsPreferencePage(PreferenceManager manager, String title,
+	public DefaultsPreferencePage(IPreferenceManager manager, String title,
 			String description) {
 		super(manager, title, description);
 		createContents();
@@ -85,17 +83,17 @@ public class DefaultsPreferencePage extends PreferencePage {
 		String value;
 		widthTextField
 				.setText((value = store
-						.getValue(ConversionSVG.KEY_INKSCAPE_EXPORT_WIDTH)) != null ? value
+						.read(ConversionSVG.KEY_INKSCAPE_EXPORT_WIDTH)) != null ? value
 						: store
 								.getDefault(ConversionSVG.KEY_INKSCAPE_EXPORT_WIDTH));
 		heightTextField
 				.setText((value = store
-						.getValue(ConversionSVG.KEY_INKSCAPE_EXPORT_HEIGHT)) != null ? value
+						.read(ConversionSVG.KEY_INKSCAPE_EXPORT_HEIGHT)) != null ? value
 						: store
 								.getDefault(ConversionSVG.KEY_INKSCAPE_EXPORT_HEIGHT));
 		colorTextField
 				.setText((value = store
-						.getValue(ConversionSVG.KEY_INKSCAPE_EXPORT_COLOR)) != null ? value
+						.read(ConversionSVG.KEY_INKSCAPE_EXPORT_COLOR)) != null ? value
 						: store
 								.getDefault(ConversionSVG.KEY_INKSCAPE_EXPORT_COLOR));
 	}
@@ -127,7 +125,7 @@ public class DefaultsPreferencePage extends PreferencePage {
 	//
 
 	@Override
-	protected void createContents() {
+	public void createContents() {
 		setLayout(new GridBagLayout());
 
 		GridBagConstraints c;
@@ -227,11 +225,11 @@ public class DefaultsPreferencePage extends PreferencePage {
 
 	@Override
 	public boolean performOk() {
-		manager.getStore().setValue(ConversionSVG.KEY_INKSCAPE_EXPORT_WIDTH,
+		manager.getStore().create(ConversionSVG.KEY_INKSCAPE_EXPORT_WIDTH,
 				widthTextField.getText());
-		manager.getStore().setValue(ConversionSVG.KEY_INKSCAPE_EXPORT_HEIGHT,
+		manager.getStore().create(ConversionSVG.KEY_INKSCAPE_EXPORT_HEIGHT,
 				heightTextField.getText());
-		manager.getStore().setValue(ConversionSVG.KEY_INKSCAPE_EXPORT_COLOR,
+		manager.getStore().create(ConversionSVG.KEY_INKSCAPE_EXPORT_COLOR,
 				colorTextField.getText());
 		return true;
 	}

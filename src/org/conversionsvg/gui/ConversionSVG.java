@@ -8,17 +8,23 @@ import javax.swing.UIManager;
 import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Logger;
 import org.conversionsvg.util.Helpers;
-import org.prefs.DefaultPreferenceNode;
-import org.prefs.PreferenceManager;
-import org.prefs.PreferencePage;
-import org.prefs.PreferenceStore;
 
 import org.conversionsvg.gui.preferences.AdvancedPreferencePage;
 import org.conversionsvg.gui.preferences.DefaultsPreferencePage;
+import org.jpreferences.DefaultPreferenceManager;
+import org.jpreferences.IPreferenceManager;
+import org.jpreferences.model.DefaultPreferenceNode;
+import org.jpreferences.storage.ConflictingIdentifierException;
+import org.jpreferences.storage.DefaultPreferenceStore;
+import org.jpreferences.storage.IPreferenceStore;
+import org.jpreferences.storage.XmlPreferenceStore;
+import org.jpreferences.ui.IPreferencePage;
 
 import java.awt.Dimension;
 import java.io.File;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
 
 public class ConversionSVG {
@@ -28,8 +34,8 @@ public class ConversionSVG {
 	//
 	// Preferences
 	//
-	private PreferenceStore prefs;
-	private PreferenceManager prefsManager;
+	private IPreferenceStore prefs;
+	private IPreferenceManager prefsManager;
 	private static final String SETTINGS_FILE = "preferences.properties";
 	private static File prefsFile;
 
@@ -43,7 +49,7 @@ public class ConversionSVG {
 	public static final String KEY_INKSCAPE_EXPORT_WIDTH = "inkscape_export_width";
 	public static final String KEY_INKSCAPE_EXPORT_HEIGHT = "inkscape_export_height";
 	public static final String KEY_INKSCAPE_EXPORT_COLOR = "inkscape_export_color";
-	public static final String KEY_LAST_ROOT= "last_root";
+	public static final String KEY_LAST_ROOT = "last_root";
 	public static final String KEY_BACKGROUND_COLOR = "background_color";
 	public static final String KEY_BACKGROUND_OPACITY = "background_opacity";
 
@@ -63,7 +69,7 @@ public class ConversionSVG {
 		try {
 			prefsFile = new File(SETTINGS_FILE);
 			prefsFile.createNewFile();
-			prefs = new PreferenceStore(prefsFile,
+			prefs = new DefaultPreferenceStore(prefsFile,
 					"This file contains preference settings for ConversionSVG",
 					getDefaults());
 
@@ -73,30 +79,31 @@ public class ConversionSVG {
 		}
 		// END get user settings/preferences
 
-		prefsManager = new PreferenceManager(prefs);
+		prefsManager = new DefaultPreferenceManager(prefs);
 
-		PreferencePage defaultsPage = new DefaultsPreferencePage(prefsManager, "Defaults",
+		IPreferencePage defaultsPage = new DefaultsPreferencePage(prefsManager,
+				"Defaults",
 				"Specify the default preferences to be populated when ConversionSVG starts up");
-		PreferencePage advancedPage = new AdvancedPreferencePage(prefsManager, "Advanced",
-				"Configure advanced features ConversionSVG uses.");
+		IPreferencePage advancedPage = new AdvancedPreferencePage(prefsManager,
+				"Advanced", "Configure advanced features ConversionSVG uses.");
 
-		prefsManager.add(new DefaultPreferenceNode(defaultsPage, "Defaults"));
-		prefsManager.add(new DefaultPreferenceNode(advancedPage, "Advanced"));
+		try {
+			prefsManager.add(new DefaultPreferenceNode("defaults", defaultsPage, "Defaults"));
+			prefsManager.add(new DefaultPreferenceNode("advanced", advancedPage, "Advanced"));
+		} catch (ConflictingIdentifierException e) {
+			logger.error(e.getMessage());
+		}
 
-		
-		IMainWindowController controller = new MainWindowController(prefsManager);
+		IMainWindowController controller = new MainWindowController(
+				prefsManager);
 		MainWindow window = new MainWindow(controller);
-		
-		// Valider les cadres ayant des tailles pr�d�finies
-		// Compacter les cadres ayant des infos de taille pr�f�r�es - ex. depuis
-		// leur disposition
+
 		if (packFrame) {
 			window.pack();
 		} else {
 			window.validate();
 		}
 
-		// Centrer la fen�tre
 		Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
 		Dimension frameSize = window.getSize();
 		if (frameSize.height > screenSize.height) {
@@ -117,17 +124,29 @@ public class ConversionSVG {
 	 * @return the default properties used by <code>MainWindowController</code>
 	 */
 	private Properties getDefaults() {
-		Properties defaults = new Properties();
-		defaults
-				.setProperty(ConversionSVG.KEY_CORE_POOL_SIZE, Integer.toString(5));
-		defaults.setProperty(ConversionSVG.KEY_MAXIMUM_POOL_SIZE, Integer
-				.toString(10));
-		defaults.setProperty(ConversionSVG.KEY_KEEP_ALIVE_TIME, Long.toString(10));
-		defaults.setProperty(ConversionSVG.KEY_INKSCAPE_EXPORT_COLOR,
-				Helpers.toRGB(Color.WHITE, false));
-		defaults.setProperty(ConversionSVG.KEY_INKSCAPE_EXPORT_HEIGHT, "");
-		defaults.setProperty(ConversionSVG.KEY_INKSCAPE_EXPORT_WIDTH, "");
-		return defaults;
+		 Properties defaults = new Properties();
+		 defaults
+		 .setProperty(ConversionSVG.KEY_CORE_POOL_SIZE, Integer.toString(5));
+		 defaults.setProperty(ConversionSVG.KEY_MAXIMUM_POOL_SIZE, Integer
+		 .toString(10));
+		 defaults.setProperty(ConversionSVG.KEY_KEEP_ALIVE_TIME,
+		 Long.toString(10));
+		 defaults.setProperty(ConversionSVG.KEY_INKSCAPE_EXPORT_COLOR,
+		 Helpers.toRGB(Color.WHITE, false));
+		 defaults.setProperty(ConversionSVG.KEY_INKSCAPE_EXPORT_HEIGHT, "");
+		 defaults.setProperty(ConversionSVG.KEY_INKSCAPE_EXPORT_WIDTH, "");
+		 return defaults;
+//		Map<String, String> defaults = new HashMap<String, String>();
+//
+//		defaults.put(ConversionSVG.KEY_CORE_POOL_SIZE, Integer.toString(5));
+//		defaults.put(ConversionSVG.KEY_MAXIMUM_POOL_SIZE, Integer.toString(10));
+//		defaults.put(ConversionSVG.KEY_KEEP_ALIVE_TIME, Long.toString(10));
+//		defaults.put(ConversionSVG.KEY_INKSCAPE_EXPORT_COLOR, Helpers.toRGB(
+//				Color.WHITE, false));
+//		defaults.put(ConversionSVG.KEY_INKSCAPE_EXPORT_HEIGHT, "");
+//		defaults.put(ConversionSVG.KEY_INKSCAPE_EXPORT_WIDTH, "");
+//
+//		return defaults;
 	}
 
 	/**
@@ -139,7 +158,7 @@ public class ConversionSVG {
 	 */
 	public static void main(String[] args) {
 		BasicConfigurator.configure();
-		
+
 		SwingUtilities.invokeLater(new Runnable() {
 			public void run() {
 				try {

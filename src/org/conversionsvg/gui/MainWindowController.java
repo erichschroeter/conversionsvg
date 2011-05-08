@@ -22,8 +22,8 @@ import javax.swing.tree.TreePath;
 
 import org.apache.log4j.Logger;
 import org.conversionsvg.util.Helpers;
-import org.prefs.PreferenceDialog;
-import org.prefs.PreferenceManager;
+import org.jpreferences.IPreferenceManager;
+import org.jpreferences.ui.PreferenceDialog;
 
 import net.sf.fstreem.FileSystemTreeModel;
 import net.sf.fstreem.FileSystemTreeNode;
@@ -71,7 +71,7 @@ public class MainWindowController implements IMainWindowController {
 	/**
 	 * Used by the {@link #preferenceDialog}
 	 */
-	private PreferenceManager preferenceManager;
+	private IPreferenceManager preferenceManager;
 
 	/**
 	 * The dialog which presents the user with all the preferences available for
@@ -99,13 +99,13 @@ public class MainWindowController implements IMainWindowController {
 	private PriorityBlockingQueue<Runnable> queue;
 	private ThreadPoolExecutor threadPool;
 
-	public MainWindowController(PreferenceManager manager) {
+	public MainWindowController(IPreferenceManager manager) {
 		this.preferenceManager = manager;
 		progressListeners = new Vector<IProgressListener>();
-		preferenceDialog = new PreferenceDialog(manager);
+		preferenceDialog = new PreferenceDialog(null, manager);
 
 		// BEGIN get the path to Inkscape
-		String inkscape_location = manager.getStore().getValue(
+		String inkscape_location = manager.getStore().read(
 				ConversionSVG.KEY_INKSCAPE_PATH);
 		if (inkscape_location != null) {
 			inkscapeExecutable = new File(inkscape_location);
@@ -119,19 +119,19 @@ public class MainWindowController implements IMainWindowController {
 							(Dialog) null,
 							"The Inkscape executable location does not exist. Please enter the correct location in the Settings.");
 		} else {
-			manager.getStore().setValue(ConversionSVG.KEY_INKSCAPE_PATH,
+			manager.getStore().create(ConversionSVG.KEY_INKSCAPE_PATH,
 					inkscapeExecutable.getAbsolutePath());
 		}
 		// END get the path to Inkscape
 
 		// BEGIN configure thread pool
 		String value;
-		corePoolSize = (value = manager.getStore().getValue(
+		corePoolSize = (value = manager.getStore().read(
 				ConversionSVG.KEY_CORE_POOL_SIZE)) != null ? Integer
 				.valueOf(value) : corePoolSize;
-		maximumPoolSize = (value = manager.getStore().getValue(
+		maximumPoolSize = (value = manager.getStore().read(
 				ConversionSVG.KEY_MAXIMUM_POOL_SIZE)) != null ? Integer
-				.valueOf(manager.getStore().getValue(
+				.valueOf(manager.getStore().read(
 						ConversionSVG.KEY_MAXIMUM_POOL_SIZE)) : maximumPoolSize;
 
 		queue = new PriorityBlockingQueue<Runnable>(corePoolSize);
@@ -352,7 +352,6 @@ public class MainWindowController implements IMainWindowController {
 		// TODO start ProgressBar
 		// progressBar.setMaximum(files.size());
 		InkscapeProcessCompletedListener progressListener = progressListener();
-		
 
 		List<String> command;
 		Converter inkscapeProcess;
@@ -485,7 +484,7 @@ public class MainWindowController implements IMainWindowController {
 
 			command.add("-f");
 			command.add(file.getAbsolutePath());
-			
+
 			// Color
 			if (options.containsKey("-b")) {
 				command.add("-b");
@@ -518,7 +517,7 @@ public class MainWindowController implements IMainWindowController {
 				// Page
 				command.add("-C");
 			}
-			
+
 			inkscapeProcess = new Converter(inkscapeExecutable, command);
 			inkscapeProcess.addProcessCompletedListener(progressListener);
 			threadPool.execute(inkscapeProcess);
@@ -603,9 +602,8 @@ public class MainWindowController implements IMainWindowController {
 	public void handleChangeRoot(CheckBoxTree tree, File root) {
 		try {
 			tree.setModel(new FileSystemTreeModel(root, MainWindow.filters));
-			preferenceManager.getStore().setValue(ConversionSVG.KEY_LAST_ROOT,
+			preferenceManager.getStore().create(ConversionSVG.KEY_LAST_ROOT,
 					root.getAbsolutePath());
-
 		} catch (Exception e) {
 			logger.error(e.getMessage());
 		}
@@ -613,11 +611,7 @@ public class MainWindowController implements IMainWindowController {
 
 	@Override
 	public void handleSave() {
-		try {
-			preferenceManager.getStore().save();
-		} catch (IOException e) {
-			logger.error(e.getMessage());
-		}
+		preferenceManager.getStore().save();
 	}
 
 	/**
@@ -640,12 +634,7 @@ public class MainWindowController implements IMainWindowController {
 			threadPool.shutdownNow();
 		}
 
-		try {
-			preferenceManager.getStore().save();
-		} catch (IOException e) {
-			logger.error(e.getMessage());
-			e.printStackTrace();
-		}
+		preferenceManager.getStore().save();
 
 		System.exit(0);
 	}

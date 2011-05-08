@@ -39,6 +39,7 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
+import javax.swing.text.BadLocationException;
 
 import net.sf.fstreem.FileSystemTreeModel;
 
@@ -54,7 +55,9 @@ import org.pushingpixels.flamingo.api.ribbon.RibbonApplicationMenuEntrySecondary
 import org.pushingpixels.flamingo.api.ribbon.RibbonTask;
 
 import com.bric.swing.ColorPicker;
+import com.jidesoft.hints.FileIntelliHints;
 import com.jidesoft.swing.CheckBoxTree;
+import com.jidesoft.swing.SelectAllUtils;
 
 import org.conversionsvg.gui.filters.NonHiddenDirectoryFilter;
 import org.conversionsvg.gui.filters.SVGFilter;
@@ -70,28 +73,14 @@ import java.util.Vector;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+@SuppressWarnings("serial")
 public class MainWindow extends JRibbonFrame implements IProgressListener {
-	private static final long serialVersionUID = 6987289183119465870L;
+
 	static final Logger logger = Logger.getLogger(MainWindow.class);
 	static final ResourceBundle i18ln = ResourceBundle.getBundle(
 			"org.conversionsvg.gui.MainWindow", Locale.getDefault());
 
 	IMainWindowController controller;
-
-	ResourceBundle imageBundle;
-	JSplitPane splitPane;
-
-	// ------------------------------------------------
-	// Ribbon
-	// ------------------------------------------------
-	RibbonApplicationMenu menuApplicationButton;
-	RibbonApplicationMenuEntryPrimary saveMenuButton;
-	RibbonApplicationMenuEntryPrimary aboutMenuButton;
-	RibbonApplicationMenuEntryPrimary settingsMenuButton;
-	RibbonApplicationMenuEntrySecondary inkscapeMenuButton;
-	RibbonApplicationMenuEntryFooter quitMenuButton;
-
-	RibbonTask homeTask;
 
 	//
 	// Options
@@ -222,7 +211,7 @@ public class MainWindow extends JRibbonFrame implements IProgressListener {
 		//
 
 		// SplitPane
-		splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
+		JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
 		splitPane.setResizeWeight(0);
 		splitPane.setDividerSize(9);
 		splitPane.setOneTouchExpandable(true);
@@ -264,29 +253,31 @@ public class MainWindow extends JRibbonFrame implements IProgressListener {
 		//
 		// Ribbon
 		//
-		menuApplicationButton = new RibbonApplicationMenu();
+		RibbonApplicationMenu menuApplicationButton = new RibbonApplicationMenu();
 
-		saveMenuButton = new RibbonApplicationMenuEntryPrimary(Helpers
-				.getResizableIconFromURL("res/images/media-floppy.png"), i18ln
-				.getString("Save"), saveActionListener(),
+		RibbonApplicationMenuEntryPrimary saveMenuButton = new RibbonApplicationMenuEntryPrimary(
+				Helpers.getResizableIconFromURL("res/images/media-floppy.png"),
+				i18ln.getString("Save"), saveActionListener(),
 				CommandButtonKind.ACTION_ONLY);
-		aboutMenuButton = new RibbonApplicationMenuEntryPrimary(Helpers
-				.getResizableIconFromURL("res/images/help-browser.png"), i18ln
-				.getString("About"), aboutActionListener(),
+		RibbonApplicationMenuEntryPrimary aboutMenuButton = new RibbonApplicationMenuEntryPrimary(
+				Helpers.getResizableIconFromURL("res/images/help-browser.png"),
+				i18ln.getString("About"), aboutActionListener(),
 				CommandButtonKind.ACTION_AND_POPUP_MAIN_ACTION);
-		settingsMenuButton = new RibbonApplicationMenuEntryPrimary(Helpers
-				.getResizableIconFromURL("res/images/applications-system.png"),
+		RibbonApplicationMenuEntryPrimary settingsMenuButton = new RibbonApplicationMenuEntryPrimary(
+				Helpers
+						.getResizableIconFromURL("res/images/applications-system.png"),
 				i18ln.getString("Settings"), settingsActionListener(),
 				CommandButtonKind.ACTION_AND_POPUP_MAIN_ACTION);
-		inkscapeMenuButton = new RibbonApplicationMenuEntrySecondary(Helpers
-				.getResizableIconFromURL("res/images/inkscape.png"),
+		RibbonApplicationMenuEntrySecondary inkscapeMenuButton = new RibbonApplicationMenuEntrySecondary(
+				Helpers.getResizableIconFromURL("res/images/inkscape.png"),
 				"Inkscape", inkscapeActionListener(),
 				CommandButtonKind.ACTION_ONLY);
 		aboutMenuButton
 				.addSecondaryMenuGroup("Information", inkscapeMenuButton);
 
-		quitMenuButton = new RibbonApplicationMenuEntryFooter(Helpers
-				.getResizableIconFromURL("res/images/system-log-out.png"),
+		RibbonApplicationMenuEntryFooter quitMenuButton = new RibbonApplicationMenuEntryFooter(
+				Helpers
+						.getResizableIconFromURL("res/images/system-log-out.png"),
 				i18ln.getString("Quit"), quitActionListener());
 
 		menuApplicationButton.addMenuEntry(saveMenuButton);
@@ -306,7 +297,7 @@ public class MainWindow extends JRibbonFrame implements IProgressListener {
 		//
 		// add all bands to task
 		//
-		homeTask = new RibbonTask(i18ln.getString("HomeRibbonTask"),
+		RibbonTask homeTask = new RibbonTask(i18ln.getString("HomeRibbonTask"),
 				controlsBand);
 		getRibbon().addTask(homeTask);
 
@@ -413,6 +404,14 @@ public class MainWindow extends JRibbonFrame implements IProgressListener {
 		fileHeirarchy = new CheckBoxTree(model);
 		JScrollPane fileSelectScrollPane = new JScrollPane(fileHeirarchy);
 
+		// implement FileIntelliHints
+		directoryTextField.getDocument().addDocumentListener(
+				rootDirectoryDocumentListener());
+		FileIntelliHints rootIntellisense = new FileIntelliHints(
+				directoryTextField);
+		rootIntellisense.setFolderOnly(true);
+		SelectAllUtils.install(directoryTextField);
+
 		fileSelectPanel.setMinimumSize(new Dimension(200, 500));
 		fileSelectPanel.setPreferredSize(new Dimension(400, 600));
 		fileSelectPanel.setLayout(new GridBagLayout());
@@ -469,7 +468,7 @@ public class MainWindow extends JRibbonFrame implements IProgressListener {
 
 		pack();
 	}
-	
+
 	/**
 	 * Sets the {@link #completedProcesses} to <code>0</code>.
 	 */
@@ -498,7 +497,8 @@ public class MainWindow extends JRibbonFrame implements IProgressListener {
 			file = new File(info.command.get(info.command.indexOf("-P") + 1));
 			logger.info(file.getAbsoluteFile());
 		}
-		progressBar.setString(completedProcesses + " / " + progressBar.getMaximum());
+		progressBar.setString(completedProcesses + " / "
+				+ progressBar.getMaximum());
 		progressBar.setValue(completedProcesses);
 	}
 
@@ -565,6 +565,40 @@ public class MainWindow extends JRibbonFrame implements IProgressListener {
 	// Action Listeners
 	//
 
+	private DocumentListener rootDirectoryDocumentListener() {
+		return new DocumentListener() {
+
+			@Override
+			public void removeUpdate(DocumentEvent e) {
+				updateRoot(e);
+			}
+
+			@Override
+			public void insertUpdate(DocumentEvent e) {
+				updateRoot(e);
+			}
+
+			@Override
+			public void changedUpdate(DocumentEvent e) {
+				updateRoot(e);
+			}
+
+			private void updateRoot(DocumentEvent e) {
+				try {
+					String path = e.getDocument().getText(0,
+							e.getDocument().getLength());
+					File newRoot = new File(path);
+					if (newRoot.exists()) {
+						root = newRoot;
+						controller.handleChangeRoot(fileHeirarchy, root);
+					}
+				} catch (BadLocationException e1) {
+					logger.error(e1.getMessage());
+				}
+			}
+		};
+	}
+
 	/**
 	 * @return an <code>ActionListener</code> which handles calling the
 	 *         <i>controller</i>'s <code>handleSave()</code> function.
@@ -588,7 +622,7 @@ public class MainWindow extends JRibbonFrame implements IProgressListener {
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				logger.debug("TODO\t" + "exit the application");
+				controller.handleQuit();
 			}
 		};
 	}
@@ -634,20 +668,6 @@ public class MainWindow extends JRibbonFrame implements IProgressListener {
 			}
 		};
 	}
-
-	/**
-	 * @return an <code>ActionListener</code> which handles calling the
-	 *         <i>controller</i>'s <code>handleCancel()</code> function.
-	 */
-	// private ActionListener cancelActionListener() {
-	// return new ActionListener() {
-	//
-	// @Override
-	// public void actionPerformed(ActionEvent e) {
-	// controller.handleCancel();
-	// }
-	// };
-	// }
 
 	/**
 	 * @return an <code>ActionListener</code> which handles showing a
@@ -708,8 +728,8 @@ public class MainWindow extends JRibbonFrame implements IProgressListener {
 				JFileChooser chooser = new JFileChooser();
 				chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
 				if (chooser.showSaveDialog(getInstance()) == JFileChooser.APPROVE_OPTION) {
-					controller.handleChangeRoot(fileHeirarchy, chooser
-							.getSelectedFile());
+					root = chooser.getSelectedFile();
+					controller.handleChangeRoot(fileHeirarchy, root);
 				}
 			}
 		};

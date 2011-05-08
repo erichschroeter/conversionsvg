@@ -14,16 +14,15 @@ import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.filechooser.FileSystemView;
 
-import org.prefs.IPreferenceStore;
-import org.prefs.PreferenceManager;
-import org.prefs.PreferencePage;
+import org.jpreferences.IPreferenceManager;
+import org.jpreferences.storage.IPreferenceStore;
+import org.jpreferences.ui.PreferencePage;
 
 import org.conversionsvg.gui.ConversionSVG;
 import org.conversionsvg.gui.filters.InkscapeFilter;
 
+@SuppressWarnings("serial")
 public class AdvancedPreferencePage extends PreferencePage {
-
-	private static final long serialVersionUID = -5609495319656181951L;
 
 	/**
 	 * Represents whether any setting on this page has changed.
@@ -37,7 +36,7 @@ public class AdvancedPreferencePage extends PreferencePage {
 	/**
 	 * The manager of the preferences being displayed on this page.
 	 */
-	private PreferenceManager manager;
+	private IPreferenceManager manager;
 
 	private JTextField inkscapeField;
 	private JTextField coreThreadsField;
@@ -58,7 +57,7 @@ public class AdvancedPreferencePage extends PreferencePage {
 	 *            <i>description</i> attribute is set to empty string (
 	 *            <code>""</code>)
 	 */
-	public AdvancedPreferencePage(PreferenceManager manager, String title,
+	public AdvancedPreferencePage(IPreferenceManager manager, String title,
 			String description) {
 		super(manager, title, description);
 		createContents();
@@ -74,11 +73,11 @@ public class AdvancedPreferencePage extends PreferencePage {
 	@Override
 	public void setVisible(boolean visible) {
 		super.setVisible(visible);
-		inkscapeField.setText(manager.getStore().getValue(
+		inkscapeField.setText(manager.getStore().read(
 				ConversionSVG.KEY_INKSCAPE_PATH));
-		coreThreadsField.setText(manager.getStore().getValue(
+		coreThreadsField.setText(manager.getStore().read(
 				ConversionSVG.KEY_CORE_POOL_SIZE));
-		maxThreadsField.setText(manager.getStore().getValue(
+		maxThreadsField.setText(manager.getStore().read(
 				ConversionSVG.KEY_MAXIMUM_POOL_SIZE));
 	}
 
@@ -88,7 +87,7 @@ public class AdvancedPreferencePage extends PreferencePage {
 	 * 
 	 * @return the manager
 	 */
-	public PreferenceManager getManager() {
+	public IPreferenceManager getManager() {
 		return manager;
 	}
 
@@ -99,16 +98,15 @@ public class AdvancedPreferencePage extends PreferencePage {
 	 * @param manager
 	 *            the manager to set
 	 */
-	public void setManager(PreferenceManager manager) {
+	public void setManager(IPreferenceManager manager) {
 		this.manager = manager;
 	}
 
 	/**
 	 * Initializes the fields on this page with the values in the given store.
 	 * <p>
-	 * The <code>PreferencePage</code> knows which preferences to look
-	 * for. If a preference does not exist in the store, a default value is
-	 * used.
+	 * The <code>PreferencePage</code> knows which preferences to look for. If a
+	 * preference does not exist in the store, a default value is used.
 	 * </p>
 	 * 
 	 * @param store
@@ -117,10 +115,10 @@ public class AdvancedPreferencePage extends PreferencePage {
 	public void setInitialValues(IPreferenceStore store) {
 		String value;
 		inkscapeField.setText((value = store
-				.getValue(ConversionSVG.KEY_INKSCAPE_PATH)) != null ? value
-				: store.getDefault(ConversionSVG.KEY_INKSCAPE_PATH));
+				.read(ConversionSVG.KEY_INKSCAPE_PATH)) != null ? value : store
+				.getDefault(ConversionSVG.KEY_INKSCAPE_PATH));
 		coreThreadsField.setText((value = store
-				.getValue(ConversionSVG.KEY_CORE_POOL_SIZE)) != null ? value
+				.read(ConversionSVG.KEY_CORE_POOL_SIZE)) != null ? value
 				: store.getDefault(ConversionSVG.KEY_CORE_POOL_SIZE));
 		maxThreadsField
 				.setText((value = store
@@ -157,9 +155,8 @@ public class AdvancedPreferencePage extends PreferencePage {
 				inkscapeChooser.setFileFilter(new InkscapeFilter());
 				inkscapeChooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
 				if (inkscapeChooser.showOpenDialog(getInstance()) == JFileChooser.APPROVE_OPTION) {
-					manager.getStore().setValue(
-							ConversionSVG.KEY_INKSCAPE_PATH,
-							inkscapeChooser.getSelectedFile());
+					manager.getStore().create(ConversionSVG.KEY_INKSCAPE_PATH,
+							inkscapeChooser.getSelectedFile().getAbsolutePath());
 				}
 			}
 		};
@@ -170,7 +167,7 @@ public class AdvancedPreferencePage extends PreferencePage {
 	//
 
 	@Override
-	protected void createContents() {
+	public void createContents() {
 		setLayout(new GridBagLayout());
 
 		GridBagConstraints c;
@@ -259,11 +256,11 @@ public class AdvancedPreferencePage extends PreferencePage {
 
 	@Override
 	public boolean performOk() {
-		manager.getStore().setValue(ConversionSVG.KEY_INKSCAPE_PATH,
+		manager.getStore().create(ConversionSVG.KEY_INKSCAPE_PATH,
 				inkscapeField.getText());
-		manager.getStore().setValue(ConversionSVG.KEY_CORE_POOL_SIZE,
+		manager.getStore().create(ConversionSVG.KEY_CORE_POOL_SIZE,
 				coreThreadsField.getText());
-		manager.getStore().setValue(ConversionSVG.KEY_MAXIMUM_POOL_SIZE,
+		manager.getStore().create(ConversionSVG.KEY_MAXIMUM_POOL_SIZE,
 				maxThreadsField.getText());
 		return true;
 	}
