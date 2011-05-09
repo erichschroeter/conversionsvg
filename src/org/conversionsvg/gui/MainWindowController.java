@@ -2,8 +2,8 @@ package org.conversionsvg.gui;
 
 import java.awt.Dialog;
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -21,6 +21,7 @@ import javax.swing.JTextField;
 import javax.swing.tree.TreePath;
 
 import org.apache.log4j.Logger;
+import org.conversionsvg.gui.filters.SVGFilter;
 import org.conversionsvg.util.Helpers;
 import org.jpreferences.IPreferenceManager;
 import org.jpreferences.ui.PreferenceDialog;
@@ -32,18 +33,19 @@ import com.bric.swing.ColorPicker;
 import com.jidesoft.swing.CheckBoxTree;
 
 /**
- * The MainWindowController class is somewhat self-explanatory. It is the
- * Controller in the Model View Controller (MVC) framework. It handles
- * controlling what is done based on user interaction from the MainWindow (the
- * <i>View</i> in MVC).
+ * The <code>MainWindowController</code> class is somewhat self-explanatory. It
+ * is the Controller in the Model View Controller (MVC) framework. It handles
+ * controlling what is done based on user interaction from the
+ * {@link MainWindow} (the <i>View</i> in MVC).
  * <p>
- * In addition to the MainWindow, the MainWindowController also handles
- * displaying dialogs where needed. In instances where a file to be exported
- * already exists on the system, a dialog will popup asking the user if they
- * want to overwrite it or not. Another instance where a dialog will popup is if
- * the program cannot find the Inkscape executable on the system. A file chooser
- * dialog will popup that will filter anything except the Inkscape executable
- * (file named Inkscape.exe or inkscape).
+ * In addition to the <code>MainWindow</code>, the
+ * <code>MainWindowController</code> also handles displaying dialogs where
+ * needed. In instances where a file to be exported already exists on the
+ * system, a dialog will popup asking the user if they want to overwrite it or
+ * not. Another instance where a dialog will popup is if the program cannot find
+ * the Inkscape executable on the system. A file chooser dialog will popup that
+ * will filter anything except the Inkscape executable (file named Inkscape.exe
+ * or inkscape).
  * </p>
  * 
  * @author Erich Schroeter
@@ -61,42 +63,40 @@ public class MainWindowController implements IMainWindowController {
 	 * <code>Converter</code> object..
 	 */
 	private File inkscapeExecutable;
-
 	/**
 	 * The list of <code>IProgresslistener</code>'s listening to the progress of
 	 * converting.
 	 */
 	private List<IProgressListener> progressListeners;
-
 	/**
 	 * Used by the {@link #preferenceDialog}
 	 */
 	private IPreferenceManager preferenceManager;
-
 	/**
 	 * The dialog which presents the user with all the preferences available for
 	 * ConversionSVG.
 	 */
 	private PreferenceDialog preferenceDialog;
-
 	/**
 	 * Used by <code>{@link #handleFileFormat(Map, String, List)}</code> to
 	 * avoid showing the <code>ConfirmAllDialog</code>.
 	 */
 	private boolean yesToAll = false;
-
 	/**
 	 * Used by <code>{@link #handleConvert(List, Map)}</code> to determine
 	 * whether to change the directory path of the file to be converted or just
 	 * the extension.
 	 */
 	private static File singleDirectoryOutput = null;
-
-	// ThreadPool defaults
+	/** Number of threads available in the pool by default */
 	private int corePoolSize = 2;
+	/** The maximum number of threads in the pool */
 	private int maximumPoolSize = 2;
+	/** The time (seconds) to keep threads alive */
 	private long keepAliveTime = 10;
+	/** The thread pool used to start Inkscape processes */
 	private PriorityBlockingQueue<Runnable> queue;
+	/** Handles starting the threads in the thread pool */
 	private ThreadPoolExecutor threadPool;
 
 	public MainWindowController(IPreferenceManager manager) {
@@ -143,46 +143,6 @@ public class MainWindowController implements IMainWindowController {
 	@Override
 	public void addProgressListener(IProgressListener listener) {
 		progressListeners.add(listener);
-	}
-
-	/**
-	 * Returns a list of <code>File</code>s that the user has checked in the
-	 * <code>CheckBoxTree</code> on the <code>MainWindow</code>'s file select
-	 * panel.
-	 * 
-	 * @param The
-	 *            <code>CheckBoxTree</code> to retrieve a list of checked files
-	 *            from
-	 * @return list of <code>File</code>'s checked in the
-	 *         <code>MainWindow</code>'s file select panel
-	 */
-	public static List<File> getFiles(CheckBoxTree tree) {
-		List<File> files = new ArrayList<File>();
-		TreePath[] selectedTreePaths = tree.getCheckBoxTreeSelectionModel()
-				.getSelectionPaths();
-
-		if (selectedTreePaths != null) {
-			for (TreePath selection : selectedTreePaths) {
-				FileSystemTreeNode node = (FileSystemTreeNode) selection
-						.getLastPathComponent();
-				File file = node.getFile();
-
-				if (file.isDirectory()) {
-					// If a directory is checked, all the children are
-					// unselected (this is a performance feature according to
-					// Jide) so we have to iterate over all the files in that
-					// directory
-					for (int i = 0; i < node.getChildCount(); i++) {
-						FileSystemTreeNode child = node.getChildAt(i);
-						files.add(child.getFile());
-					}
-				} else {
-					files.add(file);
-				}
-			}
-		}
-
-		return files;
 	}
 
 	/**
@@ -291,6 +251,11 @@ public class MainWindowController implements IMainWindowController {
 		}
 	}
 
+	/**
+	 * @return an {@link InkscapeProcessCompletedListener} which calls all
+	 *         {@link IProgressListener}'s
+	 *         <code>updateProgressBar(InkscapeProcessInfo)</code> method.
+	 */
 	private InkscapeProcessCompletedListener progressListener() {
 		return new InkscapeProcessCompletedListener() {
 

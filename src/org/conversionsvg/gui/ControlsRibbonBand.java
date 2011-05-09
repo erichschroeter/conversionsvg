@@ -9,7 +9,12 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.ResourceBundle;
 
+import javax.swing.tree.TreePath;
+
+import net.sf.fstreem.FileSystemTreeNode;
+
 import org.apache.log4j.Logger;
+import org.conversionsvg.gui.filters.SVGFilter;
 import org.conversionsvg.util.Helpers;
 import org.pushingpixels.flamingo.api.common.JCommandButton;
 import org.pushingpixels.flamingo.api.common.JCommandButton.CommandButtonKind;
@@ -19,9 +24,11 @@ import org.pushingpixels.flamingo.api.ribbon.RibbonElementPriority;
 import org.pushingpixels.flamingo.api.ribbon.resize.CoreRibbonResizePolicies;
 import org.pushingpixels.flamingo.api.ribbon.resize.RibbonBandResizePolicy;
 
+import com.jidesoft.swing.CheckBoxTree;
+
+@SuppressWarnings("serial")
 public class ControlsRibbonBand extends JRibbonBand {
 
-	private static final long serialVersionUID = -1492139421952545446L;
 	static final Logger logger = Logger.getLogger(ControlsRibbonBand.class);
 	static final ResourceBundle i18ln = ResourceBundle.getBundle(
 			"org.conversionsvg.gui.ControlsRibbonBand", Locale.getDefault());
@@ -125,6 +132,68 @@ public class ControlsRibbonBand extends JRibbonBand {
 	}
 
 	/**
+	 * Returns a list of <code>File</code>s that the user has checked in the
+	 * <code>CheckBoxTree</code> on the <code>MainWindow</code>'s file select
+	 * panel.
+	 * 
+	 * @param The
+	 *            <code>CheckBoxTree</code> to retrieve a list of checked files
+	 *            from
+	 * @return list of <code>File</code>'s checked in the
+	 *         <code>MainWindow</code>'s file select panel
+	 */
+	public List<File> getFiles(CheckBoxTree tree) {
+		List<File> files = new ArrayList<File>();
+		TreePath[] selectedTreePaths = tree.getCheckBoxTreeSelectionModel()
+				.getSelectionPaths();
+
+		if (selectedTreePaths != null) {
+			for (TreePath selection : selectedTreePaths) {
+				FileSystemTreeNode node = (FileSystemTreeNode) selection
+						.getLastPathComponent();
+				File file = node.getFile();
+
+				files.addAll(recursivelyGetFiles(file));
+				// if (file.isDirectory()) {
+				// // If a directory is checked, all the children are
+				// // unselected (this is a performance feature according to
+				// // Jide) so we have to iterate over all the files in that
+				// // directory
+				// for (int i = 0; i < node.getChildCount(); i++) {
+				// FileSystemTreeNode child = node.getChildAt(i);
+				// files.addAll(recursivelyGetFiles(child.getFile()));
+				// }
+				// } else {
+				// files.add(file);
+				// }
+			}
+		}
+
+		return files;
+	}
+
+	public List<File> recursivelyGetFiles(File file) {
+		List<File> files = new ArrayList<File>();
+		if (file.isDirectory()) {
+			File[] list = file.listFiles(new SVGFilter());
+			for (File f : list) {
+				if (f.isDirectory()) {
+					files.addAll(recursivelyGetFiles(f));
+				} else {
+					files.add(f);
+				}
+			}
+		} else {
+			files.add(file);
+		}
+		return files;
+	}
+
+	//
+	// ActionListener
+	//
+
+	/**
 	 * @return an <code>ActionListener</code> which handles calling the
 	 *         <i>controller</i>'s
 	 *         <code>{@link IMainWindowController#handleCancel()}</code>
@@ -136,7 +205,7 @@ public class ControlsRibbonBand extends JRibbonBand {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				if (converting) {
-					window.controller.handleCancel();
+					window.getController().handleCancel();
 				}
 			}
 		};
@@ -154,19 +223,21 @@ public class ControlsRibbonBand extends JRibbonBand {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				if (!converting) {
-					List<File> files = MainWindowController
-							.getFiles(window.fileHeirarchy);
+					List<File> files = getFiles(window.getFileHeirarchy());
 					// only attempt to convert if there are 1 or more files
 					if (files.size() > 0) {
+
 						Map<String, String> options = MainWindowController
-								.getInkscapeCommandlineOptions(
-										window.pngCheckBox, window.psCheckBox,
-										window.epsCheckBox, window.pdfCheckBox,
-										window.colorPicker,
-										window.heightTextField,
-										window.widthTextField,
-										window.pageRadioButton,
-										window.drawingRadioButton);
+								.getInkscapeCommandlineOptions(window
+										.getPngCheckBox(), window
+										.getPsCheckBox(), window
+										.getEpsCheckBox(), window
+										.getPdfCheckBox(), window
+										.getColorPicker(), window
+										.getHeightTextField(), window
+										.getWidthTextField(), window
+										.getPageRadioButton(), window
+										.getDrawingRadioButton());
 						// initialize the ProgressBar
 						// int exportTypes = 0;
 						// exportTypes = options.containsKey("-e") ?
@@ -178,7 +249,7 @@ public class ControlsRibbonBand extends JRibbonBand {
 						// exportTypes = options.containsKey("-A") ?
 						// exportTypes++ : exportTypes;
 						window.resetProgressBar();
-						window.progressBar.setMaximum(files.size());
+						window.getProgressBar().setMaximum(files.size());
 
 						// TODO disable input (buttons ...)
 						window.enableInput(false);
@@ -187,7 +258,7 @@ public class ControlsRibbonBand extends JRibbonBand {
 
 						converting = true;
 
-						window.controller.handleConvert(files, options);
+						window.getController().handleConvert(files, options);
 						// TODO enable input
 						window.enableInput(true);
 						converting = false;
