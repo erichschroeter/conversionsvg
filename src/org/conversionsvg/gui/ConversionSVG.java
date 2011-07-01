@@ -88,8 +88,10 @@ public class ConversionSVG {
 				"Advanced", "Configure advanced features ConversionSVG uses.");
 
 		try {
-			prefsManager.add(new DefaultPreferenceNode("defaults", defaultsPage, "Defaults"));
-			prefsManager.add(new DefaultPreferenceNode("advanced", advancedPage, "Advanced"));
+			prefsManager.add(new DefaultPreferenceNode("defaults",
+					defaultsPage, "Defaults"));
+			prefsManager.add(new DefaultPreferenceNode("advanced",
+					advancedPage, "Advanced"));
 		} catch (ConflictingIdentifierException e) {
 			logger.error(e.getMessage());
 		}
@@ -124,29 +126,30 @@ public class ConversionSVG {
 	 * @return the default properties used by <code>MainWindowController</code>
 	 */
 	private Properties getDefaults() {
-		 Properties defaults = new Properties();
-		 defaults
-		 .setProperty(ConversionSVG.KEY_CORE_POOL_SIZE, Integer.toString(5));
-		 defaults.setProperty(ConversionSVG.KEY_MAXIMUM_POOL_SIZE, Integer
-		 .toString(10));
-		 defaults.setProperty(ConversionSVG.KEY_KEEP_ALIVE_TIME,
-		 Long.toString(10));
-		 defaults.setProperty(ConversionSVG.KEY_INKSCAPE_EXPORT_COLOR,
-		 Helpers.toRGB(Color.WHITE, false));
-		 defaults.setProperty(ConversionSVG.KEY_INKSCAPE_EXPORT_HEIGHT, "");
-		 defaults.setProperty(ConversionSVG.KEY_INKSCAPE_EXPORT_WIDTH, "");
-		 return defaults;
-//		Map<String, String> defaults = new HashMap<String, String>();
-//
-//		defaults.put(ConversionSVG.KEY_CORE_POOL_SIZE, Integer.toString(5));
-//		defaults.put(ConversionSVG.KEY_MAXIMUM_POOL_SIZE, Integer.toString(10));
-//		defaults.put(ConversionSVG.KEY_KEEP_ALIVE_TIME, Long.toString(10));
-//		defaults.put(ConversionSVG.KEY_INKSCAPE_EXPORT_COLOR, Helpers.toRGB(
-//				Color.WHITE, false));
-//		defaults.put(ConversionSVG.KEY_INKSCAPE_EXPORT_HEIGHT, "");
-//		defaults.put(ConversionSVG.KEY_INKSCAPE_EXPORT_WIDTH, "");
-//
-//		return defaults;
+		Properties defaults = new Properties();
+		defaults.setProperty(ConversionSVG.KEY_CORE_POOL_SIZE, Integer
+				.toString(5));
+		defaults.setProperty(ConversionSVG.KEY_MAXIMUM_POOL_SIZE, Integer
+				.toString(10));
+		defaults.setProperty(ConversionSVG.KEY_KEEP_ALIVE_TIME, Long
+				.toString(10));
+		defaults.setProperty(ConversionSVG.KEY_INKSCAPE_EXPORT_COLOR, Helpers
+				.toRGB(Color.WHITE, false));
+		defaults.setProperty(ConversionSVG.KEY_INKSCAPE_EXPORT_HEIGHT, "");
+		defaults.setProperty(ConversionSVG.KEY_INKSCAPE_EXPORT_WIDTH, "");
+		return defaults;
+		// Map<String, String> defaults = new HashMap<String, String>();
+		//
+		// defaults.put(ConversionSVG.KEY_CORE_POOL_SIZE, Integer.toString(5));
+		// defaults.put(ConversionSVG.KEY_MAXIMUM_POOL_SIZE,
+		// Integer.toString(10));
+		// defaults.put(ConversionSVG.KEY_KEEP_ALIVE_TIME, Long.toString(10));
+		// defaults.put(ConversionSVG.KEY_INKSCAPE_EXPORT_COLOR, Helpers.toRGB(
+		// Color.WHITE, false));
+		// defaults.put(ConversionSVG.KEY_INKSCAPE_EXPORT_HEIGHT, "");
+		// defaults.put(ConversionSVG.KEY_INKSCAPE_EXPORT_WIDTH, "");
+		//
+		// return defaults;
 	}
 
 	/**
