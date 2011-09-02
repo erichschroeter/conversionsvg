@@ -3,9 +3,6 @@ package org.conversionsvg.models;
 import org.conversionsvg.InkscapeCommandBuilder;
 import org.conversionsvg.ModifiesInkscapeCommand;
 
-import com.jidesoft.app.framework.BasicDataModel;
-import com.jidesoft.app.framework.DataModelException;
-
 public class AreaModel extends DomainModel implements ModifiesInkscapeCommand {
 
 	/** A globally unique identifier for the area model */

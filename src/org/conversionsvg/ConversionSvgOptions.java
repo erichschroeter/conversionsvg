@@ -11,7 +11,7 @@ public interface ConversionSvgOptions {
 	/**
 	 * The command line switch used to set the <em>log4j</em> configuration file
 	 */
-	public static final char SWITCH_LOG4J = 'l';
+	public static final char SWITCH_LOG4J = 'L';
 	/**
 	 * The command line options for parsing the command line for the
 	 * <em>log4j</em> configuration file
@@ -32,4 +32,5 @@ public interface ConversionSvgOptions {
 	public static Option OPTION_INKSCAPE_LOCATION = OptionBuilder.withArgName(
 			"file").hasArg().withType(File.class).isRequired(false)
 			.withLongOpt("inkscape-location").create(SWITCH_INKSCAPE_LOCATION);
+
 }

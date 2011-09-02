@@ -6,14 +6,11 @@ import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.io.File;
 import java.io.FileFilter;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.ResourceBundle;
 import java.util.Vector;
-import java.util.prefs.Preferences;
 
 import javax.swing.ButtonGroup;
 import javax.swing.JButton;
@@ -32,17 +29,11 @@ import net.sf.fstreem.FileSystemTreeNode;
 import org.conversionsvg.ConversionSvgApplication;
 import org.conversionsvg.Inkscape;
 import org.conversionsvg.InkscapeCommandBuilder;
-import org.conversionsvg.gui.ConversionSVG;
 import org.conversionsvg.gui.MainWindow;
 import org.conversionsvg.gui.filters.SVGFilter;
 import org.conversionsvg.models.DomainModel;
 import org.conversionsvg.models.FileSelectionModel;
 
-import com.jidesoft.app.framework.BasicDataModel;
-import com.jidesoft.app.framework.DataModel;
-import com.jidesoft.app.framework.DataModelException;
-import com.jidesoft.app.framework.gui.DataViewPane;
-import com.jidesoft.app.framework.gui.GUIApplication;
 import com.jidesoft.hints.FileIntelliHints;
 import com.jidesoft.swing.CheckBoxTree;
 import com.jidesoft.swing.SelectAllUtils;
@@ -240,25 +231,39 @@ public class FileSelectionView extends DomainView {
 						.getLastPathComponent();
 				File file = node.getFile();
 
-				files.addAll(recursivelyGetFiles(file));
+				files.addAll(recursivelyGetFiles(file, new SVGFilter()));
 			}
 		}
 		return files;
 	}
 
-	public List<File> recursivelyGetFiles(File file) {
+	/**
+	 * Returns a list of files that satisfy the <code>filter</code>. This
+	 * recursively traverses the <code>directory</code> adding files to the list
+	 * to be returned that satisfy the <code>filter</code>.
+	 * 
+	 * @param directory
+	 *            the directory to recursively traverse
+	 * @param filter
+	 *            the file filter to use
+	 * @return a list of files that satisfy the <code>filter</code> under the
+	 *         <code>directory</code>
+	 */
+	public List<File> recursivelyGetFiles(File directory, FileFilter filter) {
 		List<File> files = new Vector<File>();
-		if (file.isDirectory()) {
-			File[] list = file.listFiles(new SVGFilter());
+		if (directory.isDirectory()) {
+			File[] list = directory.listFiles(filter);
 			for (File f : list) {
 				if (f.isDirectory()) {
-					files.addAll(recursivelyGetFiles(f));
+					files.addAll(recursivelyGetFiles(f, filter));
 				} else {
 					files.add(f);
 				}
 			}
 		} else {
-			files.add(file);
+			if (filter.accept(directory)) {
+				files.add(directory);
+			}
 		}
 		return files;
 	}

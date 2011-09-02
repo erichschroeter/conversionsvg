@@ -13,10 +13,6 @@ import org.conversionsvg.InkscapeCommandBuilder;
 import org.conversionsvg.models.AreaModel;
 import org.conversionsvg.models.DomainModel;
 
-import com.jidesoft.app.framework.DataModel;
-import com.jidesoft.app.framework.DataModelException;
-import com.jidesoft.app.framework.gui.DataViewPane;
-
 @SuppressWarnings("serial")
 public class AreaView extends DomainView {
 	static final ResourceBundle i18ln = ResourceBundle.getBundle(
@@ -49,6 +45,8 @@ public class AreaView extends DomainView {
 		ButtonGroup group = new ButtonGroup();
 		group.add(pageRadioButton);
 		group.add(drawingRadioButton);
+		
+		pageRadioButton.setSelected(true);
 
 		add(drawingRadioButton);
 		add(pageRadioButton);
@@ -75,14 +73,8 @@ public class AreaView extends DomainView {
 	@Override
 	public void updateModel(DomainModel model) {
 		InkscapeCommandBuilder command = ((AreaModel) model).getCommand();
-		if (drawingRadioButton.isSelected()) {
-			command.useDrawingArea();
-		} else if (pageRadioButton.isSelected()) {
-			command.usePageArea();
-		} else {
-			// default use page
-			command.usePageArea();
-		}
+		command.useDrawingArea(drawingRadioButton.isSelected());
+		command.usePageArea(pageRadioButton.isSelected());
 	}
 
 }

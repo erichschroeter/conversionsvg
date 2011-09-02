@@ -12,9 +12,6 @@ import org.conversionsvg.models.AreaModel;
 import org.conversionsvg.models.DomainModel;
 
 import com.bric.swing.ColorPicker;
-import com.jidesoft.app.framework.DataModel;
-import com.jidesoft.app.framework.DataModelException;
-import com.jidesoft.app.framework.gui.DataViewPane;
 
 @SuppressWarnings("serial")
 public class ColorView extends DomainView {

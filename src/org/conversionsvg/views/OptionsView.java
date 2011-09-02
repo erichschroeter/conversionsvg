@@ -4,9 +4,7 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Vector;
 
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
@@ -43,6 +41,10 @@ public class OptionsView extends DataViewPane {
 	private JPanel leftPane;
 	/** The component to be displayed in the right side of the split pane */
 	private JPanel rightPane;
+	/**
+	 * The map of strings, which represent a sub view and its sub model, to the
+	 * sub domain view.
+	 */
 	private Map<String, DomainView> subviews;
 
 	public OptionsView() {
@@ -123,8 +125,8 @@ public class OptionsView extends DataViewPane {
 		left.setLayout(new GridBagLayout());
 
 		// initialize sub views
-		// FormatView formatView = new FormatView(
-		// (ConversionSvgApplication) getApplication());
+		FormatView formatView = new FormatView(
+				(ConversionSvgApplication) getApplication());
 		AreaView areaView = new AreaView(
 				(ConversionSvgApplication) getApplication());
 		SizeView sizeView = new SizeView(
@@ -136,9 +138,7 @@ public class OptionsView extends DataViewPane {
 		c = new GridBagConstraints(0, 0, 2, 1, 1.0, 0.0,
 				GridBagConstraints.NORTHWEST, GridBagConstraints.HORIZONTAL,
 				new Insets(2, 2, 2, 2), 0, 0);
-		left.add(
-				registerSubView(OptionsModel.SUB_KEY_FORMAT, new FormatView(
-						(ConversionSvgApplication) getApplication())), c);
+		left.add(formatView, c);
 		c = new GridBagConstraints(0, 1, 1, 1, 1.0, 0.0,
 				GridBagConstraints.NORTHWEST, GridBagConstraints.BOTH,
 				new Insets(2, 2, 2, 2), 0, 0);

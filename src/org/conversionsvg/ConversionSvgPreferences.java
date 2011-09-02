@@ -1,6 +1,7 @@
 package org.conversionsvg;
 
 import java.awt.Dimension;
+import java.awt.Point;
 import java.io.File;
 
 public interface ConversionSvgPreferences {
@@ -40,8 +41,8 @@ public interface ConversionSvgPreferences {
 	 */
 	public static final String KEY_LAST_ROOT = "last root";
 	/** The default location for the file tree hierarchy */
-	public static File DEFAULT_LAST_ROOT = new File(
-			System.getProperty("user.home"));
+	public static File DEFAULT_LAST_ROOT = new File(System
+			.getProperty("user.home"));
 
 	// Basic application preferences
 
@@ -51,5 +52,11 @@ public interface ConversionSvgPreferences {
 	public static final String KEY_WINDOW_HEIGHT = "window.height";
 	/** The default application window size */
 	public static Dimension DEFAULT_WINDOW_SIZE = new Dimension(600, 350);
+	/** The preference key associated with the window's last known x position */
+	public static final String KEY_WINDOW_POSITION_X = "window.x";
+	/** The preference key associated with the window's last known y position */
+	public static final String KEY_WINDOW_POSITION_Y = "window.y";
+	/** The default application window point */
+	public static Point DEFAULT_WINDOW_POSITION = new Point(100, 100);
 
 }

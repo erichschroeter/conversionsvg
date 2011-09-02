@@ -1,20 +1,22 @@
 package org.conversionsvg;
 
-import java.awt.BorderLayout;
-import java.awt.Container;
 import java.awt.Desktop;
 import java.awt.Dimension;
+import java.awt.Point;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.prefs.Preferences;
 
+import javax.swing.ImageIcon;
 import javax.swing.JFrame;
-import javax.swing.JInternalFrame;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 
@@ -26,26 +28,11 @@ import org.apache.commons.cli.ParseException;
 import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Logger;
 import org.apache.log4j.xml.DOMConfigurator;
-import org.conversionsvg.actions.ConvertAction;
-import org.conversionsvg.models.AreaModel;
-import org.conversionsvg.models.ColorModel;
-import org.conversionsvg.models.FileSelectionModel;
-import org.conversionsvg.models.FormatModel;
-import org.conversionsvg.models.OptionsModel;
-import org.conversionsvg.models.SizeModel;
 import org.conversionsvg.util.Helpers;
-import org.conversionsvg.views.OptionsView;
-import org.pushingpixels.flamingo.api.common.RichTooltip;
+import org.javamvc.GUIApplication;
 import org.pushingpixels.flamingo.api.common.JCommandButton.CommandButtonKind;
 import org.pushingpixels.flamingo.api.common.icon.EmptyResizableIcon;
 import org.pushingpixels.flamingo.api.ribbon.JRibbon;
-
-import com.jidesoft.app.framework.BasicDataModelFactory;
-import com.jidesoft.app.framework.BasicDataViewFactory;
-import com.jidesoft.app.framework.DataModelException;
-import com.jidesoft.app.framework.gui.ApplicationWindowsUI;
-import com.jidesoft.app.framework.gui.GUIApplication;
-import com.jidesoft.app.framework.gui.WindowCustomizer;
 
 /**
  * The <code>ConversionSvgApplication</code> is a Java application that allows
@@ -57,11 +44,6 @@ import com.jidesoft.app.framework.gui.WindowCustomizer;
  * must be installed in order to use this application. Inkscape is required
  * because this application spawns threads off which pass commands via the
  * command line to Inkscape to let it handle converting images.
- * <p>
- * <code>ConversionSvgApplication</code> follows the
- * <em>Model View Controller (MVC)</em> framework using the
- * <em>JIDE Desktop Application Framework</em> libraries (which are free for
- * open source projects).
  * 
  * @author Erich Schroeter
  */
@@ -86,49 +68,16 @@ public class ConversionSvgApplication extends GUIApplication implements
 	 * menubars and toolbars in favor of using a {@link JRibbon}.
 	 */
 	public ConversionSvgApplication() {
-		super("ConversionSVG", MDI_APPLICATION_STYLE);
-		// replacing menus and toolbars for Ribbon
-		getApplicationUIManager().getMenuBarsUI().setUsesMenuBars(false);
-		getApplicationUIManager().getToolBarsUI().setUsesToolBars(false);
-		// getApplicationUIManager().getRibbonUI().setUsesRibbon(true);
-
-		// register the conversion models
-		addDataModelFactory(new BasicDataModelFactory(OptionsModel.class));
-		// register the conversion views
-		addDataViewFactory(new BasicDataViewFactory(OptionsView.class));
-
-		// install actions
-		installActions();
-
-		// the ribbon should be on all views
-		setApplicationRibbon(createApplicationRibbon());
-		addWindowCustomizer(new WindowCustomizer() {
-
-			@Override
-			public void disposingWindow(ApplicationWindowsUI windowsUI,
-					Container window) {
-			}
-
-			@Override
-			public void customizeWindow(ApplicationWindowsUI windowsUI,
-					Container window) {
-				if (window instanceof JInternalFrame) {
-					JInternalFrame frame = (JInternalFrame) window;
-					frame.setClosable(false);
-					frame.setIconifiable(false);
-					frame.setMaximizable(false);
-					windowsUI.maximizeWindow(window);
-				}
-			}
-		});
-
+		super(new JFrame());
+		setApplicationIcon(new ImageIcon(ConversionSvgApplication.class
+				.getClassLoader().getResource("images/logo.png")));
 		// initialize the thread pool
-		int corePoolSize = getPreferences().getInt(KEY_CORE_POOL_SIZE,
-				DEFAULT_CORE_POOL_SIZE);
-		int maximumPoolSize = getPreferences().getInt(KEY_MAXIMUM_POOL_SIZE,
-				DEFAULT_MAXIMUM_POOL_SIZE);
-		int keepAliveTime = getPreferences().getInt(KEY_KEEP_ALIVE_TIME,
-				DEFAULT_KEEP_ALIVE_TIME);
+		int corePoolSize = getApplicationPreferences().getInt(
+				"thread_pool.core_size", 10);
+		int maximumPoolSize = getApplicationPreferences().getInt(
+				"thread_pool.max_size", 20);
+		int keepAliveTime = getApplicationPreferences().getInt(
+				"thread_pool.keep_alive_time", 10);
 		// The thread pool used to start Inkscape processes
 		PriorityBlockingQueue<Runnable> queue = new PriorityBlockingQueue<Runnable>(
 				corePoolSize);
@@ -137,10 +86,50 @@ public class ConversionSvgApplication extends GUIApplication implements
 	}
 
 	@Override
-	protected void installActions() {
-		getActionMap().put("convert", new ConvertAction());
+	protected void installApplicationPreferences() {
+		super.installApplicationPreferences();
+		Preferences p = getApplicationPreferences();
+		p.putInt("window.size.width", 600);
+		p.putInt("window.size.height", 350);
+
+		p.put("inkscape.location", "");
+		p.putInt("thread_pool.core_size", 10);
+		p.putInt("thread_pool.max_size", 20);
+		p.putInt("thread_pool.keep_alive_time", 10);
+		p.putInt("inkscape.export_width", 16);
+		p.putInt("inkscape.export_height", 16);
+		p.put("inkscape.export_color", "#00FFFFFF");
+		p.put("last_root", System.getProperty("user.home"));
 	}
-	
+
+	@Override
+	protected void initializeWindow() {
+		super.initializeWindow();
+		JFrame frame = (JFrame) getApplicationWindow();
+		frame.setTitle("Conversion SVG \u0392");
+		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		// a window listener must be implemented to call
+		// DesktopApplication.exit() in order for our overridden exit() method
+		// to be called and save our preferences
+		frame.addWindowListener(new WindowAdapter() {
+			@Override
+			public void windowClosing(WindowEvent e) {
+				exit();
+			}
+
+			@Override
+			public void windowClosed(WindowEvent e) {
+				exit();
+			}
+		});
+		frame.pack();
+	}
+
+	@Override
+	public String getVersion() {
+		return "1.0.0";
+	}
+
 	/**
 	 * Returns the ribbon used by this application.
 	 * 
@@ -204,15 +193,24 @@ public class ConversionSvgApplication extends GUIApplication implements
 		factory.addMenuItem("Websites", Helpers
 				.getResizableIconFromResource("images/websites-menu-item.png"),
 				null, CommandButtonKind.POPUP_ONLY);
+		factory.addFooterMenuItem("Exit", Helpers
+				.getResizableIconFromResource("images/system-log-out.png"),
+				new ActionListener() {
+
+					@Override
+					public void actionPerformed(ActionEvent e) {
+						exit(0);
+					}
+				});
 		factory.withMenu();
 
-		factory.addButtonTypeAction("Convert", Helpers
-				.getResizableIconFromResource("images/convert.png"),
-				getActionMap().get("convert"), new RichTooltip(
-						"Convert SVG Images",
-						"This will begin the conversion activity to use "
-								+ "Inkscape to convert the selected SVG "
-								+ "images using the specified options."));
+		// factory.addButtonTypeAction("Convert", Helpers
+		// .getResizableIconFromResource("images/convert.png"),
+		// getActionMap().get("convert"), new RichTooltip(
+		// "Convert SVG Images",
+		// "This will begin the conversion activity to use "
+		// + "Inkscape to convert the selected SVG "
+		// + "images using the specified options."));
 		factory.addBand("Controls");
 		factory.addTask("Home");
 
@@ -277,8 +275,13 @@ public class ConversionSvgApplication extends GUIApplication implements
 		this.threadPool = threadPool;
 	}
 
+	public InkscapeCommandBuilder getCommand() {
+		return command;
+	}
+
 	@Override
 	public void run(String[] args) {
+
 		CommandLineParser parser = new GnuParser();
 		Options options = new Options();
 		options.addOption(OPTION_INKSCAPE_LOCATION);
@@ -292,27 +295,36 @@ public class ConversionSvgApplication extends GUIApplication implements
 				Inkscape.setExecutable(Inkscape.findExecutable());
 			}
 
-			// set the primary view
-			newData(command);
-		} catch (DataModelException e) {
-			logger.error(e.getMessage());
-			e.printStackTrace();
-			exit(1);
+			command = new InkscapeCommandBuilder();
 		} catch (ParseException e) {
 			logger.error(e.getMessage());
 			e.printStackTrace();
 		}
 
-		ApplicationWindowsUI i = getApplicationUIManager().getWindowsUI();
-		JFrame f = i.getRootWindow();
-		getApplicationUIManager().getWindowsUI().getRootWindow().add(
-				getApplicationRibbon(), BorderLayout.NORTH);
-//		getApplicationUIManager().getWindowsUI().getRootWindow()
-//				.setExtendedState(JFrame.NORMAL);
-		getApplicationUIManager().getWindowsUI().getRootWindow().setSize(
-				new Dimension(getPreferences().getInt(KEY_WINDOW_WIDTH,
-						DEFAULT_WINDOW_SIZE.width), getPreferences().getInt(
-						KEY_WINDOW_HEIGHT, DEFAULT_WINDOW_SIZE.height)));
+		// install the preference values
+		int width = getApplicationPreferences()
+				.getInt("window.size.width", 600);
+		int height = getApplicationPreferences().getInt("window.size.height",
+				350);
+		int x = getApplicationPreferences().getInt("window.location.x", 100);
+		int y = getApplicationPreferences().getInt("window.location.y", 100);
+
+		getApplicationWindow().setPreferredSize(new Dimension(width, height));
+		getApplicationWindow().setLocation(new Point(x, y));
+
+		// initialize the thread pool
+		int corePoolSize = getApplicationPreferences().getInt(
+				"thread_pool.core_size", 10);
+		int maximumPoolSize = getApplicationPreferences().getInt(
+				"thread_pool.max_size", 20);
+		int keepAliveTime = getApplicationPreferences().getInt(
+				"thread_pool.keep_alive_time", 10);
+		// The thread pool used to start Inkscape processes
+		PriorityBlockingQueue<Runnable> queue = new PriorityBlockingQueue<Runnable>(
+				corePoolSize);
+		setThreadPool(new ThreadPoolExecutor(corePoolSize, maximumPoolSize,
+				keepAliveTime, TimeUnit.SECONDS, queue));
+
 	}
 
 	/**
@@ -327,8 +339,8 @@ public class ConversionSvgApplication extends GUIApplication implements
 	 */
 	public static void main(String[] args) throws ParseException {
 		// license to use JIDE software (JDAF, Grids, Components, etc)
-		com.jidesoft.utils.Lm.verifyLicense("Erich Schroeter", "ConversionSVG",
-				"3.99ekleZZE3EXVgbI0hck9kXuHYXJh2");
+//		com.jidesoft.utils.Lm.verifyLicense("Erich Schroeter", "ConversionSVG",
+//				"3.99ekleZZE3EXVgbI0hck9kXuHYXJh2");
 
 		CommandLineParser parser = new GnuParser();
 		Options options = new Options();
@@ -351,7 +363,10 @@ public class ConversionSvgApplication extends GUIApplication implements
 				} catch (Exception exception) {
 					exception.printStackTrace();
 				}
-				new ConversionSvgApplication().run(remainingArgs);
+
+				ConversionSvgApplication app = new ConversionSvgApplication();
+				app.run(remainingArgs);
+
 			}
 		});
 	}

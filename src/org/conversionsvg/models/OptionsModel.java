@@ -5,7 +5,6 @@ import java.util.Map;
 
 import org.conversionsvg.InkscapeCommandBuilder;
 import org.conversionsvg.ModifiesInkscapeCommand;
-import org.conversionsvg.views.DomainView;
 
 import com.jidesoft.app.framework.BasicDataModel;
 import com.jidesoft.app.framework.DataModelException;
@@ -51,11 +50,19 @@ public class OptionsModel extends BasicDataModel implements
 	 * command line
 	 */
 	private InkscapeCommandBuilder command;
+	/**
+	 * The map of strings, which represent a sub view and its sub model, to the
+	 * sub domain model.
+	 */
 	private Map<String, DomainModel> submodels;
 
+	public OptionsModel() {
+		this(null);
+	}
+
 	/**
-	 * Constructs a default <code>OptionsModel</code> initializing the model
-	 * name to <code>options</code>.
+	 * Constructs an <code>OptionsModel</code> initializing the model name to
+	 * <code>options</code>.
 	 */
 	public OptionsModel(InkscapeCommandBuilder commandBuilder) {
 		super("options");
@@ -117,26 +124,28 @@ public class OptionsModel extends BasicDataModel implements
 
 	@Override
 	public void newData() {
-		// ((InkscapeCommandBuilder)getData()).
+		setCommand((InkscapeCommandBuilder) getCriteria());
+		registerSubModel(SUB_KEY_FORMAT, new FormatModel(getCommand()));
 		registerSubModel(SUB_KEY_AREA, new AreaModel(getCommand()));
+		registerSubModel(SUB_KEY_SIZE, new SizeModel(getCommand()));
+		registerSubModel(SUB_KEY_COLOR, new ColorModel(getCommand()));
+		registerSubModel(SUB_KEY_FILES, new FileSelectionModel(getCommand()));
 	}
 
 	@Override
 	public void openData() throws DataModelException {
-		InkscapeCommandBuilder toLoad = (InkscapeCommandBuilder) getCriteria();
-		command = toLoad;
+		newData();
 	}
 
 	@Override
 	public void resetData() throws DataModelException {
-		setData(null);
+		setCriteria(new InkscapeCommandBuilder());
 		newData();
 	}
 
 	@Override
 	public void closeData() {
 		super.closeData();
-		// options.clear();
 	}
 
 	@Override
