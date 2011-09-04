@@ -1,5 +1,6 @@
 package org.conversionsvg;
 
+import java.awt.BorderLayout;
 import java.awt.Desktop;
 import java.awt.Dimension;
 import java.awt.Point;
@@ -10,6 +11,7 @@ import java.awt.event.WindowEvent;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
+import java.util.List;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -30,9 +32,11 @@ import org.apache.log4j.Logger;
 import org.apache.log4j.xml.DOMConfigurator;
 import org.conversionsvg.util.Helpers;
 import org.javamvc.GUIApplication;
+import org.pushingpixels.flamingo.api.common.RichTooltip;
 import org.pushingpixels.flamingo.api.common.JCommandButton.CommandButtonKind;
 import org.pushingpixels.flamingo.api.common.icon.EmptyResizableIcon;
 import org.pushingpixels.flamingo.api.ribbon.JRibbon;
+import org.pushingpixels.flamingo.api.ribbon.RibbonFactory;
 
 /**
  * The <code>ConversionSvgApplication</code> is a Java application that allows
@@ -70,7 +74,7 @@ public class ConversionSvgApplication extends GUIApplication implements
 	public ConversionSvgApplication() {
 		super(new JFrame());
 		setApplicationIcon(new ImageIcon(ConversionSvgApplication.class
-				.getClassLoader().getResource("images/logo.png")));
+				.getClassLoader().getResource("images/convert.png")));
 		// initialize the thread pool
 		int corePoolSize = getApplicationPreferences().getInt(
 				"thread_pool.core_size", 10);
@@ -83,6 +87,7 @@ public class ConversionSvgApplication extends GUIApplication implements
 				corePoolSize);
 		setThreadPool(new ThreadPoolExecutor(corePoolSize, maximumPoolSize,
 				keepAliveTime, TimeUnit.SECONDS, queue));
+
 	}
 
 	@Override
@@ -122,6 +127,17 @@ public class ConversionSvgApplication extends GUIApplication implements
 				exit();
 			}
 		});
+
+		// initialize the command builder for the OptionsView
+		setInkscapeCommand(new InkscapeCommandBuilder());
+
+		// initialize and install the ribbon
+		setApplicationRibbon(createApplicationRibbon());
+		getApplicationWindow().add(getApplicationRibbon(), BorderLayout.NORTH);
+
+		// create and install the view
+		getApplicationWindow().add(new OptionsView(this), BorderLayout.CENTER);
+
 		frame.pack();
 	}
 
@@ -204,13 +220,33 @@ public class ConversionSvgApplication extends GUIApplication implements
 				});
 		factory.withMenu();
 
-		// factory.addButtonTypeAction("Convert", Helpers
-		// .getResizableIconFromResource("images/convert.png"),
-		// getActionMap().get("convert"), new RichTooltip(
-		// "Convert SVG Images",
-		// "This will begin the conversion activity to use "
-		// + "Inkscape to convert the selected SVG "
-		// + "images using the specified options."));
+		factory.addButtonTypeAction("Convert", Helpers
+				.getResizableIconFromResource("images/convert.png"),
+				new ActionListener() {
+
+					@Override
+					public void actionPerformed(ActionEvent e) {
+						// TODO convert and push to thread pool
+						Process process;
+						for (List<String> commandline : getInkscapeCommand().getCommands()) {
+							try {
+								// Execute the command
+								process = new ProcessBuilder(commandline)
+										.start();
+								process.waitFor();
+							} catch (IOException e1) {
+								logger.error(e1.getMessage());
+							} catch (InterruptedException e1) {
+								logger.error(e1.getMessage());
+							}
+							// application.getThreadPool().execute(new
+							// Converter());
+						}
+					}
+				}, new RichTooltip("Convert SVG Images",
+						"This will begin the conversion activity to use "
+								+ "Inkscape to convert the selected SVG "
+								+ "images using the specified options."));
 		factory.addBand("Controls");
 		factory.addTask("Home");
 
@@ -325,6 +361,8 @@ public class ConversionSvgApplication extends GUIApplication implements
 		setThreadPool(new ThreadPoolExecutor(corePoolSize, maximumPoolSize,
 				keepAliveTime, TimeUnit.SECONDS, queue));
 
+		getApplicationWindow().setVisible(true);
+
 	}
 
 	/**
@@ -339,8 +377,9 @@ public class ConversionSvgApplication extends GUIApplication implements
 	 */
 	public static void main(String[] args) throws ParseException {
 		// license to use JIDE software (JDAF, Grids, Components, etc)
-//		com.jidesoft.utils.Lm.verifyLicense("Erich Schroeter", "ConversionSVG",
-//				"3.99ekleZZE3EXVgbI0hck9kXuHYXJh2");
+		// com.jidesoft.utils.Lm.verifyLicense("Erich Schroeter",
+		// "ConversionSVG",
+		// "3.99ekleZZE3EXVgbI0hck9kXuHYXJh2");
 
 		CommandLineParser parser = new GnuParser();
 		Options options = new Options();
