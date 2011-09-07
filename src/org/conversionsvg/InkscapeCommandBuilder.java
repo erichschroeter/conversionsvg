@@ -1,11 +1,14 @@
 package org.conversionsvg;
 
 import java.awt.Color;
+import java.awt.Dimension;
 import java.awt.Point;
 import java.io.File;
 import java.util.List;
 import java.util.Vector;
 
+import org.conversionsvg.InkscapeCommand.ExportArea;
+import org.conversionsvg.util.Helpers;
 import org.conversionsvg.util.SVGUtils;
 
 public class InkscapeCommandBuilder {
@@ -14,6 +17,13 @@ public class InkscapeCommandBuilder {
 	private List<String> options;
 	/** The list of arguments to pass on the command line to Inkscape */
 	private List<File> files;
+	/**
+	 * The directory to export all files to. If <code>null</code> all files will
+	 * be exported to their existing directory.
+	 */
+	private File singleDirectory;
+	/** The Inkscape command to build. */
+	private InkscapeCommand command;
 
 	/**
 	 * Constructs a default <code>InkscapeCommandBuilder</code> to handle
@@ -51,10 +61,46 @@ public class InkscapeCommandBuilder {
 
 	/**
 	 * Returns the options currently on the command line.
+	 * <p>
+	 * The exported file option values are set in this method. If the
+	 * {@link #singleDirectory} is <code>null</code> then files are exported to
+	 * their existing directory, otherwise they are exported to the
+	 * <code>singleDirectory</code>.
 	 * 
 	 * @return the Inkscape options
 	 */
-	public List<String> getOptions() {
+	public List<String> getOptions(File file) {
+		// set the option values for the export file types
+		// if the singleDirectory is null then export to same directory,
+		// otherwise export to the singleDirectory
+		if (options.contains(Inkscape.OPTION_EXPORT_PNG)) {
+			options.add(options.indexOf(Inkscape.OPTION_EXPORT_PNG) + 1,
+					Helpers.changeExtension(
+							singleDirectory != null ? Helpers.changePath(file,
+									singleDirectory) : file, "png")
+							.getAbsolutePath());
+		}
+		if (options.contains(Inkscape.OPTION_EXPORT_PDF)) {
+			options.add(options.indexOf(Inkscape.OPTION_EXPORT_PDF) + 1,
+					Helpers.changeExtension(
+							singleDirectory != null ? Helpers.changePath(file,
+									singleDirectory) : file, "pdf")
+							.getAbsolutePath());
+		}
+		if (options.contains(Inkscape.OPTION_EXPORT_PS)) {
+			options.add(options.indexOf(Inkscape.OPTION_EXPORT_PS) + 1, Helpers
+					.changeExtension(
+							singleDirectory != null ? Helpers.changePath(file,
+									singleDirectory) : file, "ps")
+					.getAbsolutePath());
+		}
+		if (options.contains(Inkscape.OPTION_EXPORT_EPS)) {
+			options.add(options.indexOf(Inkscape.OPTION_EXPORT_EPS) + 1,
+					Helpers.changeExtension(
+							singleDirectory != null ? Helpers.changePath(file,
+									singleDirectory) : file, "eps")
+							.getAbsolutePath());
+		}
 		return options;
 	}
 
@@ -83,7 +129,7 @@ public class InkscapeCommandBuilder {
 	 * @return the command arguments
 	 */
 	public List<String> getArgs(File file) {
-		List<String> list = new Vector<String>(getOptions());
+		List<String> list = new Vector<String>(getOptions(file));
 		list.add(file.getAbsolutePath());
 		return list;
 	}
@@ -120,6 +166,12 @@ public class InkscapeCommandBuilder {
 		for (File svg : files) {
 			convert(svg);
 		}
+		return this;
+	}
+
+	public InkscapeCommandBuilder exportArea(ExportArea area, Point origin,
+			Dimension size) {
+		command.setExportArea(area, origin, size);
 		return this;
 	}
 
@@ -326,31 +378,46 @@ public class InkscapeCommandBuilder {
 	 * opacity argument already exists in command it and its value are removed
 	 * from the command line.
 	 * <p>
-	 * If <code>opacity</code> is less than one (1) then <code>opacity</code> is
-	 * set to one (1). If <code>opacity</code> is greater than two-hundred
-	 * fifty-five (255) then <code>opacity</code> is set to two-hundred
-	 * fifty-five (255).
+	 * If <code>opacity</code> is less than zero (0.0) then <code>opacity</code>
+	 * is set to zero (0.0). If <code>opacity</code> is greater than one (1.0)
+	 * then <code>opacity</code> is set to one (1.0).
 	 * 
 	 * @param opacity
-	 *            a value between 1 and 255
+	 *            a value between 0.0 and 1.0
 	 * @return the command builder
 	 */
-	public InkscapeCommandBuilder setBackgroundOpacity(int opacity) {
-		if (opacity < 1) {
-			opacity = 1;
+	public InkscapeCommandBuilder setBackgroundOpacity(double opacity) {
+		if (opacity < 0.0) {
+			opacity = 0.0;
 		}
-		if (opacity > 255) {
-			opacity = 255;
+		if (opacity > 1.0) {
+			opacity = 1.0;
 		}
+		int value = (int) (255 * opacity);
 		boolean exists = options.contains(Inkscape.OPTION_BACKGROUND_OPACITY);
 		if (!exists) {
 			options.add(Inkscape.OPTION_BACKGROUND_OPACITY);
-			options.add(Integer.toString(opacity));
+			options.add(Double.toString(value));
 		} else {
 			int index = options.indexOf(Inkscape.OPTION_BACKGROUND_OPACITY);
 			options.remove(index + 1);
 			options.remove(index);
 		}
+		return this;
+	}
+
+	/**
+	 * Sets the directory to which all the files will be exported to. If
+	 * <code>directory</code> is <code>null</code> files will be exported to the
+	 * directory they are located.
+	 * 
+	 * @param directory
+	 *            the directory to export all files to (can be <code>null</code>
+	 *            )
+	 * @return the command builder
+	 */
+	public InkscapeCommandBuilder exportToSingleDirectory(File directory) {
+		singleDirectory = directory;
 		return this;
 	}
 
@@ -520,25 +587,32 @@ public class InkscapeCommandBuilder {
 	public List<List<String>> getCommands() {
 		List<List<String>> commands = new Vector<List<String>>();
 		for (File file : getFiles()) {
-			getCommand(file);
-			commands.add(getCommand(file));
+			if (file.isFile()) {
+				commands.add(getCommand(file));
+			}
 		}
 		return commands;
 	}
 
+	public String toString(File file) {
+		StringBuilder builder = new StringBuilder();
+		for (String arg : getCommand(file)) {
+			builder.append(arg);
+			builder.append(" ");
+		}
+		return builder.toString();
+	}
+
 	/**
-	 * Returns a string representation of the Inkscape command.
+	 * Returns a string representation of the Inkscape command. The files may
+	 * not be represented by the result string as they are not added until the
+	 * last minute.
 	 * 
 	 * @return the Inkscape command
 	 */
 	@Override
 	public String toString() {
-		StringBuilder builder = new StringBuilder();
-		for (String arg : getArgs(new File("path/to/file"))) {
-			builder.append(arg);
-			builder.append(" ");
-		}
-		return builder.toString();
+		return command.toString();
 	}
 
 }

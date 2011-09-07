@@ -67,7 +67,7 @@ public class Helpers {
 	 */
 	public static ResizableIcon getResizableIconFromResource(String resource) {
 		return ImageWrapperResizableIcon.getIcon(Helpers.class.getClassLoader()
-				.getResource(resource), new Dimension(48, 48));
+				.getResourceAsStream(resource), new Dimension(48, 48));
 	}
 
 	/**

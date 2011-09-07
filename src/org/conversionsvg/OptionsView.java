@@ -7,6 +7,10 @@ import java.awt.FlowLayout;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.io.File;
 import java.io.FileFilter;
 import java.util.Arrays;
@@ -65,29 +69,39 @@ public class OptionsView extends View {
 
 	/** The split pane to hold the components for this view. */
 	private JSplitPane splitPane;
+	/**
+	 * The file chooser to be used for this view. This is used for all
+	 * components on this view in order to keep the last chosen value the next
+	 * time the dialog is shown.
+	 */
+	private JFileChooser chooser;
 
-	/** Used to export the image drawing area */
-	private JRadioButton drawingRadioButton;
-	/** Used to export the image page area */
-	private JRadioButton pageRadioButton;
-	/** Contains the export color option Components */
-	private ColorPicker colorPicker;
-	/** Used to export image as a PNG */
+	// Used to export image as a PNG
 	private JCheckBox pngCheckBox;
-	/** Used to export image as a PS */
+	// Used to export image as a PS
 	private JCheckBox psCheckBox;
-	/** Used to export image as a EPS */
+	// Used to export image as a EPS
 	private JCheckBox epsCheckBox;
-	/** Used to export image as a PDF */
+	// Used to export image as a PDF
 	private JCheckBox pdfCheckBox;
+
+	// Used to export the image drawing area
+	private JRadioButton drawingRadioButton;
+	// Used to export the image page area
+	private JRadioButton pageRadioButton;
+
+	// Used to export the image height
+	private JSpinner heightSpinner;
+	// Used to export the image width
+	private JSpinner widthSpinner;
+
+	// Contains the export color option Components
+	private ColorPicker colorPicker;
+
 	/** Displays available directories and files to select for conversion. */
 	private CheckBoxTree fileHeirarchy;
 	/** Opens a {@link JFileChooser} dialog to select the root directory. */
 	private JButton changeRootButton;
-	/** Used to export files in a single directory. */
-	private JRadioButton singleOutputDirectoryRadio;
-	/** Used to export files to the same directory as the source file. */
-	private JRadioButton sameOutputDirectoryRadio;
 	/** The root directory of the file system tree */
 	private File rootDirectory;
 	/** Displays the root directory for the file tree hierarchy. */
@@ -122,6 +136,10 @@ public class OptionsView extends View {
 		JPanel left = new JPanel(new GridBagLayout());
 		splitPane.setLeftComponent(left);
 
+		chooser = new JFileChooser();
+		chooser.setMultiSelectionEnabled(false);
+		chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+
 		// install the different panels that make up this view
 		// these are split up into separate methods for readability
 		installFormat(left);
@@ -130,7 +148,32 @@ public class OptionsView extends View {
 		installColor(left);
 		installFileSelection();
 
+		syncOptions();
 		add(splitPane, BorderLayout.CENTER);
+	}
+
+	/**
+	 * Syncs the options values with the Inkscape command. This may be needed
+	 * when the option components are first created on the UI since the
+	 * components have listeners that only update the command values upon
+	 * change.
+	 */
+	public void syncOptions() {
+		InkscapeCommandBuilder i = ((ConversionSvgApplication) getApplication())
+				.getInkscapeCommand();
+		i.exportAsEps(epsCheckBox.isSelected());
+		i.exportAsPdf(pdfCheckBox.isSelected());
+		i.exportAsPng(pngCheckBox.isSelected());
+		i.exportAsPs(psCheckBox.isSelected());
+
+		i.useDrawingArea(drawingRadioButton.isSelected());
+		i.usePageArea(pageRadioButton.isSelected());
+
+		i.setPixelHeight((Integer) heightSpinner.getValue());
+		i.setPixelWidth((Integer) widthSpinner.getValue());
+
+		i.setBackgroundColor(colorPicker.getColor());
+		i.setBackgroundOpacity(colorPicker.getOpacity());
 	}
 
 	protected void installFormat(JPanel panel) {
@@ -138,9 +181,45 @@ public class OptionsView extends View {
 		GroupLayout layout = new GroupLayout(p);
 
 		pngCheckBox = new JCheckBox(".PNG", true);
+		pngCheckBox.addChangeListener(new ChangeListener() {
+
+			@Override
+			public void stateChanged(ChangeEvent e) {
+				((ConversionSvgApplication) getApplication())
+						.getInkscapeCommand().exportAsPng(
+								pngCheckBox.isSelected());
+			}
+		});
 		psCheckBox = new JCheckBox(".PS");
+		psCheckBox.addChangeListener(new ChangeListener() {
+
+			@Override
+			public void stateChanged(ChangeEvent e) {
+				((ConversionSvgApplication) getApplication())
+						.getInkscapeCommand().exportAsPng(
+								psCheckBox.isSelected());
+			}
+		});
 		epsCheckBox = new JCheckBox(".EPS");
+		epsCheckBox.addChangeListener(new ChangeListener() {
+
+			@Override
+			public void stateChanged(ChangeEvent e) {
+				((ConversionSvgApplication) getApplication())
+						.getInkscapeCommand().exportAsPng(
+								epsCheckBox.isSelected());
+			}
+		});
 		pdfCheckBox = new JCheckBox(".PDF");
+		pdfCheckBox.addChangeListener(new ChangeListener() {
+
+			@Override
+			public void stateChanged(ChangeEvent e) {
+				((ConversionSvgApplication) getApplication())
+						.getInkscapeCommand().exportAsPng(
+								pdfCheckBox.isSelected());
+			}
+		});
 
 		layout.setHorizontalGroup(layout.createSequentialGroup().addGroup(
 				layout.createParallelGroup(GroupLayout.Alignment.LEADING)
@@ -226,7 +305,7 @@ public class OptionsView extends View {
 		JLabel widthLabel = new JLabel(i18ln.getString("WidthTextField"));
 		widthLabel.setToolTipText("Width of the exported image");
 
-		JSpinner heightSpinner = new JSpinner(new SpinnerNumberModel(16, 1,
+		heightSpinner = new JSpinner(new SpinnerNumberModel(16, 1,
 				Integer.MAX_VALUE, 1));
 		heightSpinner.addChangeListener(new ChangeListener() {
 
@@ -238,7 +317,7 @@ public class OptionsView extends View {
 								(Integer) ((JSpinner) e.getSource()).getValue());
 			}
 		});
-		JSpinner widthSpinner = new JSpinner(new SpinnerNumberModel(16, 1,
+		widthSpinner = new JSpinner(new SpinnerNumberModel(16, 1,
 				Integer.MAX_VALUE, 1));
 		widthSpinner.addChangeListener(new ChangeListener() {
 
@@ -291,17 +370,37 @@ public class OptionsView extends View {
 	}
 
 	protected void installColor(JPanel panel) {
-		GridBagConstraints c;
-		c = new GridBagConstraints(0, 3, 1, 1, 1.0, 1.0,
-				GridBagConstraints.NORTHWEST, GridBagConstraints.BOTH,
-				new Insets(2, 2, 2, 2), 0, 0);
 		colorPicker = new ColorPicker(true, true);
-		// Color Picker
+		colorPicker.addPropertyChangeListener("selected color",
+				new PropertyChangeListener() {
+
+					@Override
+					public void propertyChange(PropertyChangeEvent evt) {
+						((ConversionSvgApplication) getApplication())
+								.getInkscapeCommand().setBackgroundColor(
+										colorPicker.getColor());
+					}
+				});
+		colorPicker.addPropertyChangeListener("opacity",
+				new PropertyChangeListener() {
+
+					@Override
+					public void propertyChange(PropertyChangeEvent evt) {
+						((ConversionSvgApplication) getApplication())
+								.getInkscapeCommand().setBackgroundOpacity(
+										colorPicker.getOpacity());
+					}
+				});
 		colorPicker.setColor(Color.WHITE);
+		colorPicker.setOpacity((float) 0.0);
 		colorPicker.setBorder(BorderFactory.createTitledBorder(i18ln
 				.getString("BackgroundPanel")));
 		colorPicker.setEnabled(false);
 
+		GridBagConstraints c;
+		c = new GridBagConstraints(0, 3, 1, 1, 1.0, 1.0,
+				GridBagConstraints.NORTHWEST, GridBagConstraints.BOTH,
+				new Insets(2, 2, 2, 2), 0, 0);
 		panel.add(colorPicker, c);
 	}
 
@@ -322,10 +421,18 @@ public class OptionsView extends View {
 		FileSystemTreeModel model = new FileSystemTreeModel(rootDirectory,
 				filters);
 		fileHeirarchy = new CheckBoxTree(model);
+		// fileHeirarchy.getCheckBoxTreeSelectionModel().addTreeSelectionListener(new
+		// TreeSelectionListener() {
+		//			
+		// @Override
+		// public void valueChanged(TreeSelectionEvent e) {
+		// System.out.println(Arrays.toString(e.getPaths()));
+		// }
+		// });
 		JScrollPane fileSelectScrollPane = new JScrollPane(fileHeirarchy);
 
 		// implement FileIntelliHints
-		rootDirectoryTextField = new JTextField();
+		rootDirectoryTextField = new JTextField(rootDirectory.getAbsolutePath());
 		rootDirectoryTextField.getDocument().addDocumentListener(
 				new DocumentListener() {
 
@@ -364,58 +471,117 @@ public class OptionsView extends View {
 		rootIntellisense.setFolderOnly(true);
 		SelectAllUtils.install(rootDirectoryTextField);
 
+		changeRootButton = new JButton("...");
+		changeRootButton.addActionListener(new ActionListener() {
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				if (chooser.showOpenDialog(OptionsView.this) == JFileChooser.APPROVE_OPTION
+						&& chooser.getSelectedFile().isDirectory()) {
+					rootDirectoryTextField.setText(chooser.getSelectedFile()
+							.getAbsolutePath());
+				}
+			}
+		});
+
 		// add the output directory options
 		// - same directory as each file
 		// - a single directory
-		sameOutputDirectoryRadio = new JRadioButton(i18ln
+		// Used to export files to the same directory as the source file.
+		final JRadioButton sameOutputDirectoryRadio = new JRadioButton(i18ln
 				.getString("SameDirectoryRadioButton"), true);
-		singleOutputDirectoryRadio = new JRadioButton(i18ln
+		// Used to export files in a single directory.
+		final JRadioButton singleOutputDirectoryRadio = new JRadioButton(i18ln
 				.getString("SingleDirectoryRadioButton"));
+
 		ButtonGroup outputDirectoryGroup = new ButtonGroup();
 		outputDirectoryGroup.add(singleOutputDirectoryRadio);
 		outputDirectoryGroup.add(sameOutputDirectoryRadio);
-		// singleOutputDirectoryRadio.addChangeListener(singleDirChangeListener());
-		changeRootButton = new JButton("...");
-		// changeRootButton.addActionListener(changeRootActionListener());
+
+		// listener that will enable/disable the single output directory
+		// components based on whether the singleOutputDirectoryRadio button is
+		// selected
+		ActionListener outputLocationChangeListener = new ActionListener() {
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				enableSingleOutputComponents(singleOutputDirectoryRadio
+						.isSelected());
+				((ConversionSvgApplication) getApplication())
+						.getInkscapeCommand().exportToSingleDirectory(null);
+			}
+
+			private void enableSingleOutputComponents(boolean enable) {
+				outputDirectoryTextField.setEnabled(enable);
+				outputDirectoryEllipse.setEnabled(enable);
+			}
+		};
+		sameOutputDirectoryRadio
+				.addActionListener(outputLocationChangeListener);
+		singleOutputDirectoryRadio
+				.addActionListener(outputLocationChangeListener);
+
 		outputDirectoryTextField = new JTextField();
 		outputDirectoryTextField.getDocument().addDocumentListener(
 				new DocumentListener() {
 
 					@Override
 					public void removeUpdate(DocumentEvent e) {
-						updateRoot(e);
+						updateDirectory(e);
 					}
 
 					@Override
 					public void insertUpdate(DocumentEvent e) {
-						updateRoot(e);
+						updateDirectory(e);
 					}
 
 					@Override
 					public void changedUpdate(DocumentEvent e) {
-						updateRoot(e);
+						updateDirectory(e);
 					}
 
-					private void updateRoot(DocumentEvent e) {
+					private void updateDirectory(DocumentEvent e) {
 						try {
 							String path = e.getDocument().getText(0,
 									e.getDocument().getLength());
-							File newLocation = new File(path);
-							if (newLocation.exists()
-									&& newLocation.isDirectory()) {
-								outputDirectoryTextField.setText(newLocation
-										.getAbsolutePath());
+							File newDirectory = new File(path);
+							if (newDirectory.exists()
+									&& newDirectory.isDirectory()) {
+								// only update the command if singleDirectory
+								// checkbox is selected
+								if (singleOutputDirectoryRadio.isSelected()) {
+									((ConversionSvgApplication) getApplication())
+											.getInkscapeCommand()
+											.exportToSingleDirectory(
+													newDirectory);
+								}
 							}
 						} catch (BadLocationException e1) {
 							e1.printStackTrace();
 						}
 					}
 				});
+		// disable by default since the same directory is selected
+		outputDirectoryTextField.setEnabled(singleOutputDirectoryRadio
+				.isSelected());
 		FileIntelliHints outputDirectoryIntellisense = new FileIntelliHints(
 				outputDirectoryTextField);
 		outputDirectoryIntellisense.setFolderOnly(true);
 		outputDirectoryEllipse = new JButton("...");
-		// outputDirectoryEllipse.addActionListener(outputDirActionListener());
+		// disable by default since the same directory is selected
+		outputDirectoryEllipse.setEnabled(singleOutputDirectoryRadio
+				.isSelected());
+		outputDirectoryEllipse.addActionListener(new ActionListener() {
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				if (chooser.showOpenDialog(OptionsView.this) == JFileChooser.APPROVE_OPTION
+						&& chooser.getSelectedFile().isDirectory()) {
+					outputDirectoryTextField.setText(chooser.getSelectedFile()
+							.getAbsolutePath());
+				}
+			}
+		});
 
 		JPanel panel = new JPanel(new GridBagLayout());
 		panel.setMinimumSize(new Dimension(200, 500));

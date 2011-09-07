@@ -66,6 +66,8 @@ public class ConversionSvgApplication extends GUIApplication implements
 	 * command line
 	 */
 	private InkscapeCommandBuilder command;
+	/** The view allowing the user to customize options. */
+	private OptionsView optionsView;
 
 	/**
 	 * Constructs a default <code>ConversionSvgApplication</code>, disabling the
@@ -94,8 +96,8 @@ public class ConversionSvgApplication extends GUIApplication implements
 	protected void installApplicationPreferences() {
 		super.installApplicationPreferences();
 		Preferences p = getApplicationPreferences();
-		p.putInt("window.size.width", 600);
-		p.putInt("window.size.height", 350);
+		p.putInt("window.size.width", 650);
+		p.putInt("window.size.height", 700);
 
 		p.put("inkscape.location", "");
 		p.putInt("thread_pool.core_size", 10);
@@ -111,7 +113,7 @@ public class ConversionSvgApplication extends GUIApplication implements
 	protected void initializeWindow() {
 		super.initializeWindow();
 		JFrame frame = (JFrame) getApplicationWindow();
-		frame.setTitle("Conversion SVG \u0392");
+		frame.setTitle("Conversion SVG (beta)");
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		// a window listener must be implemented to call
 		// DesktopApplication.exit() in order for our overridden exit() method
@@ -136,7 +138,8 @@ public class ConversionSvgApplication extends GUIApplication implements
 		getApplicationWindow().add(getApplicationRibbon(), BorderLayout.NORTH);
 
 		// create and install the view
-		getApplicationWindow().add(new OptionsView(this), BorderLayout.CENTER);
+		getApplicationWindow().add(optionsView = new OptionsView(this),
+				BorderLayout.CENTER);
 
 		frame.pack();
 	}
@@ -209,6 +212,9 @@ public class ConversionSvgApplication extends GUIApplication implements
 		factory.addMenuItem("Websites", Helpers
 				.getResizableIconFromResource("images/websites-menu-item.png"),
 				null, CommandButtonKind.POPUP_ONLY);
+		factory.addMenuItem("");
+		factory.addMenuItem("");
+		factory.addMenuItem("");
 		factory.addFooterMenuItem("Exit", Helpers
 				.getResizableIconFromResource("images/system-log-out.png"),
 				new ActionListener() {
@@ -226,9 +232,16 @@ public class ConversionSvgApplication extends GUIApplication implements
 
 					@Override
 					public void actionPerformed(ActionEvent e) {
+						// TODO add the selected SVG files. This is done at this
+						// point for efficiency.
+						List<File> files = optionsView.getFiles();
+						getInkscapeCommand().setFiles(files);
+
 						// TODO convert and push to thread pool
 						Process process;
-						for (List<String> commandline : getInkscapeCommand().getCommands()) {
+						for (List<String> commandline : getInkscapeCommand()
+								.getCommands()) {
+							System.out.println(command);
 							try {
 								// Execute the command
 								process = new ProcessBuilder(commandline)
@@ -311,10 +324,6 @@ public class ConversionSvgApplication extends GUIApplication implements
 		this.threadPool = threadPool;
 	}
 
-	public InkscapeCommandBuilder getCommand() {
-		return command;
-	}
-
 	@Override
 	public void run(String[] args) {
 
@@ -330,8 +339,6 @@ public class ConversionSvgApplication extends GUIApplication implements
 			} else {
 				Inkscape.setExecutable(Inkscape.findExecutable());
 			}
-
-			command = new InkscapeCommandBuilder();
 		} catch (ParseException e) {
 			logger.error(e.getMessage());
 			e.printStackTrace();
