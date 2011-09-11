@@ -9,8 +9,6 @@ import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.beans.PropertyChangeEvent;
-import java.beans.PropertyChangeListener;
 import java.io.File;
 import java.io.FileFilter;
 import java.util.Arrays;
@@ -34,8 +32,6 @@ import javax.swing.JSpinner;
 import javax.swing.JSplitPane;
 import javax.swing.JTextField;
 import javax.swing.SpinnerNumberModel;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.text.BadLocationException;
@@ -104,8 +100,12 @@ public class OptionsView extends View {
 	private JButton changeRootButton;
 	/** The root directory of the file system tree */
 	private File rootDirectory;
+	/** Used to export files to the same directory as the source file. */
+	private JRadioButton sameOutputDirectoryRadio;
 	/** Displays the root directory for the file tree hierarchy. */
 	private JTextField rootDirectoryTextField;
+	/* Used to export files in a single directory. */
+	private JRadioButton singleOutputDirectoryRadio;
 	/** Displays the output directory for converted files. */
 	private JTextField outputDirectoryTextField;
 	/** Opens a {@link JFileChooser} dialog to select the output directory */
@@ -148,32 +148,41 @@ public class OptionsView extends View {
 		installColor(left);
 		installFileSelection();
 
-		syncOptions();
 		add(splitPane, BorderLayout.CENTER);
 	}
 
 	/**
-	 * Syncs the options values with the Inkscape command. This may be needed
-	 * when the option components are first created on the UI since the
-	 * components have listeners that only update the command values upon
-	 * change.
+	 * Returns the commands customized by the options specified by the user on
+	 * the user interface.
+	 * 
+	 * @return the commands to be passed on the command line
 	 */
-	public void syncOptions() {
-		InkscapeCommandBuilder i = ((ConversionSvgApplication) getApplication())
-				.getInkscapeCommand();
-		i.exportAsEps(epsCheckBox.isSelected());
-		i.exportAsPdf(pdfCheckBox.isSelected());
-		i.exportAsPng(pngCheckBox.isSelected());
-		i.exportAsPs(psCheckBox.isSelected());
+	public List<InkscapeCommand> getInkscapeCommands() {
+		InkscapeCommandBuilder i = new InkscapeCommandBuilder();
+		List<File> files = getFiles();
 
-		i.useDrawingArea(drawingRadioButton.isSelected());
-		i.usePageArea(pageRadioButton.isSelected());
+		if (!files.isEmpty()) {
+			i.enableSingleDirectory(
+					new File(outputDirectoryTextField.getText()),
+					singleOutputDirectoryRadio.isSelected());
 
-		i.setPixelHeight((Integer) heightSpinner.getValue());
-		i.setPixelWidth((Integer) widthSpinner.getValue());
+			i.exportAsPng(pngCheckBox.isSelected());
+			i.exportAsPdf(pdfCheckBox.isSelected());
+			i.exportAsPs(psCheckBox.isSelected());
+			i.exportAsEps(epsCheckBox.isSelected());
 
-		i.setBackgroundColor(colorPicker.getColor());
-		i.setBackgroundOpacity(colorPicker.getOpacity());
+			i.exportDrawing(drawingRadioButton.isSelected());
+			i.exportPage(pageRadioButton.isSelected());
+
+			i.setHeight((Integer) heightSpinner.getValue());
+			i.setWidth((Integer) widthSpinner.getValue());
+
+			i.setBackgroundColor(colorPicker.getColor());
+			i.setBackgroundOpacity(colorPicker.getOpacity());
+
+			i.setFiles(files);
+		}
+		return i.getCommands();
 	}
 
 	protected void installFormat(JPanel panel) {
@@ -181,45 +190,9 @@ public class OptionsView extends View {
 		GroupLayout layout = new GroupLayout(p);
 
 		pngCheckBox = new JCheckBox(".PNG", true);
-		pngCheckBox.addChangeListener(new ChangeListener() {
-
-			@Override
-			public void stateChanged(ChangeEvent e) {
-				((ConversionSvgApplication) getApplication())
-						.getInkscapeCommand().exportAsPng(
-								pngCheckBox.isSelected());
-			}
-		});
 		psCheckBox = new JCheckBox(".PS");
-		psCheckBox.addChangeListener(new ChangeListener() {
-
-			@Override
-			public void stateChanged(ChangeEvent e) {
-				((ConversionSvgApplication) getApplication())
-						.getInkscapeCommand().exportAsPng(
-								psCheckBox.isSelected());
-			}
-		});
 		epsCheckBox = new JCheckBox(".EPS");
-		epsCheckBox.addChangeListener(new ChangeListener() {
-
-			@Override
-			public void stateChanged(ChangeEvent e) {
-				((ConversionSvgApplication) getApplication())
-						.getInkscapeCommand().exportAsPng(
-								epsCheckBox.isSelected());
-			}
-		});
 		pdfCheckBox = new JCheckBox(".PDF");
-		pdfCheckBox.addChangeListener(new ChangeListener() {
-
-			@Override
-			public void stateChanged(ChangeEvent e) {
-				((ConversionSvgApplication) getApplication())
-						.getInkscapeCommand().exportAsPng(
-								pdfCheckBox.isSelected());
-			}
-		});
 
 		layout.setHorizontalGroup(layout.createSequentialGroup().addGroup(
 				layout.createParallelGroup(GroupLayout.Alignment.LEADING)
@@ -254,31 +227,13 @@ public class OptionsView extends View {
 	protected void installArea(JPanel panel) {
 		JPanel p = new JPanel(new FlowLayout(FlowLayout.LEFT));
 
+		pageRadioButton = new JRadioButton(i18ln.getString("PageRadioButton"),
+				true);
+		pageRadioButton.setToolTipText("Exported area is the entire page");
 		drawingRadioButton = new JRadioButton(i18ln
-				.getString("DrawingRadioButton"), true);
+				.getString("DrawingRadioButton"));
 		drawingRadioButton
 				.setToolTipText("Exported area is the entire drawing (not page)");
-		drawingRadioButton.addChangeListener(new ChangeListener() {
-
-			@Override
-			public void stateChanged(ChangeEvent e) {
-				((ConversionSvgApplication) getApplication())
-						.getInkscapeCommand().useDrawingArea(
-								drawingRadioButton.isSelected());
-			}
-		});
-		pageRadioButton = new JRadioButton(i18ln.getString("PageRadioButton"));
-		pageRadioButton.setToolTipText("Exported area is the entire page");
-		pageRadioButton.addChangeListener(new ChangeListener() {
-
-			@Override
-			public void stateChanged(ChangeEvent e) {
-				((ConversionSvgApplication) getApplication())
-						.getInkscapeCommand().useDrawingArea(
-								pageRadioButton.isSelected());
-			}
-		});
-		pageRadioButton.setSelected(true);
 
 		ButtonGroup group = new ButtonGroup();
 		group.add(pageRadioButton);
@@ -307,28 +262,8 @@ public class OptionsView extends View {
 
 		heightSpinner = new JSpinner(new SpinnerNumberModel(16, 1,
 				Integer.MAX_VALUE, 1));
-		heightSpinner.addChangeListener(new ChangeListener() {
-
-			@Override
-			public void stateChanged(ChangeEvent e) {
-				((ConversionSvgApplication) getApplication())
-						.getInkscapeCommand()
-						.setPixelHeight(
-								(Integer) ((JSpinner) e.getSource()).getValue());
-			}
-		});
 		widthSpinner = new JSpinner(new SpinnerNumberModel(16, 1,
 				Integer.MAX_VALUE, 1));
-		widthSpinner.addChangeListener(new ChangeListener() {
-
-			@Override
-			public void stateChanged(ChangeEvent e) {
-				((ConversionSvgApplication) getApplication())
-						.getInkscapeCommand()
-						.setPixelWidth(
-								(Integer) ((JSpinner) e.getSource()).getValue());
-			}
-		});
 
 		String[] units = { "px", "mm" };
 		JComboBox unitComboBox = new JComboBox(units);
@@ -371,26 +306,26 @@ public class OptionsView extends View {
 
 	protected void installColor(JPanel panel) {
 		colorPicker = new ColorPicker(true, true);
-		colorPicker.addPropertyChangeListener("selected color",
-				new PropertyChangeListener() {
-
-					@Override
-					public void propertyChange(PropertyChangeEvent evt) {
-						((ConversionSvgApplication) getApplication())
-								.getInkscapeCommand().setBackgroundColor(
-										colorPicker.getColor());
-					}
-				});
-		colorPicker.addPropertyChangeListener("opacity",
-				new PropertyChangeListener() {
-
-					@Override
-					public void propertyChange(PropertyChangeEvent evt) {
-						((ConversionSvgApplication) getApplication())
-								.getInkscapeCommand().setBackgroundOpacity(
-										colorPicker.getOpacity());
-					}
-				});
+		// colorPicker.addPropertyChangeListener("selected color",
+		// new PropertyChangeListener() {
+		//
+		// @Override
+		// public void propertyChange(PropertyChangeEvent evt) {
+		// ((ConversionSvgApplication) getApplication())
+		// .getInkscapeCommand().setBackgroundColor(
+		// colorPicker.getColor());
+		// }
+		// });
+		// colorPicker.addPropertyChangeListener("opacity",
+		// new PropertyChangeListener() {
+		//
+		// @Override
+		// public void propertyChange(PropertyChangeEvent evt) {
+		// ((ConversionSvgApplication) getApplication())
+		// .getInkscapeCommand().setBackgroundOpacity(
+		// colorPicker.getOpacity());
+		// }
+		// });
 		colorPicker.setColor(Color.WHITE);
 		colorPicker.setOpacity((float) 0.0);
 		colorPicker.setBorder(BorderFactory.createTitledBorder(i18ln
@@ -421,14 +356,6 @@ public class OptionsView extends View {
 		FileSystemTreeModel model = new FileSystemTreeModel(rootDirectory,
 				filters);
 		fileHeirarchy = new CheckBoxTree(model);
-		// fileHeirarchy.getCheckBoxTreeSelectionModel().addTreeSelectionListener(new
-		// TreeSelectionListener() {
-		//			
-		// @Override
-		// public void valueChanged(TreeSelectionEvent e) {
-		// System.out.println(Arrays.toString(e.getPaths()));
-		// }
-		// });
 		JScrollPane fileSelectScrollPane = new JScrollPane(fileHeirarchy);
 
 		// implement FileIntelliHints
@@ -487,11 +414,9 @@ public class OptionsView extends View {
 		// add the output directory options
 		// - same directory as each file
 		// - a single directory
-		// Used to export files to the same directory as the source file.
-		final JRadioButton sameOutputDirectoryRadio = new JRadioButton(i18ln
+		sameOutputDirectoryRadio = new JRadioButton(i18ln
 				.getString("SameDirectoryRadioButton"), true);
-		// Used to export files in a single directory.
-		final JRadioButton singleOutputDirectoryRadio = new JRadioButton(i18ln
+		singleOutputDirectoryRadio = new JRadioButton(i18ln
 				.getString("SingleDirectoryRadioButton"));
 
 		ButtonGroup outputDirectoryGroup = new ButtonGroup();
@@ -507,8 +432,8 @@ public class OptionsView extends View {
 			public void actionPerformed(ActionEvent e) {
 				enableSingleOutputComponents(singleOutputDirectoryRadio
 						.isSelected());
-				((ConversionSvgApplication) getApplication())
-						.getInkscapeCommand().exportToSingleDirectory(null);
+				// ((ConversionSvgApplication) getApplication())
+				// .getInkscapeCommand().exportToSingleDirectory(null);
 			}
 
 			private void enableSingleOutputComponents(boolean enable) {
@@ -549,12 +474,13 @@ public class OptionsView extends View {
 									&& newDirectory.isDirectory()) {
 								// only update the command if singleDirectory
 								// checkbox is selected
-								if (singleOutputDirectoryRadio.isSelected()) {
-									((ConversionSvgApplication) getApplication())
-											.getInkscapeCommand()
-											.exportToSingleDirectory(
-													newDirectory);
-								}
+								// if (singleOutputDirectoryRadio.isSelected())
+								// {
+								// ((ConversionSvgApplication) getApplication())
+								// .getInkscapeCommand()
+								// .exportToSingleDirectory(
+								// newDirectory);
+								// }
 							}
 						} catch (BadLocationException e1) {
 							e1.printStackTrace();
@@ -636,7 +562,7 @@ public class OptionsView extends View {
 	 * @param root
 	 *            the new root
 	 */
-	public void changeRootDirectory(CheckBoxTree tree, File root) {
+	private void changeRootDirectory(CheckBoxTree tree, File root) {
 		try {
 			tree.setModel(new FileSystemTreeModel(root, filters));
 			getApplication().getApplicationPreferences().put(
@@ -653,7 +579,7 @@ public class OptionsView extends View {
 	 * 
 	 * @return list of selected files
 	 */
-	public List<File> getFiles() {
+	private List<File> getFiles() {
 		List<File> files = new Vector<File>();
 		TreePath[] selectedTreePaths = fileHeirarchy
 				.getCheckBoxTreeSelectionModel().getSelectionPaths();
@@ -682,7 +608,7 @@ public class OptionsView extends View {
 	 * @return a list of files that satisfy the <code>filter</code> under the
 	 *         <code>directory</code>
 	 */
-	public List<File> recursivelyGetFiles(File directory, FileFilter filter) {
+	private List<File> recursivelyGetFiles(File directory, FileFilter filter) {
 		List<File> files = new Vector<File>();
 		if (directory.isDirectory()) {
 			File[] list = directory.listFiles(filter);

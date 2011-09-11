@@ -65,7 +65,7 @@ public class ConversionSvgApplication extends GUIApplication implements
 	 * The command builder used to build the command to send to Inkscape on the
 	 * command line
 	 */
-	private InkscapeCommandBuilder command;
+//	private InkscapeCommandBuilder command;
 	/** The view allowing the user to customize options. */
 	private OptionsView optionsView;
 
@@ -131,7 +131,7 @@ public class ConversionSvgApplication extends GUIApplication implements
 		});
 
 		// initialize the command builder for the OptionsView
-		setInkscapeCommand(new InkscapeCommandBuilder());
+//		setInkscapeCommand(new InkscapeCommandBuilder());
 
 		// initialize and install the ribbon
 		setApplicationRibbon(createApplicationRibbon());
@@ -232,19 +232,14 @@ public class ConversionSvgApplication extends GUIApplication implements
 
 					@Override
 					public void actionPerformed(ActionEvent e) {
-						// TODO add the selected SVG files. This is done at this
-						// point for efficiency.
-						List<File> files = optionsView.getFiles();
-						getInkscapeCommand().setFiles(files);
+						List<InkscapeCommand> commands = optionsView.getInkscapeCommands();
 
 						// TODO convert and push to thread pool
 						Process process;
-						for (List<String> commandline : getInkscapeCommand()
-								.getCommands()) {
-							System.out.println(command);
+						for (InkscapeCommand command : commands) {
 							try {
 								// Execute the command
-								process = new ProcessBuilder(commandline)
+								process = new ProcessBuilder(command.getCommand())
 										.start();
 								process.waitFor();
 							} catch (IOException e1) {
@@ -252,8 +247,6 @@ public class ConversionSvgApplication extends GUIApplication implements
 							} catch (InterruptedException e1) {
 								logger.error(e1.getMessage());
 							}
-							// application.getThreadPool().execute(new
-							// Converter());
 						}
 					}
 				}, new RichTooltip("Convert SVG Images",
@@ -290,9 +283,9 @@ public class ConversionSvgApplication extends GUIApplication implements
 	 * 
 	 * @return the Inkscape command builder
 	 */
-	public InkscapeCommandBuilder getInkscapeCommand() {
-		return command;
-	}
+//	public InkscapeCommandBuilder getInkscapeCommand() {
+//		return command;
+//	}
 
 	/**
 	 * Sets the Inkscape command builder responsible for building the command
@@ -301,9 +294,9 @@ public class ConversionSvgApplication extends GUIApplication implements
 	 * @param command
 	 *            the command to set
 	 */
-	public void setInkscapeCommand(InkscapeCommandBuilder command) {
-		this.command = command;
-	}
+//	public void setInkscapeCommand(InkscapeCommandBuilder command) {
+//		this.command = command;
+//	}
 
 	/**
 	 * Returns the object responsible for executing threads in the thread pool.
@@ -391,6 +384,7 @@ public class ConversionSvgApplication extends GUIApplication implements
 		CommandLineParser parser = new GnuParser();
 		Options options = new Options();
 		options.addOption(OPTION_LOG4J);
+		options.addOption(OPTION_BATCH_MODE);
 
 		CommandLine cmd = parser.parse(options, args);
 
@@ -400,21 +394,25 @@ public class ConversionSvgApplication extends GUIApplication implements
 			BasicConfigurator.configure();
 		}
 
-		final String[] remainingArgs = cmd.getArgs();
-		SwingUtilities.invokeLater(new Runnable() {
-			public void run() {
-				try {
-					UIManager.setLookAndFeel(UIManager
-							.getSystemLookAndFeelClassName());
-				} catch (Exception exception) {
-					exception.printStackTrace();
+		if (cmd.hasOption(SWITCH_BATCH_MODE)) {
+			// TODO implement batch mode
+		} else {
+			final String[] remainingArgs = cmd.getArgs();
+			SwingUtilities.invokeLater(new Runnable() {
+				public void run() {
+					try {
+						UIManager.setLookAndFeel(UIManager
+								.getSystemLookAndFeelClassName());
+					} catch (Exception exception) {
+						exception.printStackTrace();
+					}
+
+					ConversionSvgApplication app = new ConversionSvgApplication();
+					app.run(remainingArgs);
+
 				}
-
-				ConversionSvgApplication app = new ConversionSvgApplication();
-				app.run(remainingArgs);
-
-			}
-		});
+			});
+		}
 	}
 
 }

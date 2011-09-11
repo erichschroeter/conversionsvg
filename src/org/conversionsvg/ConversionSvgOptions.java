@@ -33,4 +33,10 @@ public interface ConversionSvgOptions {
 			"file").hasArg().withType(File.class).isRequired(false)
 			.withLongOpt("inkscape-location").create(SWITCH_INKSCAPE_LOCATION);
 
+	/** The unique switch used for enabling batch mode. */
+	public static final String SWITCH_BATCH_MODE = "batch";
+	/** The command line options used to execute the program in batch mode. */
+	public static Option OPTION_BATCH_MODE = OptionBuilder.withLongOpt(SWITCH_BATCH_MODE)
+			.withDescription("execute in batch mode (no GUI)").create();
+
 }

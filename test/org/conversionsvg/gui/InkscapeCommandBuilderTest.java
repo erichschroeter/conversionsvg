@@ -8,6 +8,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Vector;
 
+import org.conversionsvg.InkscapeCommand;
 import org.conversionsvg.InkscapeCommandBuilder;
 
 public class InkscapeCommandBuilderTest {
@@ -21,17 +22,20 @@ public class InkscapeCommandBuilderTest {
 		i.setFiles(files);
 		i.setBackgroundColor(Color.GREEN);
 		i.setBackgroundOpacity(0.5);
-		i.exportAsPdf();
+		i.exportAsPdf(new File("test1.pdf"));
 	}
 	
 	public void testExportMethods() {
 		InkscapeCommandBuilder i = new InkscapeCommandBuilder();
-		i.exportAsPdf();
-		i.exportAsEps();
-		i.exportAsPng();
-		i.exportAsPs();
+		i.setFiles(new File("test.svg"));
+		i.exportAsPdf(new File("test1.pdf"));
+		i.exportAsEps(new File("test1.eps"));
+		i.exportAsPng(new File("test1.png"));
+		i.exportAsPs(new File("test1.ps"));
 		
-		List<List<String>> commands = i.getCommands();
+		List<InkscapeCommand> commands = i.getCommands();
+		assertNotNull(commands);
+		assertEquals(4, commands.size());
 	}
 	
 }

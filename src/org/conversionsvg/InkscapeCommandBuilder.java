@@ -4,17 +4,20 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Point;
 import java.io.File;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Vector;
 
-import org.conversionsvg.InkscapeCommand.ExportArea;
 import org.conversionsvg.util.Helpers;
-import org.conversionsvg.util.SVGUtils;
 
+/**
+ * The <code>InkscapeCommandBuilder</code> implements the <a
+ * href="http://en.wikipedia.org/wiki/Builder_pattern">Builder Pattern</a>.
+ * 
+ * @author Erich Schroeter
+ */
 public class InkscapeCommandBuilder {
 
-	/** The list of options to pass on the command line to Inkscape */
-	private List<String> options;
 	/** The list of arguments to pass on the command line to Inkscape */
 	private List<File> files;
 	/**
@@ -22,6 +25,26 @@ public class InkscapeCommandBuilder {
 	 * be exported to their existing directory.
 	 */
 	private File singleDirectory;
+	/**
+	 * Whether to export as PNG. Only used when the {@link #singleDirectory}
+	 * feature is enabled.
+	 */
+	private boolean pngExportEnabled;
+	/**
+	 * Whether to export as PDF. Only used when the {@link #singleDirectory}
+	 * feature is enabled.
+	 */
+	private boolean pdfExportEnabled;
+	/**
+	 * Whether to export as PS. Only used when the {@link #singleDirectory}
+	 * feature is enabled.
+	 */
+	private boolean psExportEnabled;
+	/**
+	 * Whether to export as EPS. Only used when the {@link #singleDirectory}
+	 * feature is enabled.
+	 */
+	private boolean epsExportEnabled;
 	/** The Inkscape command to build. */
 	private InkscapeCommand command;
 
@@ -30,7 +53,7 @@ public class InkscapeCommandBuilder {
 	 * building the command to send to Inkscape on the command line.
 	 */
 	public InkscapeCommandBuilder() {
-		setOptions(new Vector<String>());
+		command = new InkscapeCommand();
 		setFiles(new Vector<File>());
 	}
 
@@ -39,8 +62,27 @@ public class InkscapeCommandBuilder {
 	 * 
 	 * @return the files to be converted
 	 */
-	public List<File> getFiles() {
-		return files;
+	// public List<File> getFiles() {
+	// return files;
+	// }
+
+	/**
+	 * Sets the files on the command line to be converted.
+	 * <p>
+	 * This will replace the container of files currently to be on the command
+	 * line. To add file(s) to the command line use {@link #convert(File)} and
+	 * {@link #convertAll(List)}.
+	 * <p>
+	 * This is equivalent to <code>setFiles(Arrays.asList(files))</code>.
+	 * 
+	 * @see #setFiles(List)
+	 * @see #convert(File)
+	 * @see #convertAll(List)
+	 * @param files
+	 *            the files to set
+	 */
+	public void setFiles(File... files) {
+		setFiles(Arrays.asList(files));
 	}
 
 	/**
@@ -60,81 +102,6 @@ public class InkscapeCommandBuilder {
 	}
 
 	/**
-	 * Returns the options currently on the command line.
-	 * <p>
-	 * The exported file option values are set in this method. If the
-	 * {@link #singleDirectory} is <code>null</code> then files are exported to
-	 * their existing directory, otherwise they are exported to the
-	 * <code>singleDirectory</code>.
-	 * 
-	 * @return the Inkscape options
-	 */
-	public List<String> getOptions(File file) {
-		// set the option values for the export file types
-		// if the singleDirectory is null then export to same directory,
-		// otherwise export to the singleDirectory
-		if (options.contains(Inkscape.OPTION_EXPORT_PNG)) {
-			options.add(options.indexOf(Inkscape.OPTION_EXPORT_PNG) + 1,
-					Helpers.changeExtension(
-							singleDirectory != null ? Helpers.changePath(file,
-									singleDirectory) : file, "png")
-							.getAbsolutePath());
-		}
-		if (options.contains(Inkscape.OPTION_EXPORT_PDF)) {
-			options.add(options.indexOf(Inkscape.OPTION_EXPORT_PDF) + 1,
-					Helpers.changeExtension(
-							singleDirectory != null ? Helpers.changePath(file,
-									singleDirectory) : file, "pdf")
-							.getAbsolutePath());
-		}
-		if (options.contains(Inkscape.OPTION_EXPORT_PS)) {
-			options.add(options.indexOf(Inkscape.OPTION_EXPORT_PS) + 1, Helpers
-					.changeExtension(
-							singleDirectory != null ? Helpers.changePath(file,
-									singleDirectory) : file, "ps")
-					.getAbsolutePath());
-		}
-		if (options.contains(Inkscape.OPTION_EXPORT_EPS)) {
-			options.add(options.indexOf(Inkscape.OPTION_EXPORT_EPS) + 1,
-					Helpers.changeExtension(
-							singleDirectory != null ? Helpers.changePath(file,
-									singleDirectory) : file, "eps")
-							.getAbsolutePath());
-		}
-		return options;
-	}
-
-	/**
-	 * Sets the options to pass on the command line to Inkscape.
-	 * <p>
-	 * This will replace the container of options currently configured to be
-	 * passed to Inkscape. In order to add options use the various methods
-	 * available in this builder.
-	 * 
-	 * @param options
-	 *            the options to set
-	 */
-	public void setOptions(List<String> options) {
-		this.options = options;
-	}
-
-	/**
-	 * Returns the arguments to pass on the command line to Inkscape. This
-	 * constructs a new list adding the options and file in that order.
-	 * <p>
-	 * Inkscape only allows one file to be converted at a given time. This
-	 * simply creates a <code>List&#60;String&#62;</code> and adding all
-	 * <code>getOptions()</code> and the <code>file.getAbsolutePath()</code>.
-	 * 
-	 * @return the command arguments
-	 */
-	public List<String> getArgs(File file) {
-		List<String> list = new Vector<String>(getOptions(file));
-		list.add(file.getAbsolutePath());
-		return list;
-	}
-
-	/**
 	 * Adds the file's absolute path to the command line. If the file already
 	 * exists in command it is removed from the command line.
 	 * 
@@ -143,12 +110,12 @@ public class InkscapeCommandBuilder {
 	 * @return the command builder
 	 */
 	public InkscapeCommandBuilder convert(File file) {
-		boolean exists = getFiles().contains(file.getAbsolutePath());
+		boolean exists = files.contains(file.getAbsolutePath());
 		if (!exists) {
-			getFiles().add(file);
+			files.add(file);
 		} else {
-			int index = getFiles().indexOf(file);
-			getFiles().remove(index);
+			int index = files.indexOf(file);
+			files.remove(index);
 		}
 		return this;
 	}
@@ -169,12 +136,6 @@ public class InkscapeCommandBuilder {
 		return this;
 	}
 
-	public InkscapeCommandBuilder exportArea(ExportArea area, Point origin,
-			Dimension size) {
-		command.setExportArea(area, origin, size);
-		return this;
-	}
-
 	/**
 	 * Adds the option and specified argument value to the command line. If the
 	 * custom area argument already exists in command it and its value are
@@ -185,6 +146,7 @@ public class InkscapeCommandBuilder {
 	 * This is equivalent to calling
 	 * <code>useCustomArea(new Point(x, y), new Point(x + width, y + height))</code>.
 	 * 
+	 * @see #exportCustom(Point, Dimension)
 	 * @param x
 	 *            originating x coordinate
 	 * @param y
@@ -193,105 +155,38 @@ public class InkscapeCommandBuilder {
 	 *            number of width pixels from the originating point
 	 * @param height
 	 *            number of height pixels from the originating point
-	 * @return
+	 * @return the command builder
 	 */
-	public InkscapeCommandBuilder useCustomArea(int x, int y, int width,
+	public InkscapeCommandBuilder exportCustom(int x, int y, int width,
 			int height) {
-		return useCustomArea(new Point(x, y), new Point(x + width, y + height));
+		return exportCustom(new Point(x, y), new Dimension(width, height));
 	}
 
-	/**
-	 * Adds the option and specified argument value to the command line. If the
-	 * custom area argument already exists in command it and its value are
-	 * removed from the command line.
-	 * <p>
-	 * (0, 0) is the lower-left corner of the image.
-	 * 
-	 * @param first
-	 *            beginning point coordinate
-	 * @param second
-	 *            ending point coordinate
-	 * @return the command builder
-	 */
-	public InkscapeCommandBuilder useCustomArea(Point first, Point second) {
-		boolean exists = options.contains(Inkscape.OPTION_AREA_CUSTOM);
-		if (!exists) {
-			StringBuilder area = new StringBuilder();
-			area.append(first.x).append(':');
-			area.append(first.y).append(':');
-			area.append(second.x).append(':');
-			area.append(second.y);
-			options.add(Inkscape.OPTION_AREA_CUSTOM);
-			options.add(area.toString());
-		} else {
-			int index = options.indexOf(Inkscape.OPTION_AREA_CUSTOM);
-			options.remove(index + 1);
-			options.remove(index);
-		}
+	public InkscapeCommandBuilder exportPage() {
+		return exportPage(true);
+	}
+
+	public InkscapeCommandBuilder exportPage(boolean enable) {
+		command.exportPage(enable);
 		return this;
 	}
 
-	/**
-	 * Adds the option flag to the command line to use the page area when
-	 * exporting the image.
-	 * <p>
-	 * This is equivalent to calling <code>usePageArea(true)</code>
-	 * 
-	 * @see #usePageArea(boolean)
-	 * @return the command builder
-	 */
-	public InkscapeCommandBuilder usePageArea() {
-		return usePageArea(true);
+	public InkscapeCommandBuilder exportDrawing() {
+		return exportDrawing(true);
 	}
 
-	/**
-	 * Adds the option flag to the command line to use the page area when
-	 * exporting the image.
-	 * 
-	 * @param enable
-	 *            <code>true</code> to add to command line, or
-	 *            <code>false</code> to remove from command line
-	 * @return the command builder
-	 */
-	public InkscapeCommandBuilder usePageArea(boolean enable) {
-		boolean exists = options.contains(Inkscape.OPTION_AREA_PAGE);
-		if (enable && !exists) {
-			options.add(Inkscape.OPTION_AREA_PAGE);
-		} else if (!enable && exists) {
-			options.remove(Inkscape.OPTION_AREA_PAGE);
-		}
+	public InkscapeCommandBuilder exportDrawing(boolean enable) {
+		command.exportDrawing(enable);
 		return this;
 	}
 
-	/**
-	 * Adds the option flag to the command line to use the drawing area when
-	 * exporting the image.
-	 * <p>
-	 * This is equivalent to calling <code>useDrawingArea(true)</code>
-	 * 
-	 * @see #useDrawingArea(boolean)
-	 * @return the command builder
-	 */
-	public InkscapeCommandBuilder useDrawingArea() {
-		return useDrawingArea(true);
+	public InkscapeCommandBuilder exportCustom(Point origin, Dimension size) {
+		return exportCustom(origin, size, true);
 	}
 
-	/**
-	 * Adds the option flag to the command line to use the drawing area when
-	 * exporting the image.
-	 * 
-	 * @param enable
-	 *            <code>true</code> to add to command line, or
-	 *            <code>false</code> to remove from command line
-	 * @return the command builder
-	 */
-	public InkscapeCommandBuilder useDrawingArea(boolean enable) {
-		boolean exists = options.contains(Inkscape.OPTION_AREA_DRAWING);
-		if (enable && !exists) {
-			options.add(Inkscape.OPTION_AREA_DRAWING);
-		} else if (!enable && exists) {
-			options.remove(Inkscape.OPTION_AREA_DRAWING);
-		}
+	public InkscapeCommandBuilder exportCustom(Point origin, Dimension size,
+			boolean enable) {
+		command.exportCustom(origin, size, true);
 		return this;
 	}
 
@@ -307,19 +202,8 @@ public class InkscapeCommandBuilder {
 	 *            the width of exported bitmap pixels
 	 * @return the command builder
 	 */
-	public InkscapeCommandBuilder setPixelWidth(int pixels) {
-		if (pixels < 0) {
-			pixels = Math.abs(pixels);
-		}
-		boolean exists = options.contains(Inkscape.OPTION_PIXEL_WIDTH);
-		if (!exists) {
-			options.add(Inkscape.OPTION_PIXEL_WIDTH);
-			options.add(Integer.toString(pixels));
-		} else {
-			int index = options.indexOf(Inkscape.OPTION_PIXEL_WIDTH);
-			options.remove(index + 1);
-			options.remove(index);
-		}
+	public InkscapeCommandBuilder setWidth(int pixels) {
+		command.setWidth(pixels);
 		return this;
 	}
 
@@ -335,19 +219,8 @@ public class InkscapeCommandBuilder {
 	 *            the height of exported bitmap pixels
 	 * @return the command builder
 	 */
-	public InkscapeCommandBuilder setPixelHeight(int pixels) {
-		if (pixels < 0) {
-			pixels = Math.abs(pixels);
-		}
-		boolean exists = options.contains(Inkscape.OPTION_PIXEL_HEIGHT);
-		if (!exists) {
-			options.add(Inkscape.OPTION_PIXEL_HEIGHT);
-			options.add(Integer.toString(pixels));
-		} else {
-			int index = options.indexOf(Inkscape.OPTION_PIXEL_HEIGHT);
-			options.remove(index + 1);
-			options.remove(index);
-		}
+	public InkscapeCommandBuilder setHeight(int pixels) {
+		command.setHeight(pixels);
 		return this;
 	}
 
@@ -361,15 +234,7 @@ public class InkscapeCommandBuilder {
 	 * @return the command builder
 	 */
 	public InkscapeCommandBuilder setBackgroundColor(Color color) {
-		boolean exists = options.contains(Inkscape.OPTION_BACKGROUND_COLOR);
-		if (color != null && !exists) {
-			options.add(Inkscape.OPTION_BACKGROUND_COLOR);
-			options.add(SVGUtils.toSvgFormatString(color));
-		} else if (color == null && exists) {
-			int index = options.indexOf(Inkscape.OPTION_BACKGROUND_COLOR);
-			options.remove(index + 1);
-			options.remove(index);
-		}
+		command.setBackgroundColor(color);
 		return this;
 	}
 
@@ -387,23 +252,22 @@ public class InkscapeCommandBuilder {
 	 * @return the command builder
 	 */
 	public InkscapeCommandBuilder setBackgroundOpacity(double opacity) {
-		if (opacity < 0.0) {
-			opacity = 0.0;
-		}
-		if (opacity > 1.0) {
-			opacity = 1.0;
-		}
-		int value = (int) (255 * opacity);
-		boolean exists = options.contains(Inkscape.OPTION_BACKGROUND_OPACITY);
-		if (!exists) {
-			options.add(Inkscape.OPTION_BACKGROUND_OPACITY);
-			options.add(Double.toString(value));
-		} else {
-			int index = options.indexOf(Inkscape.OPTION_BACKGROUND_OPACITY);
-			options.remove(index + 1);
-			options.remove(index);
-		}
+		command.setBackgroundOpacity(opacity);
 		return this;
+	}
+
+	/**
+	 * Returns whether the single directory feature is enabled in this command
+	 * builder.
+	 * <p>
+	 * This feature is enabled if {@link #singleDirectory} is not
+	 * <code>null</code> and exists.
+	 * 
+	 * @see File#exists()
+	 * @return <code>true</code> if enabled, else <code>false</code>
+	 */
+	protected boolean isSingleDirectoryEnabled() {
+		return singleDirectory != null && singleDirectory.exists();
 	}
 
 	/**
@@ -417,139 +281,138 @@ public class InkscapeCommandBuilder {
 	 * @return the command builder
 	 */
 	public InkscapeCommandBuilder exportToSingleDirectory(File directory) {
-		singleDirectory = directory;
+		return enableSingleDirectory(directory, directory != null);
+	}
+
+	/**
+	 * Sets and enables the single directory feature of the
+	 * <code>InkscapeCommandBuilder</code>. This feature allows you to configure
+	 * an Inkscape command's options omitting the SVG file and export files
+	 * (i.e. PNG, PDF, PS, EPS) allowing the builder to export files to a single
+	 * directory.
+	 * <p>
+	 * If <code>directory</code> is <code>null</code> or does not exist, this
+	 * feature will be disabled.
+	 * 
+	 * @param directory
+	 *            the directory to export all files to
+	 * @param enable
+	 *            <code>true</code> to enable, <code>false</code> to disable
+	 * @return the command builder
+	 */
+	public InkscapeCommandBuilder enableSingleDirectory(File directory,
+			boolean enable) {
+		if (enable) {
+			singleDirectory = directory;
+		} else {
+			singleDirectory = null;
+		}
+		return this;
+	}
+
+	/**
+	 * Adds the option flag and argument to the command line to export image as
+	 * <em>Portable Network Graphics (PNG)</em>.
+	 * 
+	 * @param file
+	 *            the PNG file to be exported
+	 * @return the command builder
+	 */
+	public InkscapeCommandBuilder exportAsPng(File file) {
+		command.setPNG(file);
 		return this;
 	}
 
 	/**
 	 * Adds the option flag to the command line to export image as
-	 * <em>Portable Network Graphics (PNG)</em>
-	 * <p>
-	 * This is equivalent to calling <code>exportAsPng(true)</code>.
+	 * <em>Portable Network Graphics (PNG)</em>. This is only taken into effect
+	 * if the {@link #singleDirectory} feature is enabled.
 	 * 
-	 * @see #exportAsPng(boolean)
-	 * @return the command builder
-	 */
-	public InkscapeCommandBuilder exportAsPng() {
-		return exportAsPng(true);
-	}
-
-	/**
-	 * Adds the option flag to the command line to export image as
-	 * <em>Portable Network Graphics (PNG)</em>
-	 * 
-	 * @param enable
-	 *            <code>true</code> to add to command line, or
-	 *            <code>false</code> to remove from command line
 	 * @return the command builder
 	 */
 	public InkscapeCommandBuilder exportAsPng(boolean enable) {
-		boolean exists = options.contains(Inkscape.OPTION_EXPORT_PNG);
-		if (enable && !exists) {
-			options.add(Inkscape.OPTION_EXPORT_PNG);
-		} else if (!enable && exists) {
-			options.remove(Inkscape.OPTION_EXPORT_PNG);
-		}
+		pngExportEnabled = enable;
 		return this;
 	}
 
 	/**
-	 * Adds the option flag to the command line to export image as <em>(PS)</em>
-	 * <p>
-	 * This is equivalent to calling <code>exportAsPs(true)</code>.
+	 * Adds the option flag to the command line to export image as
+	 * <em>Post Script (PS)</em>
 	 * 
-	 * @see #exportAsPs(boolean)
+	 * @param file
+	 *            the PS file to be exported
 	 * @return the command builder
 	 */
-	public InkscapeCommandBuilder exportAsPs() {
-		return exportAsPs(true);
+	public InkscapeCommandBuilder exportAsPs(File file) {
+		command.setPS(file);
+		return this;
 	}
 
 	/**
-	 * Adds the option flag to the command line to export image as <em>(PS)</em>
+	 * Adds the option flag to the command line to export image as
+	 * <em>Post Script (PS)</em>. This is only taken into effect if the
+	 * {@link #singleDirectory} feature is enabled.
 	 * 
-	 * @param enable
-	 *            <code>true</code> to add to command line, or
-	 *            <code>false</code> to remove from command line
 	 * @return the command builder
 	 */
 	public InkscapeCommandBuilder exportAsPs(boolean enable) {
-		boolean exists = options.contains(Inkscape.OPTION_EXPORT_PS);
-		if (enable && !exists) {
-			options.add(Inkscape.OPTION_EXPORT_PS);
-		} else if (!enable && exists) {
-			options.remove(Inkscape.OPTION_EXPORT_PS);
-		}
+		psExportEnabled = enable;
 		return this;
 	}
 
 	/**
 	 * Adds the option flag to the command line to export image as
 	 * <em>Printable Document Format (PDF)</em>
-	 * <p>
-	 * This is equivalent to calling <code>exportAsPdf(true)</code>.
 	 * 
-	 * @see #exportAsPdf(boolean)
+	 * @param file
+	 *            the PDF file to be exported
 	 * @return the command builder
 	 */
-	public InkscapeCommandBuilder exportAsPdf() {
-		return exportAsPdf(true);
+	public InkscapeCommandBuilder exportAsPdf(File file) {
+		command.setPDF(file);
+		return this;
 	}
 
 	/**
 	 * Adds the option flag to the command line to export image as
-	 * <em>Printable Document Format (PDF)</em>
+	 * <em>Printable Document Format (PDF)</em>. This is only taken into effect
+	 * if the {@link #singleDirectory} feature is enabled.
 	 * 
-	 * @param enable
-	 *            <code>true</code> to add to command line, or
-	 *            <code>false</code> to remove from command line
 	 * @return the command builder
 	 */
 	public InkscapeCommandBuilder exportAsPdf(boolean enable) {
-		boolean exists = options.contains(Inkscape.OPTION_EXPORT_PDF);
-		if (enable && !exists) {
-			options.add(Inkscape.OPTION_EXPORT_PDF);
-		} else if (!enable && exists) {
-			options.remove(Inkscape.OPTION_EXPORT_PDF);
-		}
+		pdfExportEnabled = enable;
 		return this;
 	}
 
 	/**
 	 * Adds the option flag to the command line to export image as
 	 * <em>(EPS)</em>
-	 * <p>
-	 * This is equivalent to calling <code>exportAsEps(true)</code>.
 	 * 
-	 * @see #exportAsEps(boolean)
+	 * @param file
+	 *            the EPS file to be exported
 	 * @return the command builder
 	 */
-	public InkscapeCommandBuilder exportAsEps() {
-		return exportAsEps(true);
+	public InkscapeCommandBuilder exportAsEps(File file) {
+		command.setEPS(file);
+		return this;
 	}
 
 	/**
 	 * Adds the option flag to the command line to export image as
-	 * <em>(EPS)</em>
+	 * <em>(EPS)</em>. This is only taken into effect if the
+	 * {@link #singleDirectory} feature is enabled.
 	 * 
-	 * @param enable
-	 *            <code>true</code> to add to command line, or
-	 *            <code>false</code> to remove from command line
 	 * @return the command builder
 	 */
 	public InkscapeCommandBuilder exportAsEps(boolean enable) {
-		boolean exists = options.contains(Inkscape.OPTION_EXPORT_EPS);
-		if (enable && !exists) {
-			options.add(Inkscape.OPTION_EXPORT_EPS);
-		} else if (!enable && exists) {
-			options.remove(Inkscape.OPTION_EXPORT_EPS);
-		}
+		epsExportEnabled = enable;
 		return this;
 	}
 
 	/**
-	 * Returns the customized Inkscape command as a list of strings. This is the
-	 * full command that is sent on the command line which includes:
+	 * Returns the customized Inkscape command. This is the full command that is
+	 * sent on the command line which includes:
 	 * <ol>
 	 * <li>the program (result of <code>Inkscape.getExecutable()</code>)</li>
 	 * <li>the options (result of <code>getArgs()</code>)</li>
@@ -564,49 +427,59 @@ public class InkscapeCommandBuilder {
 	 * @see Inkscape#getExecutable()
 	 * @param file
 	 *            the <em>Scalable Vector Graphics (SVG)</em> file
-	 * @return list of strings
+	 * @return the Inkscape command
 	 */
-	public List<String> getCommand(File file) {
-		if (Inkscape.getExecutable() == null) {
-			Inkscape.setExecutable(Inkscape.findExecutable());
+	public InkscapeCommand getCommandFor(File file) {
+		InkscapeCommand clone = null;
+		try {
+			clone = command.clone();
+			File newFile = file;
+			// change the path once instead of for each export type
+			if (isSingleDirectoryEnabled()) {
+				newFile = Helpers.changePath(file, singleDirectory);
+			}
+			if (clone.isPNG() || pngExportEnabled) {
+				clone.setPNG(Helpers.changeExtension(newFile, "png"));
+			}
+			if (clone.isPDF() || pdfExportEnabled) {
+				clone.setPDF(Helpers.changeExtension(newFile, "pdf"));
+			}
+			if (clone.isPS() || psExportEnabled) {
+				clone.setPS(Helpers.changeExtension(newFile, "ps"));
+			}
+			if (clone.isEPS() || epsExportEnabled) {
+				clone.setEPS(Helpers.changeExtension(newFile, "eps"));
+			}
+			// only add the SVG file if at least one export was selected
+			if (clone.isPNG() || clone.isPDF() || clone.isPS() || clone.isEPS()) {
+				clone.setSVG(file);
+			}
+		} catch (CloneNotSupportedException e) {
+			e.printStackTrace();
 		}
-		List<String> command = getArgs(file);
-		((Vector<String>) command).insertElementAt(Inkscape.getExecutable()
-				.getAbsolutePath(), 0);
-		return command;
+		return clone;
 	}
 
 	/**
-	 * Returns a list of commands consisting of one command per
+	 * Returns a list of Inkscape commands consisting of one command per
 	 * <code>File</code>. This iterates over the builder's <code>File</code>
-	 * container calling {@link #getCommand(File)}.
+	 * container calling {@link #getCommandFor(File)}.
 	 * 
-	 * @see #getCommand(File)
+	 * @see #getCommandFor(File)
 	 * @return a list of commands
 	 */
-	public List<List<String>> getCommands() {
-		List<List<String>> commands = new Vector<List<String>>();
-		for (File file : getFiles()) {
+	public List<InkscapeCommand> getCommands() {
+		List<InkscapeCommand> commands = new Vector<InkscapeCommand>();
+		for (File file : files) {
 			if (file.isFile()) {
-				commands.add(getCommand(file));
+				commands.add(getCommandFor(file));
 			}
 		}
 		return commands;
 	}
 
-	public String toString(File file) {
-		StringBuilder builder = new StringBuilder();
-		for (String arg : getCommand(file)) {
-			builder.append(arg);
-			builder.append(" ");
-		}
-		return builder.toString();
-	}
-
 	/**
-	 * Returns a string representation of the Inkscape command. The files may
-	 * not be represented by the result string as they are not added until the
-	 * last minute.
+	 * Returns a string representation of the Inkscape command.
 	 * 
 	 * @return the Inkscape command
 	 */

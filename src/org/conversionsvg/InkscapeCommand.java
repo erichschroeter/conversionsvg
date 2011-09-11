@@ -16,7 +16,7 @@ import org.conversionsvg.util.Helpers;
  * 
  * @author Erich Schroeter
  */
-public class InkscapeCommand {
+public class InkscapeCommand implements Cloneable {
 
 	/** The SVG file to be exported. */
 	private File svgFile;
@@ -60,19 +60,35 @@ public class InkscapeCommand {
 
 	/** The export area type. */
 	private ExportArea areaType;
+	/** Whether to export custom area. */
+	private boolean exportCustomEnabled;
 	/** The custom area width and height relative to the {@link #areaOrigin}. */
 	private Dimension areaSize;
 	/** The origin point for a custom area. */
 	private Point areaOrigin;
+	/** Whether to export the page area. */
+	private boolean exportPageEnabled;
+	/** Whether to export the drawing area. */
+	private boolean exportDrawingEnabled;
 
 	/** The supported areas to export the image. */
 	public static enum ExportArea {
 		/** Exports the entire page. */
 		PAGE,
-		/** Exports the entire drawing (which is not the page). */
+		/** Exports the entire drawing (which is not the page) */
 		DRAWING,
 		/** Exports a custom area specified by the user. */
 		CUSTOM
+	}
+
+	/**
+	 * Returns the SVG file to be exported.
+	 * 
+	 * @see #setSVG(File)
+	 * @return the SVG file
+	 */
+	public File getSVG() {
+		return svgFile;
 	}
 
 	/**
@@ -81,7 +97,7 @@ public class InkscapeCommand {
 	 * @param file
 	 *            the SVG file
 	 */
-	public void setSvgFile(File file) {
+	public void setSVG(File file) {
 		svgFile = file;
 	}
 
@@ -96,6 +112,17 @@ public class InkscapeCommand {
 	 */
 	public boolean isHeightEnabled() {
 		return pixelHeightEnabled;
+	}
+
+	/**
+	 * Returns the pixel height of the image to be exported.
+	 * 
+	 * @see #setHeight(int)
+	 * @see #setHeight(int, boolean)
+	 * @return the pixel height
+	 */
+	public int getHeight() {
+		return pixelHeight;
 	}
 
 	/**
@@ -145,6 +172,17 @@ public class InkscapeCommand {
 	}
 
 	/**
+	 * Returns the pixel width of the image to be exported.
+	 * 
+	 * @see #setWidth(int)
+	 * @see #setWidth(int, boolean)
+	 * @return the pixel width
+	 */
+	public int getWidth() {
+		return pixelWidth;
+	}
+
+	/**
 	 * Sets the width of the exported image. If <code>pixels</code> is less than
 	 * 0, the Inkscape <code>--export-width</code> option is not enabled.
 	 * <p>
@@ -178,13 +216,35 @@ public class InkscapeCommand {
 	}
 
 	/**
+	 * Returns whether the image page area will be exported.
+	 * 
+	 * @return <code>true</code> if enabled, else <code>false</code>
+	 */
+	public boolean isExportPageEnabled() {
+		return exportPageEnabled;
+	}
+
+	/**
 	 * Sets the area of the image to export to as the page.
 	 * <p>
 	 * This is equivalent to
 	 * <code>setExportArea(ExportArea.PAGE, null, null)</code>.
 	 */
-	public void exportPage() {
-		setExportArea(ExportArea.PAGE, null, null);
+	public void exportPage(boolean enable) {
+		exportPageEnabled = enable;
+		// only change the areaType if enabled
+		if (exportPageEnabled) {
+			areaType = ExportArea.PAGE;
+		}
+	}
+
+	/**
+	 * Returns whether the image drawing area will be exported.
+	 * 
+	 * @return <code>true</code> if enabled, else <code>false</code>
+	 */
+	public boolean isExportDrawingEnabled() {
+		return exportDrawingEnabled;
 	}
 
 	/**
@@ -193,50 +253,51 @@ public class InkscapeCommand {
 	 * This is equivalent to
 	 * <code>setExportArea(ExportArea.DRAWING, null, null)</code>.
 	 */
-	public void exportDrawing() {
-		setExportArea(ExportArea.DRAWING, null, null);
+	public void exportDrawing(boolean enable) {
+		exportDrawingEnabled = enable;
+		// only change the areaType if enabled
+		if (exportDrawingEnabled) {
+			areaType = ExportArea.DRAWING;
+		}
+	}
+
+	/**
+	 * Returns whether the image custom area will be exported.
+	 * 
+	 * @return <code>true</code> if enabled, else <code>false</code>
+	 */
+	public boolean isExportCustomEnabled() {
+		return exportCustomEnabled;
 	}
 
 	/**
 	 * Sets the custom area of the image to export.
 	 * <p>
-	 * This is equivalent to
-	 * <code>setExportArea(ExportArea.CUSTOM, origin, size)</code>.
-	 */
-	public void exportCustom(Point origin, Dimension size) {
-		setExportArea(ExportArea.CUSTOM, origin, size);
-	}
-
-	/**
-	 * Sets the area of the image to export.
-	 * <ul>
-	 * <li>If <code>size</code> is <code>null</code> it will be equivalent to
-	 * setting <code>area</code> to {@link ExportArea#PAGE}.</li>
-	 * <li>If <code>lowerLeft</code> is <code>null</code> it is equivalent to
-	 * (0,0)</li>
-	 * </ul>
-	 * If <code>area</code> is {@link ExportArea#PAGE} or
-	 * {@link ExportArea#DRAWING} then <code>size</code> and
-	 * <code>lowerleft</code> are ignored.
+	 * If <code>size</code> is <code>null</code> it is equivalent to setting
+	 * <code>enable</code> to <code>false</code>.
 	 * 
-	 * @param area
-	 *            the area type to determine the command line option used
 	 * @param origin
 	 *            the lower left corner of the <code>size</code>
 	 * @param size
 	 *            the height and width in pixel area relative to
 	 *            <code>point</code>
+	 * @param enable
+	 *            <code>true</code> to enable, <code>false</code> to disable
 	 */
-	public void setExportArea(ExportArea area, Point origin, Dimension size) {
+	public void exportCustom(Point origin, Dimension size, boolean enable) {
 		if (size == null) {
-			area = ExportArea.PAGE;
+			exportCustomEnabled = false;
 		}
 		if (origin == null) {
 			origin = new Point(0, 0);
 		}
-		areaType = area;
+		exportCustomEnabled = enable;
 		areaOrigin = origin;
 		areaSize = size;
+		// only change the areaType if enabled
+		if (exportCustomEnabled) {
+			areaType = ExportArea.CUSTOM;
+		}
 	}
 
 	/**
@@ -250,6 +311,16 @@ public class InkscapeCommand {
 	 */
 	public boolean isBackgroundEnabled() {
 		return background != null;
+	}
+
+	/**
+	 * Returns the background color to be exported.
+	 * 
+	 * @see #setBackgroundColor(Color)
+	 * @return the background color
+	 */
+	public Color getBackgroundColor() {
+		return background;
 	}
 
 	/**
@@ -281,6 +352,33 @@ public class InkscapeCommand {
 	}
 
 	/**
+	 * Returns the background opacity of the image to be exported.
+	 * 
+	 * @see #setBackgroundOpacity(double)
+	 * @see #setBackgroundOpacity(double, boolean)
+	 * @return the background opacity
+	 */
+	public double getBackgroundOpacity() {
+		return opacity;
+	}
+
+	/**
+	 * Sets the background color opacity of the exported image. If
+	 * <code>opacity</code> is less than 0.0 it is forced to 0.0, and if greater
+	 * than 1.0 it is forced to 1.0.
+	 * <p>
+	 * This is equivalent to <code>setBackgroundOpacity(opacity)</code>.
+	 * 
+	 * @see #setBackgroundColor(Color)
+	 * @see #isBackgroundOpacityEnabled()
+	 * @param opacity
+	 *            the background color opacity
+	 */
+	public void setBackgroundOpacity(double opacity) {
+		setBackgroundOpacity(opacity, true);
+	}
+
+	/**
 	 * Sets the background color opacity of the exported image. If
 	 * <code>opacity</code> is less than 0.0 it is forced to 0.0, and if greater
 	 * than 1.0 it is forced to 1.0.
@@ -309,6 +407,17 @@ public class InkscapeCommand {
 	}
 
 	/**
+	 * Returns the PNG file to be exported.
+	 * 
+	 * @see #isPNG()
+	 * @see #setPNG(File)
+	 * @return the PNG file
+	 */
+	public File getPNG() {
+		return exportPNG;
+	}
+
+	/**
 	 * Sets the file to be exported as a PNG. By setting <code>file</code> to a
 	 * non-<code>null</code> value the switch for exporting a PNG image is
 	 * automatically included.
@@ -330,6 +439,17 @@ public class InkscapeCommand {
 	 */
 	public boolean isPNG() {
 		return exportPNG != null;
+	}
+
+	/**
+	 * Returns the PDF file to be exported.
+	 * 
+	 * @see #isPDF()
+	 * @see #setPDF(File)
+	 * @return the PDF file
+	 */
+	public File getPDF() {
+		return exportPDF;
 	}
 
 	/**
@@ -357,6 +477,17 @@ public class InkscapeCommand {
 	}
 
 	/**
+	 * Returns the PS file to be exported.
+	 * 
+	 * @see #isPS()
+	 * @see #setPS(File)
+	 * @return the PS file
+	 */
+	public File getPS() {
+		return exportPS;
+	}
+
+	/**
 	 * Sets the file to be exported as a PS. By setting <code>file</code> to a
 	 * non-<code>null</code> value the switch for exporting a PS image is
 	 * automatically included.
@@ -378,6 +509,17 @@ public class InkscapeCommand {
 	 */
 	public boolean isPS() {
 		return exportPS != null;
+	}
+
+	/**
+	 * Returns the EPS file to be exported.
+	 * 
+	 * @see #isEPS()
+	 * @see #setEPS(File)
+	 * @return the EPS file
+	 */
+	public File getEPS() {
+		return exportEPS;
 	}
 
 	/**
@@ -417,16 +559,7 @@ public class InkscapeCommand {
 	 *                </ul>
 	 */
 	public List<String> getOptions() {
-		if (Inkscape.getExecutable() == null) {
-			Inkscape.setExecutable(Inkscape.findExecutable());
-			if (Inkscape.getExecutable() == null) {
-				throw new IllegalStateException(
-						"Inkscape executable could not be found");
-			}
-		}
 		List<String> options = new Vector<String>();
-
-		options.add(Inkscape.getExecutable().getAbsolutePath());
 
 		if (isPNG()) {
 			options.add(Inkscape.OPTION_EXPORT_PNG);
@@ -445,30 +578,37 @@ public class InkscapeCommand {
 			options.add(exportEPS.getAbsolutePath());
 		}
 
-		switch (areaType) {
-		case PAGE:
-			options.add(Inkscape.OPTION_AREA_PAGE);
-			break;
-		case DRAWING:
-			options.add(Inkscape.OPTION_AREA_DRAWING);
-			break;
-		case CUSTOM:
-			options.add(Inkscape.OPTION_AREA_CUSTOM);
-			StringBuilder custom = new StringBuilder();
-			custom.append(areaOrigin.x);
-			custom.append(':');
-			custom.append(areaOrigin.y);
-			custom.append(':');
-			custom.append(areaOrigin.x + areaSize.width);
-			custom.append(':');
-			custom.append(areaOrigin.y + areaSize.height);
-			options.add(custom.toString());
-			break;
-		default:
-			throw new IllegalStateException("unsupported area type <"
-					+ areaType + ">");
+		if (areaType != null) {
+			switch (areaType) {
+			case PAGE:
+				if (isExportPageEnabled()) {
+					options.add(Inkscape.OPTION_AREA_PAGE);
+				}
+				break;
+			case DRAWING:
+				if (isExportDrawingEnabled()) {
+					options.add(Inkscape.OPTION_AREA_DRAWING);
+				}
+				break;
+			case CUSTOM:
+				if (isExportCustomEnabled()) {
+					options.add(Inkscape.OPTION_AREA_CUSTOM);
+					StringBuilder custom = new StringBuilder();
+					custom.append(areaOrigin.x);
+					custom.append(':');
+					custom.append(areaOrigin.y);
+					custom.append(':');
+					custom.append(areaOrigin.x + areaSize.width);
+					custom.append(':');
+					custom.append(areaOrigin.y + areaSize.height);
+					options.add(custom.toString());
+				}
+				break;
+			default:
+				throw new UnsupportedOperationException(
+						"export area not supported");
+			}
 		}
-
 		if (isHeightEnabled()) {
 			options.add(Inkscape.OPTION_PIXEL_HEIGHT);
 			options.add(Integer.toString(pixelHeight));
@@ -494,9 +634,22 @@ public class InkscapeCommand {
 		return options;
 	}
 
+	public List<String> getCommand() {
+		List<String> command = getOptions();
+		if (Inkscape.getExecutable() == null) {
+			Inkscape.setExecutable(Inkscape.findExecutable());
+			if (Inkscape.getExecutable() == null) {
+				throw new IllegalStateException(
+						"Inkscape executable could not be found");
+			}
+		}
+		command.add(0, Inkscape.getExecutable().getAbsolutePath());
+		return command;
+	}
+
 	@Override
 	public String toString() {
-		List<String> options = getOptions();
+		List<String> options = getCommand();
 		StringBuilder b = new StringBuilder();
 		for (String option : options) {
 			if (b.length() != 0) {
@@ -506,4 +659,38 @@ public class InkscapeCommand {
 		}
 		return b.toString();
 	}
+
+	@Override
+	public InkscapeCommand clone() throws CloneNotSupportedException {
+		InkscapeCommand clone = new InkscapeCommand();
+		clone.setPNG(getPNG());
+		clone.setPDF(getPDF());
+		clone.setPS(getPS());
+		clone.setEPS(getEPS());
+
+		if (areaType != null) {
+			switch (areaType) {
+			case PAGE:
+				clone.exportPage(isExportPageEnabled());
+				break;
+			case DRAWING:
+				clone.exportDrawing(isExportDrawingEnabled());
+				break;
+			case CUSTOM:
+				clone.exportCustom(new Point(areaOrigin), new Dimension(
+						areaSize), isExportCustomEnabled());
+				break;
+			default:
+				break;
+			}
+		}
+		clone.setHeight(getHeight(), isHeightEnabled());
+		clone.setWidth(getWidth(), isWidthEnabled());
+		clone.setBackgroundColor(getBackgroundColor());
+		clone.setBackgroundOpacity(getBackgroundOpacity(),
+				isBackgroundOpacityEnabled());
+		clone.setSVG(getSVG());
+		return clone;
+	}
+
 }
