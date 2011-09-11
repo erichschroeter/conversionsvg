@@ -61,11 +61,6 @@ public class ConversionSvgApplication extends GUIApplication implements
 	private JRibbon applicationRibbon;
 	/** Handles starting the threads in the thread pool */
 	private ThreadPoolExecutor threadPool;
-	/**
-	 * The command builder used to build the command to send to Inkscape on the
-	 * command line
-	 */
-//	private InkscapeCommandBuilder command;
 	/** The view allowing the user to customize options. */
 	private OptionsView optionsView;
 
@@ -77,19 +72,6 @@ public class ConversionSvgApplication extends GUIApplication implements
 		super(new JFrame());
 		setApplicationIcon(new ImageIcon(ConversionSvgApplication.class
 				.getClassLoader().getResource("images/convert.png")));
-		// initialize the thread pool
-		int corePoolSize = getApplicationPreferences().getInt(
-				"thread_pool.core_size", 10);
-		int maximumPoolSize = getApplicationPreferences().getInt(
-				"thread_pool.max_size", 20);
-		int keepAliveTime = getApplicationPreferences().getInt(
-				"thread_pool.keep_alive_time", 10);
-		// The thread pool used to start Inkscape processes
-		PriorityBlockingQueue<Runnable> queue = new PriorityBlockingQueue<Runnable>(
-				corePoolSize);
-		setThreadPool(new ThreadPoolExecutor(corePoolSize, maximumPoolSize,
-				keepAliveTime, TimeUnit.SECONDS, queue));
-
 	}
 
 	@Override
@@ -131,7 +113,7 @@ public class ConversionSvgApplication extends GUIApplication implements
 		});
 
 		// initialize the command builder for the OptionsView
-//		setInkscapeCommand(new InkscapeCommandBuilder());
+		// setInkscapeCommand(new InkscapeCommandBuilder());
 
 		// initialize and install the ribbon
 		setApplicationRibbon(createApplicationRibbon());
@@ -174,7 +156,7 @@ public class ConversionSvgApplication extends GUIApplication implements
 	 * @return the application ribbon
 	 */
 	protected JRibbon createApplicationRibbon() {
-		RibbonFactory factory = new RibbonFactory()
+		RibbonFactory ribbon = new RibbonFactory()
 				.withHelp(new ActionListener() {
 
 					@Override
@@ -183,8 +165,9 @@ public class ConversionSvgApplication extends GUIApplication implements
 					}
 				});
 
-		factory.addSubMenuItem("Erich Schroeter Github", Helpers
-				.getResizableIconFromResource("images/erichschroeter.png"),
+		ribbon.newSubMenuGroup();
+		ribbon.addSubMenuItem("Erich Schroeter Github", Helpers
+				.getResizableIconFromResource("images/github.png"),
 				new ActionListener() {
 
 					@Override
@@ -192,7 +175,7 @@ public class ConversionSvgApplication extends GUIApplication implements
 						openInBrowser("https://github.com/erichschroeter/conversionsvg");
 					}
 				});
-		factory.addSubMenuItem("Powered by JIDE", new EmptyResizableIcon(16),
+		ribbon.addSubMenuItem("Powered by JIDE", new EmptyResizableIcon(16),
 				new ActionListener() {
 
 					@Override
@@ -200,7 +183,7 @@ public class ConversionSvgApplication extends GUIApplication implements
 						openInBrowser("http://www.jidesoft.com/");
 					}
 				});
-		factory.addSubMenuItem("Original SourceForge Project", Helpers
+		ribbon.addSubMenuItem("Original SourceForge Project", Helpers
 				.getResizableIconFromResource("images/sourceforge.png"),
 				new ActionListener() {
 
@@ -209,13 +192,13 @@ public class ConversionSvgApplication extends GUIApplication implements
 						openInBrowser("http://sourceforge.net/projects/conversionsvg/");
 					}
 				});
-		factory.addMenuItem("Websites", Helpers
+		ribbon.addMenuItem("Websites", Helpers
 				.getResizableIconFromResource("images/websites-menu-item.png"),
 				null, CommandButtonKind.POPUP_ONLY);
-		factory.addMenuItem("");
-		factory.addMenuItem("");
-		factory.addMenuItem("");
-		factory.addFooterMenuItem("Exit", Helpers
+		ribbon.addMenuItem("");
+		ribbon.addMenuItem("");
+		ribbon.addMenuItem("");
+		ribbon.addFooterMenuItem("Exit", Helpers
 				.getResizableIconFromResource("images/system-log-out.png"),
 				new ActionListener() {
 
@@ -224,23 +207,25 @@ public class ConversionSvgApplication extends GUIApplication implements
 						exit(0);
 					}
 				});
-		factory.withMenu();
+		ribbon.withMenu(Helpers
+				.getResizableIconFromResource("images/convert.png"));
 
-		factory.addButtonTypeAction("Convert", Helpers
+		ribbon.addButtonTypeAction("Convert", Helpers
 				.getResizableIconFromResource("images/convert.png"),
 				new ActionListener() {
 
 					@Override
 					public void actionPerformed(ActionEvent e) {
-						List<InkscapeCommand> commands = optionsView.getInkscapeCommands();
+						List<InkscapeCommand> commands = optionsView
+								.getInkscapeCommands();
 
 						// TODO convert and push to thread pool
 						Process process;
 						for (InkscapeCommand command : commands) {
 							try {
 								// Execute the command
-								process = new ProcessBuilder(command.getCommand())
-										.start();
+								process = new ProcessBuilder(command
+										.getCommand()).start();
 								process.waitFor();
 							} catch (IOException e1) {
 								logger.error(e1.getMessage());
@@ -253,10 +238,10 @@ public class ConversionSvgApplication extends GUIApplication implements
 						"This will begin the conversion activity to use "
 								+ "Inkscape to convert the selected SVG "
 								+ "images using the specified options."));
-		factory.addBand("Controls");
-		factory.addTask("Home");
+		ribbon.addBand("Controls");
+		ribbon.addTask("Home");
 
-		return factory.getRibbon();
+		return ribbon.getRibbon();
 	}
 
 	/**
@@ -276,27 +261,6 @@ public class ConversionSvgApplication extends GUIApplication implements
 		}
 		return true;
 	}
-
-	/**
-	 * Returns the command builder responsible for building the command sent on
-	 * the command line to Inkscape.
-	 * 
-	 * @return the Inkscape command builder
-	 */
-//	public InkscapeCommandBuilder getInkscapeCommand() {
-//		return command;
-//	}
-
-	/**
-	 * Sets the Inkscape command builder responsible for building the command
-	 * sent on the command line to Inkscape.
-	 * 
-	 * @param command
-	 *            the command to set
-	 */
-//	public void setInkscapeCommand(InkscapeCommandBuilder command) {
-//		this.command = command;
-//	}
 
 	/**
 	 * Returns the object responsible for executing threads in the thread pool.
