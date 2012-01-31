@@ -1,7 +1,6 @@
 package usr.erichschroeter.conversionsvg;
 
 import java.awt.BorderLayout;
-import java.awt.Color;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.IOException;
@@ -113,7 +112,6 @@ public class ConversionSvgApplication extends GUIApplicationImpl<JFrame> {
 		window.add(view, BorderLayout.CENTER);
 
 		progressBar = new JProgressBar();
-		progressBar.setForeground(Color.BLACK);
 		progressBar.setStringPainted(true);
 		window.add(progressBar, BorderLayout.SOUTH);
 	}
@@ -162,6 +160,7 @@ public class ConversionSvgApplication extends GUIApplicationImpl<JFrame> {
 								.openInWebBrowser("https://github.com/erichschroeter/conversionsvg");
 					}
 				}, CommandButtonKind.ACTION_ONLY);
+		github.setDescriptionText("The source code for Conversion SVG");
 		RibbonApplicationMenuEntrySecondary inkscape = new RibbonApplicationMenuEntrySecondary(
 				Utils.resizableIcon(R.png("Inkscape.png")), "Inkscape",
 				new ActionListener() {
@@ -172,6 +171,7 @@ public class ConversionSvgApplication extends GUIApplicationImpl<JFrame> {
 								.openInWebBrowser("http://www.inkscape.org/");
 					}
 				}, CommandButtonKind.ACTION_ONLY);
+		inkscape.setDescriptionText("Required by this Conversion SVG");
 		RibbonApplicationMenuEntrySecondary sourceforge = new RibbonApplicationMenuEntrySecondary(
 				Utils.resizableIcon(R.png("sourceforge.png")), "Sourceforge",
 				new ActionListener() {
@@ -182,6 +182,8 @@ public class ConversionSvgApplication extends GUIApplicationImpl<JFrame> {
 								.openInWebBrowser("http://sourceforge.net/projects/conversionsvg/");
 					}
 				}, CommandButtonKind.ACTION_ONLY);
+		sourceforge
+				.setDescriptionText("The original project started by metalke64");
 		RibbonApplicationMenuEntryPrimary websites = new RibbonApplicationMenuEntryPrimary(
 				Utils.resizableIcon(R.png("websites-menu-item.png")),
 				"Websites", null, CommandButtonKind.POPUP_ONLY);
