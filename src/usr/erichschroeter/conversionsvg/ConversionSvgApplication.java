@@ -37,6 +37,7 @@ import org.pushingpixels.flamingo.api.ribbon.resize.RibbonBandResizePolicy;
 import usr.erichschroeter.applib.GUIApplicationImpl;
 import usr.erichschroeter.conversionsvg.util.R;
 import usr.erichschroeter.conversionsvg.util.Utils;
+import usr.erichschroeter.jpreferences.PreferenceDialog;
 
 /**
  * The <code>ConversionSvgApplication</code> is a Java application that allows
@@ -78,17 +79,43 @@ public class ConversionSvgApplication extends GUIApplicationImpl<JFrame> {
 	}
 
 	@Override
-	protected void installApplicationPreferences(Preferences preferences) {
-		super.installApplicationPreferences(preferences);
-		Preferences p = preferences.node("Inkscape");
-		p.put("inkscape.location", "");
-		p.putInt("thread_pool.core_size", 10);
-		p.putInt("thread_pool.max_size", 20);
-		p.putInt("thread_pool.keep_alive_time", 10);
-		p.putInt("inkscape.export_width", 16);
-		p.putInt("inkscape.export_height", 16);
-		p.put("inkscape.export_color", "#00FFFFFF");
-		p.put("last_root", System.getProperty("user.home"));
+	protected void installApplicationPreferences(Preferences p) {
+		super.installApplicationPreferences(p);
+		if (p.getInt("thread_pool.max_size", -1) < 1) {
+			p.putInt("thread_pool.max_size", 20);
+		}
+		int maxPoolSize = p.getInt("thread_pool.max_size", 20);
+		int corePoolSize = p.getInt("thread_pool.core_size", -1);
+		if (corePoolSize < 0 || corePoolSize >= maxPoolSize) {
+			p.putInt("thread_pool.core_size", 0);
+		}
+		if (p.getInt("thread_pool.keep_alive_time", -1) < 0) {
+			p.putInt("thread_pool.keep_alive_time", 2000);
+		}
+		if (p.get("location.root", null) == null) {
+			p.put("location.root", System.getProperty("user.home"));
+		}
+		if (p.get("location.single", null) == null) {
+			p.put("location.single", "");
+		}
+		Preferences ink = p.node("Inkscape");
+		if (ink.get("inkscape.location", null) == null) {
+			ink.put("inkscape.location", "");
+		}
+		if (ink.getInt("inkscape.export_width", 0) < 1) {
+			ink.putInt("inkscape.export_width", 16);
+		}
+		if (ink.getInt("inkscape.export_height", 0) < 1) {
+			ink.putInt("inkscape.export_height", 16);
+		}
+		if (ink.get("inkscape.export_color", null) == null) {
+			ink.put("inkscape.export_color", "#00FFFFFF");
+		}
+		boolean page = ink.getBoolean("inkscape.export_page", false);
+		boolean drawing = ink.getBoolean("inkscape.export_drawing", false);
+		if (!page && !drawing) {
+			ink.putBoolean("inkscape.export_page", true);
+		}
 	}
 
 	@Override
@@ -196,6 +223,20 @@ public class ConversionSvgApplication extends GUIApplicationImpl<JFrame> {
 		menu.addMenuEntry(new RibbonApplicationMenuEntryPrimary(null, "", null,
 				CommandButtonKind.ACTION_ONLY));
 
+		RibbonApplicationMenuEntryPrimary preferences = new RibbonApplicationMenuEntryPrimary(
+				Utils.resizableIcon(R.png("preferences.png")), "Preferences",
+				new ActionListener() {
+
+					@Override
+					public void actionPerformed(ActionEvent arg0) {
+						PreferenceDialog d = new PreferenceDialog(
+								getApplicationWindow(),
+								getApplicationPreferences());
+						d.setVisible(true);
+					}
+				}, CommandButtonKind.ACTION_ONLY);
+		menu.addMenuEntry(preferences);
+
 		RibbonApplicationMenuEntryFooter exit = new RibbonApplicationMenuEntryFooter(
 				Utils.resizableIcon(R.png("system-log-out.png")), "Exit",
 				new ActionListener() {
@@ -302,6 +343,11 @@ public class ConversionSvgApplication extends GUIApplicationImpl<JFrame> {
 	@Override
 	protected JFrame createApplicationWindow() {
 		return new JFrame(String.format("Conversion SVG (%s)", getVersion()));
+	}
+
+	@Override
+	public Preferences getApplicationPreferences() {
+		return super.getApplicationPreferences("Conversion SVG");
 	}
 
 	@Override

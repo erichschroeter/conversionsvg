@@ -32,6 +32,8 @@ import javax.swing.JSpinner;
 import javax.swing.JSplitPane;
 import javax.swing.JTextField;
 import javax.swing.SpinnerNumberModel;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.text.BadLocationException;
@@ -186,10 +188,58 @@ public class OptionsView extends JPanel {
 		JPanel p = new JPanel();
 		GroupLayout layout = new GroupLayout(p);
 
-		pngCheckBox = new JCheckBox(".PNG", true);
+		pngCheckBox = new JCheckBox(".PNG");
 		psCheckBox = new JCheckBox(".PS");
 		epsCheckBox = new JCheckBox(".EPS");
 		pdfCheckBox = new JCheckBox(".PDF");
+
+		pngCheckBox.addChangeListener(new ChangeListener() {
+
+			@Override
+			public void stateChanged(ChangeEvent arg0) {
+				app.getApplicationPreferences("Inkscape").putBoolean(
+						"inkscape.export_png", pngCheckBox.isSelected());
+			}
+		});
+		psCheckBox.addChangeListener(new ChangeListener() {
+
+			@Override
+			public void stateChanged(ChangeEvent arg0) {
+				app.getApplicationPreferences("Inkscape").putBoolean(
+						"inkscape.export_ps", psCheckBox.isSelected());
+			}
+		});
+		epsCheckBox.addChangeListener(new ChangeListener() {
+
+			@Override
+			public void stateChanged(ChangeEvent arg0) {
+				app.getApplicationPreferences("Inkscape").putBoolean(
+						"inkscape.export_eps", epsCheckBox.isSelected());
+			}
+		});
+		pdfCheckBox.addChangeListener(new ChangeListener() {
+
+			@Override
+			public void stateChanged(ChangeEvent arg0) {
+				app.getApplicationPreferences("Inkscape").putBoolean(
+						"inkscape.export_pdf", pdfCheckBox.isSelected());
+			}
+		});
+
+		pngCheckBox.setSelected(app.getApplicationPreferences("Inkscape")
+				.getBoolean("inkscape.export_png", false));
+		psCheckBox.setSelected(app.getApplicationPreferences("Inkscape")
+				.getBoolean("inkscape.export_ps", false));
+		epsCheckBox.setSelected(app.getApplicationPreferences("Inkscape")
+				.getBoolean("inkscape.export_eps", false));
+		pdfCheckBox.setSelected(app.getApplicationPreferences("Inkscape")
+				.getBoolean("inkscape.export_pdf", false));
+
+		// set default selection if none are selected
+		if (!pngCheckBox.isSelected() && !psCheckBox.isSelected()
+				&& !epsCheckBox.isSelected() && !pdfCheckBox.isSelected()) {
+			pngCheckBox.setSelected(true);
+		}
 
 		layout.setHorizontalGroup(layout
 				.createSequentialGroup()
@@ -234,13 +284,40 @@ public class OptionsView extends JPanel {
 	protected void installArea(JPanel panel) {
 		JPanel p = new JPanel(new FlowLayout(FlowLayout.LEFT));
 
-		pageRadioButton = new JRadioButton(i18ln.getString("PageRadioButton"),
-				true);
+		pageRadioButton = new JRadioButton(i18ln.getString("PageRadioButton"));
 		pageRadioButton.setToolTipText("Exported area is the entire page");
 		drawingRadioButton = new JRadioButton(
 				i18ln.getString("DrawingRadioButton"));
 		drawingRadioButton
 				.setToolTipText("Exported area is the entire drawing (not page)");
+
+		pageRadioButton.addChangeListener(new ChangeListener() {
+
+			@Override
+			public void stateChanged(ChangeEvent e) {
+				app.getApplicationPreferences("Inkscape").putBoolean(
+						"inkscape.export_page", pageRadioButton.isSelected());
+			}
+		});
+		drawingRadioButton.addChangeListener(new ChangeListener() {
+
+			@Override
+			public void stateChanged(ChangeEvent e) {
+				app.getApplicationPreferences("Inkscape").putBoolean(
+						"inkscape.export_drawing",
+						drawingRadioButton.isSelected());
+			}
+		});
+
+		// set a default selection if neither are selected
+		drawingRadioButton.setSelected(app
+				.getApplicationPreferences("Inkscape").getBoolean(
+						"inkscape.export_drawing", false));
+		pageRadioButton.setSelected(app.getApplicationPreferences("Inkscape")
+				.getBoolean("inkscape.export_page", false));
+		if (!drawingRadioButton.isSelected() && !pageRadioButton.isSelected()) {
+			pageRadioButton.setSelected(true);
+		}
 
 		ButtonGroup group = new ButtonGroup();
 		group.add(pageRadioButton);
@@ -267,10 +344,12 @@ public class OptionsView extends JPanel {
 		JLabel widthLabel = new JLabel(i18ln.getString("WidthTextField"));
 		widthLabel.setToolTipText("Width of the exported image");
 
-		heightSpinner = new JSpinner(new SpinnerNumberModel(16, 1,
-				Integer.MAX_VALUE, 1));
-		widthSpinner = new JSpinner(new SpinnerNumberModel(16, 1,
-				Integer.MAX_VALUE, 1));
+		heightSpinner = new JSpinner(new SpinnerNumberModel(app
+				.getApplicationPreferences("Inkscape").getInt(
+						"inkscape.export_height", 16), 1, Integer.MAX_VALUE, 1));
+		widthSpinner = new JSpinner(new SpinnerNumberModel(app
+				.getApplicationPreferences("Inkscape").getInt(
+						"inkscape.export_width", 16), 1, Integer.MAX_VALUE, 1));
 
 		String[] units = { "px", "mm" };
 		JComboBox unitComboBox = new JComboBox(units);
@@ -357,7 +436,8 @@ public class OptionsView extends JPanel {
 		final Vector<FileFilter> filters = new Vector<FileFilter>(
 				Arrays.asList(heirarchy_filters));
 		/** The root directory for the {@link #fileHeirarchy}. */
-		rootDirectory = new File(System.getProperty("user.home"));
+		rootDirectory = new File(app.getApplicationPreferences().get(
+				"location.root", System.getProperty("user.home")));
 
 		// Tree Hierarchy
 		FileSystemTreeModel model = new FileSystemTreeModel(rootDirectory,
@@ -394,6 +474,11 @@ public class OptionsView extends JPanel {
 								rootDirectory = newRoot;
 								changeRootDirectory(fileHeirarchy,
 										rootDirectory);
+								System.out.printf("root: <%s>%n",
+										rootDirectory.getAbsolutePath());
+								app.getApplicationPreferences().put(
+										"location.root",
+										rootDirectory.getAbsolutePath());
 							}
 						} catch (BadLocationException e1) {
 							e1.printStackTrace();
@@ -410,10 +495,15 @@ public class OptionsView extends JPanel {
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
+				chooser.setCurrentDirectory(new File(app
+						.getApplicationPreferences().get("location.root",
+								System.getProperty("user.home"))));
 				if (chooser.showOpenDialog(OptionsView.this) == JFileChooser.APPROVE_OPTION
 						&& chooser.getSelectedFile().isDirectory()) {
-					rootDirectoryTextField.setText(chooser.getSelectedFile()
-							.getAbsolutePath());
+					File file = chooser.getSelectedFile();
+					app.getApplicationPreferences().put("location.root",
+							file.getAbsolutePath());
+					rootDirectoryTextField.setText(file.getAbsolutePath());
 				}
 			}
 		});
@@ -454,6 +544,8 @@ public class OptionsView extends JPanel {
 				.addActionListener(outputLocationChangeListener);
 
 		outputDirectoryTextField = new JTextField();
+		outputDirectoryTextField.setText(app.getApplicationPreferences().get(
+				"location.single", ""));
 		outputDirectoryTextField.getDocument().addDocumentListener(
 				new DocumentListener() {
 
