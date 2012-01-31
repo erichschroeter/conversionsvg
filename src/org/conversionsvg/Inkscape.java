@@ -158,8 +158,12 @@ public final class Inkscape {
 		String os = System.getProperty("os.name").toLowerCase();
 		if (os.contains("linux")) {
 			executable = new File("/usr/bin/inkscape");
-		} else if (os.contains("windows")) {
+		} else if (os.contains("Windows") || os.contains("windows")) {
 			executable = new File("C:/Program Files/Inkscape/inkscape.exe");
+			if (!executable.exists()) {
+				executable = new File(
+						"C:/Program Files (x86)/Inkscape/inkscape.exe");
+			}
 		} else {
 			// TODO handle Apple Inc. or platform independent
 		}

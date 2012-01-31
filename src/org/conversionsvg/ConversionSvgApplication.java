@@ -1,42 +1,36 @@
 package org.conversionsvg;
 
 import java.awt.BorderLayout;
-import java.awt.Desktop;
-import java.awt.Dimension;
-import java.awt.Point;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
-import java.io.File;
 import java.io.IOException;
-import java.net.URI;
+import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.PriorityBlockingQueue;
+import java.util.Properties;
+import java.util.Vector;
 import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 import java.util.prefs.Preferences;
 
-import javax.swing.ImageIcon;
 import javax.swing.JFrame;
-import javax.swing.SwingUtilities;
-import javax.swing.UIManager;
 
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.CommandLineParser;
-import org.apache.commons.cli.GnuParser;
-import org.apache.commons.cli.Options;
-import org.apache.commons.cli.ParseException;
-import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Logger;
-import org.apache.log4j.xml.DOMConfigurator;
-import org.conversionsvg.util.Helpers;
-import org.javamvc.GUIApplication;
-import org.pushingpixels.flamingo.api.common.RichTooltip;
+import org.conversionsvg.util.R;
+import org.conversionsvg.util.Utils;
+import org.pushingpixels.flamingo.api.common.JCommandButton;
 import org.pushingpixels.flamingo.api.common.JCommandButton.CommandButtonKind;
-import org.pushingpixels.flamingo.api.common.icon.EmptyResizableIcon;
+import org.pushingpixels.flamingo.api.common.RichTooltip;
 import org.pushingpixels.flamingo.api.ribbon.JRibbon;
-import org.pushingpixels.flamingo.api.ribbon.RibbonFactory;
+import org.pushingpixels.flamingo.api.ribbon.JRibbonBand;
+import org.pushingpixels.flamingo.api.ribbon.RibbonApplicationMenu;
+import org.pushingpixels.flamingo.api.ribbon.RibbonApplicationMenuEntryFooter;
+import org.pushingpixels.flamingo.api.ribbon.RibbonApplicationMenuEntryPrimary;
+import org.pushingpixels.flamingo.api.ribbon.RibbonApplicationMenuEntrySecondary;
+import org.pushingpixels.flamingo.api.ribbon.RibbonElementPriority;
+import org.pushingpixels.flamingo.api.ribbon.RibbonTask;
+import org.pushingpixels.flamingo.api.ribbon.resize.CoreRibbonResizePolicies;
+import org.pushingpixels.flamingo.api.ribbon.resize.RibbonBandResizePolicy;
+
+import usr.erichschroeter.applib.GUIApplicationImpl;
 
 /**
  * The <code>ConversionSvgApplication</code> is a Java application that allows
@@ -51,36 +45,29 @@ import org.pushingpixels.flamingo.api.ribbon.RibbonFactory;
  * 
  * @author Erich Schroeter
  */
-public class ConversionSvgApplication extends GUIApplication implements
-		ConversionSvgPreferences, ConversionSvgOptions {
+public class ConversionSvgApplication extends GUIApplicationImpl<JFrame>
+		implements ConversionSvgPreferences, ConversionSvgOptions {
 
 	static final Logger logger = Logger
 			.getLogger(ConversionSvgApplication.class);
 
-	/** The ribbon used by this application */
-	private JRibbon applicationRibbon;
 	/** Handles starting the threads in the thread pool */
 	private ThreadPoolExecutor threadPool;
-	/** The view allowing the user to customize options. */
-	private OptionsView optionsView;
+	private OptionsView view;
 
 	/**
 	 * Constructs a default <code>ConversionSvgApplication</code>, disabling the
 	 * menubars and toolbars in favor of using a {@link JRibbon}.
 	 */
 	public ConversionSvgApplication() {
-		super(new JFrame());
-		setApplicationIcon(new ImageIcon(ConversionSvgApplication.class
-				.getClassLoader().getResource("images/convert.png")));
+		super();
+		setSavePreferencesOnExit(true);
 	}
 
 	@Override
-	protected void installApplicationPreferences() {
-		super.installApplicationPreferences();
-		Preferences p = getApplicationPreferences();
-		p.putInt("window.size.width", 650);
-		p.putInt("window.size.height", 700);
-
+	protected void installApplicationPreferences(Preferences preferences) {
+		super.installApplicationPreferences(preferences);
+		Preferences p = preferences.node("Inkscape");
 		p.put("inkscape.location", "");
 		p.putInt("thread_pool.core_size", 10);
 		p.putInt("thread_pool.max_size", 20);
@@ -92,52 +79,24 @@ public class ConversionSvgApplication extends GUIApplication implements
 	}
 
 	@Override
-	protected void initializeWindow() {
-		super.initializeWindow();
-		JFrame frame = (JFrame) getApplicationWindow();
-		frame.setTitle("Conversion SVG (beta)");
-		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		// a window listener must be implemented to call
-		// DesktopApplication.exit() in order for our overridden exit() method
-		// to be called and save our preferences
-		frame.addWindowListener(new WindowAdapter() {
-			@Override
-			public void windowClosing(WindowEvent e) {
-				exit();
-			}
+	protected void initializeWindow(JFrame window) {
+		super.initializeWindow(window);
+		window.setIconImages(Arrays.asList(
+				usr.erichschroeter.applib.utils.Utils
+						.iconToImage(usr.erichschroeter.applib.utils.Utils
+								.imageIcon(R.png("conversionsvg-16x16.png"))),
+				usr.erichschroeter.applib.utils.Utils
+						.iconToImage(usr.erichschroeter.applib.utils.Utils
+								.imageIcon(R.png("conversionsvg-24x24.png"))),
+				usr.erichschroeter.applib.utils.Utils
+						.iconToImage(usr.erichschroeter.applib.utils.Utils
+								.imageIcon(R.png("conversionsvg-32x32.png"))),
+				usr.erichschroeter.applib.utils.Utils
+						.iconToImage(usr.erichschroeter.applib.utils.Utils
+								.imageIcon(R.png("conversionsvg-48x48.png")))));
 
-			@Override
-			public void windowClosed(WindowEvent e) {
-				exit();
-			}
-		});
-
-		// initialize the command builder for the OptionsView
-		// setInkscapeCommand(new InkscapeCommandBuilder());
-
-		// initialize and install the ribbon
-		setApplicationRibbon(createApplicationRibbon());
-		getApplicationWindow().add(getApplicationRibbon(), BorderLayout.NORTH);
-
-		// create and install the view
-		getApplicationWindow().add(optionsView = new OptionsView(this),
-				BorderLayout.CENTER);
-
-		frame.pack();
-	}
-
-	@Override
-	public String getVersion() {
-		return "1.0.0";
-	}
-
-	/**
-	 * Returns the ribbon used by this application.
-	 * 
-	 * @return the ribbon
-	 */
-	public JRibbon getApplicationRibbon() {
-		return applicationRibbon;
+		view = new OptionsView(this);
+		window.add(view, BorderLayout.CENTER);
 	}
 
 	/**
@@ -146,8 +105,9 @@ public class ConversionSvgApplication extends GUIApplication implements
 	 * @param applicationRibbon
 	 *            the ribbon
 	 */
-	public void setApplicationRibbon(JRibbon applicationRibbon) {
-		this.applicationRibbon = applicationRibbon;
+	public void installApplicationRibbon(JRibbon applicationRibbon) {
+		getApplicationWindow().getContentPane().add(applicationRibbon,
+				BorderLayout.NORTH);
 	}
 
 	/**
@@ -155,51 +115,61 @@ public class ConversionSvgApplication extends GUIApplication implements
 	 * 
 	 * @return the application ribbon
 	 */
-	protected JRibbon createApplicationRibbon() {
-		RibbonFactory ribbon = new RibbonFactory()
-				.withHelp(new ActionListener() {
-
-					@Override
-					public void actionPerformed(ActionEvent arg0) {
-						openInBrowser("http://www.google.com");
-					}
-				});
-
-		ribbon.newSubMenuGroup();
-		ribbon.addSubMenuItem("Erich Schroeter Github", Helpers
-				.getResizableIconFromResource("images/github.png"),
+	public JRibbon createApplicationRibbon() {
+		JRibbon r = new JRibbon(Utils.resizableIcon(R
+				.png("conversion-48x48.png")));
+		r.configureHelp(Utils.resizableIcon(R.png("conversion-48x48.png")),
 				new ActionListener() {
 
 					@Override
 					public void actionPerformed(ActionEvent arg0) {
-						openInBrowser("https://github.com/erichschroeter/conversionsvg");
+						usr.erichschroeter.applib.utils.Utils
+								.openInWebBrowser("http://www.google.com");
 					}
 				});
-		ribbon.addSubMenuItem("Powered by JIDE", new EmptyResizableIcon(16),
+		return r;
+	}
+
+	public RibbonApplicationMenu createApplicationRibbonMenu() {
+		RibbonApplicationMenu menu = new RibbonApplicationMenu();
+
+		RibbonApplicationMenuEntrySecondary github = new RibbonApplicationMenuEntrySecondary(
+				Utils.resizableIcon(R.png("github.png")), "Github",
 				new ActionListener() {
 
 					@Override
 					public void actionPerformed(ActionEvent arg0) {
-						openInBrowser("http://www.jidesoft.com/");
+						usr.erichschroeter.applib.utils.Utils
+								.openInWebBrowser("https://github.com/erichschroeter/conversionsvg");
 					}
-				});
-		ribbon.addSubMenuItem("Original SourceForge Project", Helpers
-				.getResizableIconFromResource("images/sourceforge.png"),
+				}, CommandButtonKind.POPUP_ONLY);
+		RibbonApplicationMenuEntrySecondary jide = new RibbonApplicationMenuEntrySecondary(
+				Utils.resizableIcon(R.png("websites-menu-item.png")), "JIDE",
 				new ActionListener() {
 
 					@Override
 					public void actionPerformed(ActionEvent arg0) {
-						openInBrowser("http://sourceforge.net/projects/conversionsvg/");
+						usr.erichschroeter.applib.utils.Utils
+								.openInWebBrowser("http://www.jidesoft.com/");
 					}
-				});
-		ribbon.addMenuItem("Websites", Helpers
-				.getResizableIconFromResource("images/websites-menu-item.png"),
+				}, CommandButtonKind.POPUP_ONLY);
+		RibbonApplicationMenuEntrySecondary sourceforge = new RibbonApplicationMenuEntrySecondary(
+				Utils.resizableIcon(R.png("websites-menu-item.png")),
+				"Sourceforge", new ActionListener() {
+
+					@Override
+					public void actionPerformed(ActionEvent arg0) {
+						usr.erichschroeter.applib.utils.Utils
+								.openInWebBrowser("http://sourceforge.net/projects/conversionsvg/");
+					}
+				}, CommandButtonKind.POPUP_ONLY);
+		RibbonApplicationMenuEntryPrimary websites = new RibbonApplicationMenuEntryPrimary(
+				Utils.resizableIcon(R.png("erichschroeter.png")), "Websites",
 				null, CommandButtonKind.POPUP_ONLY);
-		ribbon.addMenuItem("");
-		ribbon.addMenuItem("");
-		ribbon.addMenuItem("");
-		ribbon.addFooterMenuItem("Exit", Helpers
-				.getResizableIconFromResource("images/system-log-out.png"),
+		websites.addSecondaryMenuGroup("", github, jide, sourceforge);
+
+		RibbonApplicationMenuEntryFooter exit = new RibbonApplicationMenuEntryFooter(
+				Utils.resizableIcon(R.png("system-log-out.png")), "Exit",
 				new ActionListener() {
 
 					@Override
@@ -207,59 +177,55 @@ public class ConversionSvgApplication extends GUIApplication implements
 						exit(0);
 					}
 				});
-		ribbon.withMenu(Helpers
-				.getResizableIconFromResource("images/convert.png"));
+		menu.addFooterEntry(exit);
 
-		ribbon.addButtonTypeAction("Convert", Helpers
-				.getResizableIconFromResource("images/convert.png"),
-				new ActionListener() {
-
-					@Override
-					public void actionPerformed(ActionEvent e) {
-						List<InkscapeCommand> commands = optionsView
-								.getInkscapeCommands();
-
-						// TODO convert and push to thread pool
-						Process process;
-						for (InkscapeCommand command : commands) {
-							try {
-								// Execute the command
-								process = new ProcessBuilder(command
-										.getCommand()).start();
-								process.waitFor();
-							} catch (IOException e1) {
-								logger.error(e1.getMessage());
-							} catch (InterruptedException e1) {
-								logger.error(e1.getMessage());
-							}
-						}
-					}
-				}, new RichTooltip("Convert SVG Images",
-						"This will begin the conversion activity to use "
-								+ "Inkscape to convert the selected SVG "
-								+ "images using the specified options."));
-		ribbon.addBand("Controls");
-		ribbon.addTask("Home");
-
-		return ribbon.getRibbon();
+		return menu;
 	}
 
-	/**
-	 * Handles opening the <code>url</code> in the default web browser.
-	 * 
-	 * @param url
-	 *            a valid website address
-	 * @return <code>false</code> if an IOException occurs when creating a
-	 *         {@link URI} instance with <code>url</code>, else
-	 *         <code>true</code>
-	 */
-	public static boolean openInBrowser(String url) {
-		try {
-			Desktop.getDesktop().browse(URI.create(url));
-		} catch (IOException e1) {
-			return false;
-		}
-		return true;
+	public RibbonTask[] createApplicationRibbonTasks() {
+		JCommandButton convert = new JCommandButton("Convert",
+				Utils.resizableIcon(R.png("convert.png")));
+		convert.setFlat(false);
+		convert.setCommandButtonKind(CommandButtonKind.ACTION_ONLY);
+		convert.setActionRichTooltip(new RichTooltip("Convert SVG Images",
+				"This will begin the conversion activity to use "
+						+ "Inkscape to convert the selected SVG "
+						+ "images using the specified options."));
+		convert.addActionListener(new ActionListener() {
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				List<InkscapeCommand> commands = view.getInkscapeCommands();
+
+				// TODO convert and push to thread pool
+				Process process;
+				for (InkscapeCommand command : commands) {
+					try {
+						// Execute the command
+						process = new ProcessBuilder(command.getCommand())
+								.start();
+						process.waitFor();
+					} catch (IOException e1) {
+						logger.error(e1.getMessage());
+					} catch (InterruptedException e1) {
+						logger.error(e1.getMessage());
+					}
+				}
+			}
+		});
+
+		JRibbonBand control = new JRibbonBand("Controls", Utils.resizableIcon(R
+				.png("control.png")));
+		control.setResizePolicies(new Vector<RibbonBandResizePolicy>(Arrays
+				.asList(new CoreRibbonResizePolicies.Mirror(control
+						.getControlPanel()),
+						new CoreRibbonResizePolicies.Mid2Low(control
+								.getControlPanel()))));
+		control.addCommandButton(convert, RibbonElementPriority.TOP);
+
+		RibbonTask home = new RibbonTask("Home", control);
+
+		return new RibbonTask[] { home };
 	}
 
 	/**
@@ -282,101 +248,24 @@ public class ConversionSvgApplication extends GUIApplication implements
 	}
 
 	@Override
-	public void run(String[] args) {
-
-		CommandLineParser parser = new GnuParser();
-		Options options = new Options();
-		options.addOption(OPTION_INKSCAPE_LOCATION);
-
-		try {
-			CommandLine cmd = parser.parse(options, args);
-			if (cmd.hasOption(SWITCH_INKSCAPE_LOCATION)) {
-				Inkscape.setExecutable((File) cmd
-						.getOptionObject(SWITCH_INKSCAPE_LOCATION));
-			} else {
-				Inkscape.setExecutable(Inkscape.findExecutable());
-			}
-		} catch (ParseException e) {
-			logger.error(e.getMessage());
-			e.printStackTrace();
-		}
-
-		// install the preference values
-		int width = getApplicationPreferences()
-				.getInt("window.size.width", 600);
-		int height = getApplicationPreferences().getInt("window.size.height",
-				350);
-		int x = getApplicationPreferences().getInt("window.location.x", 100);
-		int y = getApplicationPreferences().getInt("window.location.y", 100);
-
-		getApplicationWindow().setPreferredSize(new Dimension(width, height));
-		getApplicationWindow().setLocation(new Point(x, y));
-
-		// initialize the thread pool
-		int corePoolSize = getApplicationPreferences().getInt(
-				"thread_pool.core_size", 10);
-		int maximumPoolSize = getApplicationPreferences().getInt(
-				"thread_pool.max_size", 20);
-		int keepAliveTime = getApplicationPreferences().getInt(
-				"thread_pool.keep_alive_time", 10);
-		// The thread pool used to start Inkscape processes
-		PriorityBlockingQueue<Runnable> queue = new PriorityBlockingQueue<Runnable>(
-				corePoolSize);
-		setThreadPool(new ThreadPoolExecutor(corePoolSize, maximumPoolSize,
-				keepAliveTime, TimeUnit.SECONDS, queue));
-
-		getApplicationWindow().setVisible(true);
-
+	protected JFrame createApplicationWindow() {
+		return new JFrame("Conversion SVG (beta)");
 	}
 
-	/**
-	 * Handles verifying the <em>JIDE</em> license information, configuring
-	 * <em>log4j</em>, and starting the {@link ConversionSvgApplication} passing
-	 * the remaining command line arguments that have not been used.
-	 * 
-	 * @param args
-	 *            command line arguments
-	 * @throws ParseException
-	 *             if there is an error parsing the command line options
-	 */
-	public static void main(String[] args) throws ParseException {
-		// license to use JIDE software (JDAF, Grids, Components, etc)
-		// com.jidesoft.utils.Lm.verifyLicense("Erich Schroeter",
-		// "ConversionSVG",
-		// "3.99ekleZZE3EXVgbI0hck9kXuHYXJh2");
-
-		CommandLineParser parser = new GnuParser();
-		Options options = new Options();
-		options.addOption(OPTION_LOG4J);
-		options.addOption(OPTION_BATCH_MODE);
-
-		CommandLine cmd = parser.parse(options, args);
-
-		if (cmd.hasOption(SWITCH_LOG4J)) {
-			DOMConfigurator.configure(cmd.getOptionValue(SWITCH_LOG4J));
-		} else {
-			BasicConfigurator.configure();
+	@Override
+	public String getVersion() {
+		Properties p = new Properties();
+		try {
+			p.load(ConversionSvgApplication.class
+					.getClassLoader()
+					.getResourceAsStream(
+							"usr/erichschroeter/conversionsvg/build.properties"));
+		} catch (IOException e) {
+			e.printStackTrace();
 		}
-
-		if (cmd.hasOption(SWITCH_BATCH_MODE)) {
-			// TODO implement batch mode
-		} else {
-			final String[] remainingArgs = cmd.getArgs();
-			SwingUtilities.invokeLater(new Runnable() {
-				public void run() {
-					try {
-						UIManager.setLookAndFeel(UIManager
-								.getSystemLookAndFeelClassName());
-					} catch (Exception exception) {
-						exception.printStackTrace();
-					}
-
-					ConversionSvgApplication app = new ConversionSvgApplication();
-					app.run(remainingArgs);
-
-				}
-			});
-		}
+		return String.format("%s.%s.%s", p.getProperty("build.major", "0"),
+				p.getProperty("build.minor", "0"),
+				p.getProperty("build.revision", "0"));
 	}
 
 }

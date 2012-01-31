@@ -41,8 +41,6 @@ import net.sf.fstreem.FileSystemTreeModel;
 import net.sf.fstreem.FileSystemTreeNode;
 
 import org.conversionsvg.gui.filters.SVGFilter;
-import org.javamvc.GUIApplication;
-import org.javamvc.View;
 
 import com.bric.swing.ColorPicker;
 import com.jidesoft.hints.FileIntelliHints;
@@ -58,10 +56,12 @@ import com.jidesoft.swing.SelectAllUtils;
  * @author Erich Schroeter
  */
 @SuppressWarnings("serial")
-public class OptionsView extends View {
+public class OptionsView extends JPanel {
 
 	static final ResourceBundle i18ln = ResourceBundle.getBundle(
 			"org.conversionsvg.gui.MainWindow", Locale.getDefault());
+
+	private ConversionSvgApplication app;
 
 	/** The split pane to hold the components for this view. */
 	private JSplitPane splitPane;
@@ -122,16 +122,13 @@ public class OptionsView extends View {
 	/**
 	 * Constructs a default <code>OptionsView</code>.
 	 */
-	public OptionsView(GUIApplication app) {
-		super(app);
+	public OptionsView(ConversionSvgApplication app) {
+		super(new BorderLayout());
+		this.app = app;
+		initializeView();
 	}
 
-	@Override
 	protected void initializeView() {
-		super.initializeView();
-		setLayout(new BorderLayout());
-		setName("views.options");
-
 		splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
 		JPanel left = new JPanel(new GridBagLayout());
 		splitPane.setLeftComponent(left);
@@ -194,20 +191,30 @@ public class OptionsView extends View {
 		epsCheckBox = new JCheckBox(".EPS");
 		pdfCheckBox = new JCheckBox(".PDF");
 
-		layout.setHorizontalGroup(layout.createSequentialGroup().addGroup(
-				layout.createParallelGroup(GroupLayout.Alignment.LEADING)
-						.addComponent(pngCheckBox).addComponent(pdfCheckBox))
+		layout.setHorizontalGroup(layout
+				.createSequentialGroup()
 				.addGroup(
 						layout.createParallelGroup(
-								GroupLayout.Alignment.LEADING).addComponent(
-								epsCheckBox).addComponent(psCheckBox)));
-		layout.setVerticalGroup(layout.createSequentialGroup().addGroup(
-				layout.createParallelGroup(GroupLayout.Alignment.LEADING)
-						.addComponent(pngCheckBox).addComponent(epsCheckBox))
+								GroupLayout.Alignment.LEADING)
+								.addComponent(pngCheckBox)
+								.addComponent(pdfCheckBox))
 				.addGroup(
 						layout.createParallelGroup(
-								GroupLayout.Alignment.LEADING).addComponent(
-								pdfCheckBox).addComponent(psCheckBox)));
+								GroupLayout.Alignment.LEADING)
+								.addComponent(epsCheckBox)
+								.addComponent(psCheckBox)));
+		layout.setVerticalGroup(layout
+				.createSequentialGroup()
+				.addGroup(
+						layout.createParallelGroup(
+								GroupLayout.Alignment.LEADING)
+								.addComponent(pngCheckBox)
+								.addComponent(epsCheckBox))
+				.addGroup(
+						layout.createParallelGroup(
+								GroupLayout.Alignment.LEADING)
+								.addComponent(pdfCheckBox)
+								.addComponent(psCheckBox)));
 		p.setLayout(layout);
 		p.setBorder(BorderFactory.createTitledBorder(i18ln
 				.getString("FormatPanel")));
@@ -230,8 +237,8 @@ public class OptionsView extends View {
 		pageRadioButton = new JRadioButton(i18ln.getString("PageRadioButton"),
 				true);
 		pageRadioButton.setToolTipText("Exported area is the entire page");
-		drawingRadioButton = new JRadioButton(i18ln
-				.getString("DrawingRadioButton"));
+		drawingRadioButton = new JRadioButton(
+				i18ln.getString("DrawingRadioButton"));
 		drawingRadioButton
 				.setToolTipText("Exported area is the entire drawing (not page)");
 
@@ -347,8 +354,8 @@ public class OptionsView extends View {
 		 * These filters filter what <i>WILL</i> be displayed (meaning if it
 		 * doesn't match one of these filters, then it won't be shown)
 		 */
-		final Vector<FileFilter> filters = new Vector<FileFilter>(Arrays
-				.asList(heirarchy_filters));
+		final Vector<FileFilter> filters = new Vector<FileFilter>(
+				Arrays.asList(heirarchy_filters));
 		/** The root directory for the {@link #fileHeirarchy}. */
 		rootDirectory = new File(System.getProperty("user.home"));
 
@@ -414,10 +421,10 @@ public class OptionsView extends View {
 		// add the output directory options
 		// - same directory as each file
 		// - a single directory
-		sameOutputDirectoryRadio = new JRadioButton(i18ln
-				.getString("SameDirectoryRadioButton"), true);
-		singleOutputDirectoryRadio = new JRadioButton(i18ln
-				.getString("SingleDirectoryRadioButton"));
+		sameOutputDirectoryRadio = new JRadioButton(
+				i18ln.getString("SameDirectoryRadioButton"), true);
+		singleOutputDirectoryRadio = new JRadioButton(
+				i18ln.getString("SingleDirectoryRadioButton"));
 
 		ButtonGroup outputDirectoryGroup = new ButtonGroup();
 		outputDirectoryGroup.add(singleOutputDirectoryRadio);
@@ -565,7 +572,7 @@ public class OptionsView extends View {
 	private void changeRootDirectory(CheckBoxTree tree, File root) {
 		try {
 			tree.setModel(new FileSystemTreeModel(root, filters));
-			getApplication().getApplicationPreferences().put(
+			app.getApplicationPreferences().put(
 					ConversionSvgApplication.KEY_LAST_ROOT,
 					rootDirectory.getAbsolutePath());
 		} catch (Exception e) {
