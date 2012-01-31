@@ -1,4 +1,4 @@
-package org.conversionsvg.util;
+package usr.erichschroeter.conversionsvg.util;
 
 /**
  * The <code>R</code> class contains methods for specifying resources.

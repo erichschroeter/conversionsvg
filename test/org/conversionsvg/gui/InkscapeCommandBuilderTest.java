@@ -8,8 +8,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Vector;
 
-import org.conversionsvg.InkscapeCommand;
-import org.conversionsvg.InkscapeCommandBuilder;
+import usr.erichschroeter.conversionsvg.InkscapeCommand;
+import usr.erichschroeter.conversionsvg.InkscapeCommandBuilder;
 
 public class InkscapeCommandBuilderTest {
 

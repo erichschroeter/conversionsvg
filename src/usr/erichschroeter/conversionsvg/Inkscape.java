@@ -1,4 +1,4 @@
-package org.conversionsvg;
+package usr.erichschroeter.conversionsvg;
 
 import java.io.File;
 

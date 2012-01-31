@@ -19,7 +19,7 @@
     along with ConversionSVG 1.0.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.conversionsvg.gui.filters;
+package usr.erichschroeter.conversionsvg.util;
 
 import java.io.File;
 import java.io.FileFilter;

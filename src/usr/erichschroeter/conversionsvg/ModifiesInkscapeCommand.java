@@ -1,4 +1,4 @@
-package org.conversionsvg;
+package usr.erichschroeter.conversionsvg;
 
 /**
  * This interface provides methods for required in order to modify the Inkscape

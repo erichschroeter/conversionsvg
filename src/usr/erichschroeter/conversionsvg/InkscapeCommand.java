@@ -1,4 +1,4 @@
-package org.conversionsvg;
+package usr.erichschroeter.conversionsvg;
 
 import java.awt.Color;
 import java.awt.Dimension;
@@ -7,7 +7,7 @@ import java.io.File;
 import java.util.List;
 import java.util.Vector;
 
-import org.conversionsvg.util.Helpers;
+import usr.erichschroeter.conversionsvg.util.Helpers;
 
 /**
  * An <code>InkscapeCommand</code> encapsulates the options and arguments passed

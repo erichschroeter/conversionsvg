@@ -1,4 +1,4 @@
-package org.conversionsvg;
+package usr.erichschroeter.conversionsvg;
 
 import java.awt.Color;
 import java.awt.Dimension;
@@ -8,7 +8,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Vector;
 
-import org.conversionsvg.util.Helpers;
+import usr.erichschroeter.conversionsvg.util.Helpers;
 
 /**
  * The <code>InkscapeCommandBuilder</code> implements the <a

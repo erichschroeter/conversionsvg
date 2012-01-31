@@ -1,4 +1,4 @@
-package org.conversionsvg;
+package usr.erichschroeter.conversionsvg;
 
 import java.awt.BorderLayout;
 import java.awt.event.ActionEvent;
@@ -14,8 +14,6 @@ import java.util.prefs.Preferences;
 import javax.swing.JFrame;
 
 import org.apache.log4j.Logger;
-import org.conversionsvg.util.R;
-import org.conversionsvg.util.Utils;
 import org.pushingpixels.flamingo.api.common.JCommandButton;
 import org.pushingpixels.flamingo.api.common.JCommandButton.CommandButtonKind;
 import org.pushingpixels.flamingo.api.common.RichTooltip;
@@ -31,6 +29,8 @@ import org.pushingpixels.flamingo.api.ribbon.resize.CoreRibbonResizePolicies;
 import org.pushingpixels.flamingo.api.ribbon.resize.RibbonBandResizePolicy;
 
 import usr.erichschroeter.applib.GUIApplicationImpl;
+import usr.erichschroeter.conversionsvg.util.R;
+import usr.erichschroeter.conversionsvg.util.Utils;
 
 /**
  * The <code>ConversionSvgApplication</code> is a Java application that allows

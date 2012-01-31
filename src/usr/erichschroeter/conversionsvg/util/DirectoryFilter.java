@@ -1,4 +1,4 @@
-package org.conversionsvg.gui.filters;
+package usr.erichschroeter.conversionsvg.util;
 
 import java.io.File;
 import java.io.FileFilter;

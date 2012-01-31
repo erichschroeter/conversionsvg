@@ -1,4 +1,4 @@
-package org.conversionsvg.util;
+package usr.erichschroeter.conversionsvg.util;
 
 import java.awt.Dimension;
 

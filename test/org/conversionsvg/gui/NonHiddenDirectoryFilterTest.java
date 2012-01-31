@@ -3,7 +3,7 @@ package org.conversionsvg.gui;
 import java.io.File;
 import java.io.IOException;
 
-import org.conversionsvg.gui.filters.NonHiddenDirectoryFilter;
+import usr.erichschroeter.conversionsvg.util.NonHiddenDirectoryFilter;
 
 
 public class NonHiddenDirectoryFilterTest extends AbstractFileSystemTestCase {

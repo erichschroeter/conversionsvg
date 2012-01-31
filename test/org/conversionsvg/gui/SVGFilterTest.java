@@ -3,7 +3,7 @@ package org.conversionsvg.gui;
 import java.io.File;
 import java.io.IOException;
 
-import org.conversionsvg.gui.filters.SVGFilter;
+import usr.erichschroeter.conversionsvg.util.SVGFilter;
 
 public class SVGFilterTest extends AbstractFileSystemTestCase {
 

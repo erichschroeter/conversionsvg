@@ -1,4 +1,4 @@
-package org.conversionsvg;
+package usr.erichschroeter.conversionsvg;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -40,7 +40,7 @@ import javax.swing.tree.TreePath;
 import net.sf.fstreem.FileSystemTreeModel;
 import net.sf.fstreem.FileSystemTreeNode;
 
-import org.conversionsvg.gui.filters.SVGFilter;
+import usr.erichschroeter.conversionsvg.util.SVGFilter;
 
 import com.bric.swing.ColorPicker;
 import com.jidesoft.hints.FileIntelliHints;
