@@ -45,8 +45,7 @@ import usr.erichschroeter.applib.GUIApplicationImpl;
  * 
  * @author Erich Schroeter
  */
-public class ConversionSvgApplication extends GUIApplicationImpl<JFrame>
-		implements ConversionSvgPreferences, ConversionSvgOptions {
+public class ConversionSvgApplication extends GUIApplicationImpl<JFrame> {
 
 	static final Logger logger = Logger
 			.getLogger(ConversionSvgApplication.class);
@@ -154,7 +153,7 @@ public class ConversionSvgApplication extends GUIApplicationImpl<JFrame>
 					}
 				}, CommandButtonKind.POPUP_ONLY);
 		RibbonApplicationMenuEntrySecondary sourceforge = new RibbonApplicationMenuEntrySecondary(
-				Utils.resizableIcon(R.png("websites-menu-item.png")),
+				Utils.resizableIcon(R.png("sourceforge.png")),
 				"Sourceforge", new ActionListener() {
 
 					@Override
@@ -164,9 +163,16 @@ public class ConversionSvgApplication extends GUIApplicationImpl<JFrame>
 					}
 				}, CommandButtonKind.POPUP_ONLY);
 		RibbonApplicationMenuEntryPrimary websites = new RibbonApplicationMenuEntryPrimary(
-				Utils.resizableIcon(R.png("erichschroeter.png")), "Websites",
-				null, CommandButtonKind.POPUP_ONLY);
+				Utils.resizableIcon(R.png("websites-menu-item.png")),
+				"Websites", null, CommandButtonKind.POPUP_ONLY);
 		websites.addSecondaryMenuGroup("", github, jide, sourceforge);
+		menu.addMenuEntry(websites);
+		menu.addMenuEntry(new RibbonApplicationMenuEntryPrimary(null, "", null,
+				CommandButtonKind.ACTION_ONLY));
+		menu.addMenuEntry(new RibbonApplicationMenuEntryPrimary(null, "", null,
+				CommandButtonKind.ACTION_ONLY));
+		menu.addMenuEntry(new RibbonApplicationMenuEntryPrimary(null, "", null,
+				CommandButtonKind.ACTION_ONLY));
 
 		RibbonApplicationMenuEntryFooter exit = new RibbonApplicationMenuEntryFooter(
 				Utils.resizableIcon(R.png("system-log-out.png")), "Exit",

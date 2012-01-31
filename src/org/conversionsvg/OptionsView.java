@@ -572,8 +572,7 @@ public class OptionsView extends JPanel {
 	private void changeRootDirectory(CheckBoxTree tree, File root) {
 		try {
 			tree.setModel(new FileSystemTreeModel(root, filters));
-			app.getApplicationPreferences().put(
-					ConversionSvgApplication.KEY_LAST_ROOT,
+			app.getApplicationPreferences().put("last_root",
 					rootDirectory.getAbsolutePath());
 		} catch (Exception e) {
 			e.printStackTrace();
