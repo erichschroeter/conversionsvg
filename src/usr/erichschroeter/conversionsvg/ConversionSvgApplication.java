@@ -1,17 +1,24 @@
 package usr.erichschroeter.conversionsvg;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
 import java.util.Vector;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.prefs.Preferences;
 
+import javax.swing.AbstractAction;
 import javax.swing.JFrame;
+import javax.swing.JProgressBar;
+import javax.swing.SwingUtilities;
 
 import org.apache.log4j.Logger;
 import org.pushingpixels.flamingo.api.common.JCommandButton;
@@ -53,6 +60,8 @@ public class ConversionSvgApplication extends GUIApplicationImpl<JFrame> {
 	/** Handles starting the threads in the thread pool */
 	private ThreadPoolExecutor threadPool;
 	private OptionsView view;
+	private JProgressBar progressBar;
+	private volatile int completed;
 
 	/**
 	 * Constructs a default <code>ConversionSvgApplication</code>, disabling the
@@ -61,6 +70,12 @@ public class ConversionSvgApplication extends GUIApplicationImpl<JFrame> {
 	public ConversionSvgApplication() {
 		super();
 		setSavePreferencesOnExit(true);
+		threadPool = new ThreadPoolExecutor(getApplicationPreferences().getInt(
+				"thread_pool.core_size", 10), getApplicationPreferences()
+				.getInt("thread_pool.max_size", 20),
+				getApplicationPreferences().getInt(
+						"thread_pool.keep_alive_time", 10),
+				TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>());
 	}
 
 	@Override
@@ -96,6 +111,11 @@ public class ConversionSvgApplication extends GUIApplicationImpl<JFrame> {
 
 		view = new OptionsView(this);
 		window.add(view, BorderLayout.CENTER);
+
+		progressBar = new JProgressBar();
+		progressBar.setForeground(Color.BLACK);
+		progressBar.setStringPainted(true);
+		window.add(progressBar, BorderLayout.SOUTH);
 	}
 
 	/**
@@ -116,8 +136,8 @@ public class ConversionSvgApplication extends GUIApplicationImpl<JFrame> {
 	 */
 	public JRibbon createApplicationRibbon() {
 		JRibbon r = new JRibbon(Utils.resizableIcon(R
-				.png("conversion-48x48.png")));
-		r.configureHelp(Utils.resizableIcon(R.png("conversion-48x48.png")),
+				.png("conversionsvg-48x48.png")));
+		r.configureHelp(Utils.resizableIcon(R.png("help.png")),
 				new ActionListener() {
 
 					@Override
@@ -153,8 +173,8 @@ public class ConversionSvgApplication extends GUIApplicationImpl<JFrame> {
 					}
 				}, CommandButtonKind.POPUP_ONLY);
 		RibbonApplicationMenuEntrySecondary sourceforge = new RibbonApplicationMenuEntrySecondary(
-				Utils.resizableIcon(R.png("sourceforge.png")),
-				"Sourceforge", new ActionListener() {
+				Utils.resizableIcon(R.png("sourceforge.png")), "Sourceforge",
+				new ActionListener() {
 
 					@Override
 					public void actionPerformed(ActionEvent arg0) {
@@ -189,6 +209,51 @@ public class ConversionSvgApplication extends GUIApplicationImpl<JFrame> {
 	}
 
 	public RibbonTask[] createApplicationRibbonTasks() {
+		@SuppressWarnings("serial")
+		AbstractAction convertAction = new AbstractAction("Convert") {
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				List<InkscapeCommand> commands = view.getInkscapeCommands();
+
+				final int max = commands.size();
+				progressBar.setValue(0);
+				progressBar.setMaximum(max);
+				// convert and push to thread pool
+				for (final InkscapeCommand command : commands) {
+					threadPool.submit(new Runnable() {
+
+						@Override
+						public void run() {
+							try {
+								// Execute the command
+								Process process = new ProcessBuilder(command
+										.getCommand()).start();
+								process.waitFor();
+
+								++completed;
+								SwingUtilities.invokeAndWait(new Runnable() {
+
+									@Override
+									public void run() {
+										progressBar.setString(String.format(
+												"%d / %d", completed, max));
+										progressBar.setValue(completed);
+									}
+								});
+							} catch (IOException e) {
+								e.printStackTrace();
+							} catch (InterruptedException e) {
+								e.printStackTrace();
+							} catch (InvocationTargetException e) {
+								e.printStackTrace();
+							}
+						}
+					});
+				}
+			}
+		};
+
 		JCommandButton convert = new JCommandButton("Convert",
 				Utils.resizableIcon(R.png("convert.png")));
 		convert.setFlat(false);
@@ -197,28 +262,7 @@ public class ConversionSvgApplication extends GUIApplicationImpl<JFrame> {
 				"This will begin the conversion activity to use "
 						+ "Inkscape to convert the selected SVG "
 						+ "images using the specified options."));
-		convert.addActionListener(new ActionListener() {
-
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				List<InkscapeCommand> commands = view.getInkscapeCommands();
-
-				// TODO convert and push to thread pool
-				Process process;
-				for (InkscapeCommand command : commands) {
-					try {
-						// Execute the command
-						process = new ProcessBuilder(command.getCommand())
-								.start();
-						process.waitFor();
-					} catch (IOException e1) {
-						logger.error(e1.getMessage());
-					} catch (InterruptedException e1) {
-						logger.error(e1.getMessage());
-					}
-				}
-			}
-		});
+		convert.addActionListener(convertAction);
 
 		JRibbonBand control = new JRibbonBand("Controls", Utils.resizableIcon(R
 				.png("control.png")));
@@ -255,7 +299,7 @@ public class ConversionSvgApplication extends GUIApplicationImpl<JFrame> {
 
 	@Override
 	protected JFrame createApplicationWindow() {
-		return new JFrame("Conversion SVG (beta)");
+		return new JFrame(String.format("Conversion SVG (%s)", getVersion()));
 	}
 
 	@Override

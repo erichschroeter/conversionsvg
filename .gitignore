@@ -1,0 +1,25 @@
+# Compiled sources
+####################
+*.class
+*.classpath
+*.project
+*.msi
+*.exe
+*.jar
+*.wixobj
+*.wixpdb
+
+# Directories
+####################
+classes/
+bin/
+tmp/
+jar/
+junit/
+
+# OS generated files
+#####################
+.DS_Store?
+ehthumbs.db
+Icon?
+Thumbs.db
