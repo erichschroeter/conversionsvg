@@ -61,7 +61,8 @@ import com.jidesoft.swing.SelectAllUtils;
 public class OptionsView extends JPanel {
 
 	static final ResourceBundle i18ln = ResourceBundle.getBundle(
-			"org.conversionsvg.gui.MainWindow", Locale.getDefault());
+			"usr.erichschroeter.conversionsvg.res.i18ln.MainWindow",
+			Locale.getDefault());
 
 	private ConversionSvgApplication app;
 
