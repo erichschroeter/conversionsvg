@@ -161,17 +161,17 @@ public class ConversionSvgApplication extends GUIApplicationImpl<JFrame> {
 						usr.erichschroeter.applib.utils.Utils
 								.openInWebBrowser("https://github.com/erichschroeter/conversionsvg");
 					}
-				}, CommandButtonKind.POPUP_ONLY);
-		RibbonApplicationMenuEntrySecondary jide = new RibbonApplicationMenuEntrySecondary(
-				Utils.resizableIcon(R.png("websites-menu-item.png")), "JIDE",
+				}, CommandButtonKind.ACTION_ONLY);
+		RibbonApplicationMenuEntrySecondary inkscape = new RibbonApplicationMenuEntrySecondary(
+				Utils.resizableIcon(R.png("Inkscape.png")), "Inkscape",
 				new ActionListener() {
 
 					@Override
 					public void actionPerformed(ActionEvent arg0) {
 						usr.erichschroeter.applib.utils.Utils
-								.openInWebBrowser("http://www.jidesoft.com/");
+								.openInWebBrowser("http://www.inkscape.org/");
 					}
-				}, CommandButtonKind.POPUP_ONLY);
+				}, CommandButtonKind.ACTION_ONLY);
 		RibbonApplicationMenuEntrySecondary sourceforge = new RibbonApplicationMenuEntrySecondary(
 				Utils.resizableIcon(R.png("sourceforge.png")), "Sourceforge",
 				new ActionListener() {
@@ -181,11 +181,11 @@ public class ConversionSvgApplication extends GUIApplicationImpl<JFrame> {
 						usr.erichschroeter.applib.utils.Utils
 								.openInWebBrowser("http://sourceforge.net/projects/conversionsvg/");
 					}
-				}, CommandButtonKind.POPUP_ONLY);
+				}, CommandButtonKind.ACTION_ONLY);
 		RibbonApplicationMenuEntryPrimary websites = new RibbonApplicationMenuEntryPrimary(
 				Utils.resizableIcon(R.png("websites-menu-item.png")),
 				"Websites", null, CommandButtonKind.POPUP_ONLY);
-		websites.addSecondaryMenuGroup("", github, jide, sourceforge);
+		websites.addSecondaryMenuGroup("", github, inkscape, sourceforge);
 		menu.addMenuEntry(websites);
 		menu.addMenuEntry(new RibbonApplicationMenuEntryPrimary(null, "", null,
 				CommandButtonKind.ACTION_ONLY));
