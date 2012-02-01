@@ -1,74 +1,11 @@
 package usr.erichschroeter.conversionsvg.util;
 
 import java.awt.Color;
-import java.awt.Dimension;
 import java.io.File;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.text.MessageFormat;
 import java.util.Locale;
 
-import org.apache.log4j.Logger;
-import org.pushingpixels.flamingo.api.common.icon.ImageWrapperResizableIcon;
-import org.pushingpixels.flamingo.api.common.icon.ResizableIcon;
-
 public class Helpers {
-
-	static final Logger logger = Logger.getLogger(Helpers.class);
-
-	/**
-	 * Returns a <code>ResizableIcon</code> from the given URL location.
-	 * <p>
-	 * Calls {@code getResizableIconFromURL(resource, new Dimension(48, 48)}
-	 * </p>
-	 * 
-	 * @see {@link #getResizableIconFromURL(String, Dimension)}
-	 * @param resource
-	 *            the location
-	 * @return a new <code>ResizableIcon</code>
-	 */
-	public static ResizableIcon getResizableIconFromURL(String resource) {
-		return getResizableIconFromURL(resource, new Dimension(48, 48));
-	}
-
-	/**
-	 * Returns a <code>ResizableIcon</code> from the given URL location.
-	 * <p>
-	 * The <i>resource</i> argument is used to create a <code>URL</code> object
-	 * which is then passed to
-	 * <code>ImageWrapperResizableIcon.getIcon(URL, Dimension)</code>
-	 * </p>
-	 * 
-	 * @param resource
-	 *            the location
-	 * @param size
-	 *            the size of the returned icon
-	 * @return a new <code>ResizableIcon</code>
-	 */
-	public static ResizableIcon getResizableIconFromURL(String resource,
-			Dimension size) {
-		URL url = null;
-		try {
-			File file = new File(resource);
-			url = file.toURI().toURL();
-		} catch (MalformedURLException e) {
-			logger.error(e.getMessage());
-			e.printStackTrace();
-		}
-		return ImageWrapperResizableIcon.getIcon(url, size);
-	}
-
-	/**
-	 * Returns a <code>ResizableIcon</code> from the given resource location.
-	 * 
-	 * @param resource
-	 *            the location
-	 * @return a new <code>ResizableIcon</code>
-	 */
-	public static ResizableIcon getResizableIconFromResource(String resource) {
-		return ImageWrapperResizableIcon.getIcon(Helpers.class.getClassLoader()
-				.getResourceAsStream(resource), new Dimension(48, 48));
-	}
 
 	/**
 	 * Returns a <code>String</code> representing the <code>Color</code>.

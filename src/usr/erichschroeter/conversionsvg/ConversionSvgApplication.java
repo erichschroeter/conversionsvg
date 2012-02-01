@@ -19,7 +19,6 @@ import javax.swing.JFrame;
 import javax.swing.JProgressBar;
 import javax.swing.SwingUtilities;
 
-import org.apache.log4j.Logger;
 import org.pushingpixels.flamingo.api.common.JCommandButton;
 import org.pushingpixels.flamingo.api.common.JCommandButton.CommandButtonKind;
 import org.pushingpixels.flamingo.api.common.RichTooltip;
@@ -53,9 +52,6 @@ import usr.erichschroeter.jpreferences.PreferenceDialog;
  * @author Erich Schroeter
  */
 public class ConversionSvgApplication extends GUIApplicationImpl<JFrame> {
-
-	static final Logger logger = Logger
-			.getLogger(ConversionSvgApplication.class);
 
 	/** Handles starting the threads in the thread pool */
 	private ThreadPoolExecutor threadPool;
