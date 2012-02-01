@@ -9,7 +9,7 @@
 	<!-- The directory where the Javadoc will be created -->
 	<property name="javadoc.location" value="javadoc" />
 	<property name="build.properties" value="src/usr/erichschroeter/conversionsvg/build.properties" />
-	<property name="main-class" value="usr.erichschroeter.conversionsvg.ConversionSvg"/>
+	<property name="main-class" value="usr.erichschroeter.conversionsvg.ConversionSvg" />
 
 	<property environment="env" />
 	<property name="ECLIPSE_HOME" value="C:/Program Files/eclipse" />
@@ -113,7 +113,8 @@
 		<!--ANT 1.7 is required -->
 		<jar destfile="${jar.location}/${ant.project.name}-${version}.jar" filesetmanifest="mergewithoutmain">
 			<manifest>
-			<attribute name="Main-class" value="${main-class}"/>
+				<attribute name="Main-class" value="${main-class}" />
+				<attribute name="Class-Path" value="." />
 			</manifest>
 			<fileset dir="bin">
 				<exclude name="test/**" />
