@@ -9,7 +9,7 @@ package usr.erichschroeter.conversionsvg.util;
 public class R {
 
 	/** The root package resources are located in. */
-	public static final String resourcePackage = "usr/erichschroeter/conversionsvg/res";
+	public static final String resourcePackage = "usr/erichschroeter/conversionsvg";
 
 	/**
 	 * Returns the resource string that refers to the <code>resource</code> file
