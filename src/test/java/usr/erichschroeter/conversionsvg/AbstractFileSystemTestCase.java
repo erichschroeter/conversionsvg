@@ -1,4 +1,4 @@
-package org.conversionsvg.gui;
+package usr.erichschroeter.conversionsvg;
 
 import junit.framework.TestCase;
 
