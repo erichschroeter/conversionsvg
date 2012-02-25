@@ -1,11 +1,15 @@
 package usr.erichschroeter.conversionsvg.util;
 
 /**
- * The <code>R</code> class contains methods for specifying resources.
+ * The <code>R</code> class contains methods for specifying resources in the
+ * <code>usr.erichschroeter.conversionsvg.res</code> package.
  * 
  * @author Erich Schroeter
  */
 public class R {
+
+	/** The root package resources are located in. */
+	public static final String resourcePackage = "usr/erichschroeter/conversionsvg/res";
 
 	/**
 	 * Returns the resource string that refers to the <code>resource</code> file
@@ -16,7 +20,7 @@ public class R {
 	 * @return the full resource string
 	 */
 	public static String png(String resource) {
-		return "usr/erichschroeter/conversionsvg/res/png/" + resource;
+		return String.format("%s/png/%s", resourcePackage, resource);
 	}
 
 	/**
@@ -28,7 +32,7 @@ public class R {
 	 * @return the full resource string
 	 */
 	public static String xsd(String resource) {
-		return "usr/erichschroeter/conversionsvg/res/xsd/" + resource;
+		return String.format("%s/xsd/%s", resourcePackage, resource);
 	}
 
 }
