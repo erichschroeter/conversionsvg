@@ -1,21 +1,21 @@
 # Compiled sources
-####################
+#####################
 *.class
 *.classpath
 *.project
-*.msi
-*.exe
-*.jar
-*.wixobj
-*.wixpdb
+*.swp
 
 # Directories
 ####################
 classes/
 bin/
+build/
 tmp/
-jar/
 junit/
+jar/
+javadoc/
+.gradle/
+.settings/
 
 # OS generated files
 #####################
