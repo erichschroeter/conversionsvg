@@ -1,72 +1,40 @@
-# conversion-svg
+# Conversion SVG
 
 ConversionSVG is a frontend wrapper around Inkscape's command line feature. It
 provides users who want to perform batch conversions of their SVG files into
 the other file formats Inkscape can export to.
 
-## Description
-
-#### Why does ConversionSVG exist?
-
-I needed an easy way for me to perform batch conversions of SVG files for work, because it would take too much time to open each file and export individually. I did some searching around for batch image converters for SVG and came across [ConversionSVG on SourceForge][sfConversionSVG], and it worked in the short run, but eventually I got tired of the user interface. I didn't want to have to select whether I was converting files in a single directory or a single file; I wanted to select the files I wanted to convert faster than the user interface allowed me to.
-
-It had been about a year since I had done any programming in Java, and this seemed like a small enough project to get back in. When I started getting into the code, it difficult to read since it was written in French. So I had to go around refactoring the code so I could read it. As I did that ideas began popping up in my head for improvements.
-
-Part of the requirements I had personally was to not spend a ton of time on this; basically quickly improve this application for personal use, but allow others to use it if they come across it in their pursuit to improve their efficiency. With that said, it is the main reason I reuse code I've found through searching the internet for the implementing the features in ConversionSVG.
-
 ## Installation
 
 ### Prerequisites
 
-The following are what I used.
+- [Inkscape][inkscape] is installed
+- [Java 6][2] is installed
 
-- [Inkscape][inkscape]
-- Java 6
-- JUnit 4
+[Download Conversion SVG][1] and run it.
 
-### Building
+### Libraries Used
 
-I used Eclipse to develop ConversionSVG, and I setup each group of source code as individual projects. So, to replicate what I did, you would need to add a new Java Project using existing source (selecting the top directory). Then for the projects that use JUnit you would have to add the JUnit library to their project build-path settings.  
+[ConversionSVG on SourceForge][0] -- I started with metalkev64's code from SourceForge, but eventually rewrote most of it. Without his contributions, I probably would not have even started this.
 
-## Credit
+[Flamingo library][flamingo] -- I didn't want to use menu's; ever since I used Office 2007 with the Ribbon I refuse to use menus where I can and use Ribbons instead. So, upon doing some research I came across the flamingo swing component suite.
 
-Contributors: Erich Schroeter
+[JIDE Common Layer][jide-common] -- I wanted to improve the way I selected files to convert, and thought of the checkbox tree I've seen in Windows. After some searching, I came across the CheckBoxTree the jide library provides. 
 
-#### Recognized Code Usage in ConversionSVG
+[ColorChooser Widget][colorchooser] -- The background color selection in the original app was too slow for me, so I wondered if there was existing code that implemented a color picker. I came across the Color Picker at java.net.
 
-##### [ConversionSVG on SourceForge][sfConversionSVG]
+[fstreem on SourceForge][fstreem] -- I didn't want to spend a lot of time on how to access the file system in a device independent way in Java, so I did some searching on how to do this in Java and came across a SF project which provided some code that happened to work for me.
 
-I started with metalkev64's code from SourceForge, but eventually rewrote most of it. Without his contributions, I probably would not have even started this.
+[Tango Icons][tango] -- Most of the icons used are from the Tango Desktop Project.
 
-##### [Flamingo library][flamingo]
+[GoSquared Flag Icons][gosquared] -- The flags used for language icons are a set created by Go Squared Ltd.
 
-I didn't want to use menu's; ever since I used Office 2007 with the Ribbon I refuse to use menus where I can and use Ribbons instead. So, upon doing some research I came across the flamingo swing component suite.
-
-##### [JIDE Common Layer][jide-common]
-
-I wanted to improve the way I selected files to convert, and thought of the checkbox tree I've seen in Windows. After some searching, I came across the CheckBoxTree the jide library provides. 
-
-##### [ColorChooser Widget][colorchooser]
-
-The background color selection in the original app was too slow for me, so I wondered if there was existing code that implemented a color picker. I came across the Color Picker at java.net.
-
-##### [fstreem on SourceForge][fstreem]
-
-I didn't want to spend a lot of time on how to access the file system in a device independent way in Java, so I did some searching on how to do this in Java and came across a SF project which provided some code that happened to work for me.
-
-##### [Tango Icons][tango]
-
-Most of the icons used are from the Tango Desktop Project.
-
-##### [GoSquared Flag Icons][gosquared]
-
-The flags used for language icons are a set created by Go Squared Ltd.
-
+[0]: http://sourceforge.net/projects/conversionsvg/ "The original application"
+[1]: https://github.com/erichschroeter/conversionsvg/downloads "Downloads page"
+[2]: http://java.com/en/download/ "Java download page"
 [inkscape]: http://inkscape.org/ "Open source vector graphics editor"
-[sfConversionSVG]: http://sourceforge.net/projects/conversionsvg/ "The original application"
-[flamingo]: https://flamingo.dev.java.net/ "A collection of components for Swing applications"
+[flamingo]: http://mvnrepository.com/artifact/com.github.insubstantial/flamingo/7.0 "A collection of ribbon components for Swing applications"
 [jide-common]: https://jide-oss.dev.java.net/ "JIDE Common Layer (Professional Swing Components)"
-[jide]: http://www.jidesoft.com "Powered by JIDE (http://www.jidesoft.com)"
 [colorchooser]: https://colorchooser.dev.java.net/ "A Swing widget for selecting colors with single mouse gesture"
 [fstreem]: http://sourceforge.net/projects/fstreem/files/ "SourceForge File System TreeModel"
 [tango]: http://tango.freedesktop.org/Tango_Icon_Library "The Tango Desktop Project"
