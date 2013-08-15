@@ -1,0 +1,97 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <title>ConversionSVG by erichschroeter</title>
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+    <script src="javascripts/main.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+
+  </head>
+  <body>
+
+      <header>
+        <h1>ConversionSVG</h1>
+        <p>This is a frontend to the Inkscape command line feature to allow the user to perform batch conversions of SVG files.</p>
+      </header>
+
+      <div id="banner">
+        <span id="logo"></span>
+
+        <a href="https://github.com/erichschroeter/conversionsvg" class="button fork"><strong>View On GitHub</strong></a>
+        <div class="downloads">
+          <span>Downloads:</span>
+          <ul>
+            <li><a href="https://github.com/erichschroeter/conversionsvg/zipball/master" class="button">ZIP</a></li>
+            <li><a href="https://github.com/erichschroeter/conversionsvg/tarball/master" class="button">TAR</a></li>
+          </ul>
+        </div>
+      </div><!-- end banner -->
+
+    <div class="wrapper">
+      <nav>
+        <ul></ul>
+      </nav>
+      <section>
+        <h1>
+<a name="conversion-svg" class="anchor" href="#conversion-svg"><span class="octicon octicon-link"></span></a>Conversion SVG</h1>
+
+<p>ConversionSVG is a frontend wrapper around Inkscape's command line feature. It
+provides users who want to perform batch conversions of their SVG files into
+the other file formats Inkscape can export to.</p>
+
+<h2>
+<a name="installation" class="anchor" href="#installation"><span class="octicon octicon-link"></span></a>Installation</h2>
+
+<h3>
+<a name="prerequisites" class="anchor" href="#prerequisites"><span class="octicon octicon-link"></span></a>Prerequisites</h3>
+
+<ul>
+<li>
+<a href="http://inkscape.org/" title="Open source vector graphics editor">Inkscape</a> is installed</li>
+<li>
+<a href="http://java.com/en/download/" title="Java download page">Java 6</a> is installed</li>
+</ul><p><a href="https://github.com/erichschroeter/conversionsvg/downloads" title="Downloads page">Download Conversion SVG</a> and run it.</p>
+
+<h3>
+<a name="libraries-used" class="anchor" href="#libraries-used"><span class="octicon octicon-link"></span></a>Libraries Used</h3>
+
+<p><a href="http://sourceforge.net/projects/conversionsvg/" title="The original application">ConversionSVG on SourceForge</a> -- I started with metalkev64's code from SourceForge, but eventually rewrote most of it. Without his contributions, I probably would not have even started this.</p>
+
+<p><a href="http://mvnrepository.com/artifact/com.github.insubstantial/flamingo/7.0" title="A collection of ribbon components for Swing applications">Flamingo library</a> -- I didn't want to use menu's; ever since I used Office 2007 with the Ribbon I refuse to use menus where I can and use Ribbons instead. So, upon doing some research I came across the flamingo swing component suite.</p>
+
+<p><a href="https://jide-oss.dev.java.net/" title="JIDE Common Layer (Professional Swing Components)">JIDE Common Layer</a> -- I wanted to improve the way I selected files to convert, and thought of the checkbox tree I've seen in Windows. After some searching, I came across the CheckBoxTree the jide library provides. </p>
+
+<p><a href="https://colorchooser.dev.java.net/" title="A Swing widget for selecting colors with single mouse gesture">ColorChooser Widget</a> -- The background color selection in the original app was too slow for me, so I wondered if there was existing code that implemented a color picker. I came across the Color Picker at java.net.</p>
+
+<p><a href="http://sourceforge.net/projects/fstreem/files/" title="SourceForge File System TreeModel">fstreem on SourceForge</a> -- I didn't want to spend a lot of time on how to access the file system in a device independent way in Java, so I did some searching on how to do this in Java and came across a SF project which provided some code that happened to work for me.</p>
+
+<p><a href="http://tango.freedesktop.org/Tango_Icon_Library" title="The Tango Desktop Project">Tango Icons</a> -- Most of the icons used are from the Tango Desktop Project.</p>
+
+<p><a href="http://www.gosquared.com/liquidicity/archives/1493" title="2400 Flag Icon Set">GoSquared Flag Icons</a> -- The flags used for language icons are a set created by Go Squared Ltd.</p>
+      </section>
+      <footer>
+        <p>Project maintained by <a href="https://github.com/erichschroeter">erichschroeter</a></p>
+        <p><small>Hosted on GitHub Pages &mdash; Theme by <a href="https://twitter.com/michigangraham">mattgraham</a></small></p>
+      </footer>
+    </div>
+    <!--[if !IE]><script>fixScale(document);</script><![endif]-->
+              <script type="text/javascript">
+            var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
+            document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
+          </script>
+          <script type="text/javascript">
+            try {
+              var pageTracker = _gat._getTracker("UA-25317287-2");
+            pageTracker._trackPageview();
+            } catch(err) {}
+          </script>
+
+  </body>
+</html>
