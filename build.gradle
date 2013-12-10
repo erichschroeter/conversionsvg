@@ -2,7 +2,7 @@ apply plugin: 'java'
 apply plugin: 'eclipse'
 
 group = 'usr.erichschroeter'
-version = '0.0.4'
+version = '1.0.0'
 description = 'A frontend batch application to Inkscape for converting multple SVG files to other formats'
 
 sourceCompatibility = 1.6
