@@ -305,11 +305,12 @@ public class ConversionSvgApplication extends GUIApplicationImpl<JFrame> {
 
 		JRibbonBand control = new JRibbonBand("Controls", Utils.resizableIcon(R
 				.png("control.png")));
-		control.setResizePolicies(new Vector<RibbonBandResizePolicy>(Arrays
-				.asList(new CoreRibbonResizePolicies.Mirror(control
-						.getControlPanel()),
-						new CoreRibbonResizePolicies.Mid2Low(control
-								.getControlPanel()))));
+		Vector<RibbonBandResizePolicy> temp = new Vector<RibbonBandResizePolicy>();
+		temp.add(new CoreRibbonResizePolicies.Mirror(control
+						.getControlPanel()));
+		temp.add(new CoreRibbonResizePolicies.Mid2Low(control
+								.getControlPanel()));
+		control.setResizePolicies(temp);
 		control.addCommandButton(convert, RibbonElementPriority.TOP);
 
 		RibbonTask home = new RibbonTask("Home", control);
